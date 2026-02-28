@@ -26,7 +26,7 @@ Before deploying to production:
 - [ ] Backups scheduled
 - [ ] Security audit completed
 - [ ] Performance tested under load
-
+ 
 ---
 
 ## Vercel + Supabase (Recommended)
