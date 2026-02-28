@@ -1,0 +1,171 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your SaaS DB?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============= MULTI-TENANT CORE =============
+
+model Tenant {
+  id                String    @id @default(uuid())
+  name              String    @unique
+  email             String    @unique
+  passwordHash      String    // bcrypted
+  language          String    @default("en") // 'en', 'ar', etc.
+  currency          String    @default("OMR") // 'OMR', 'USD', 'AED', etc.
+  timezone          String    @default("Asia/Muscat") // IANA timezone
+  rooms             Json      @default("[]") // Array of {id: string, name: string}
+  subscriptionStatus String   @default("trial") // 'trial', 'active', 'expired', 'canceled'
+  validUntil        DateTime  // Last day of access
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  isAdmin           Boolean   @default(false) // Super admin flag
+  isActive          Boolean   @default(true)
+
+  // Relations
+  bookings          Booking[]
+  auditLogs         AuditLog[]
+  payments          Payment[]
+  settings          TenantSettings?
+
+  @@index([email])
+  @@index([subscriptionStatus])
+}
+
+model TenantSettings {
+  id                String    @id @default(uuid())
+  tenantId          String    @unique
+  tenant            Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  // Display settings
+  defaultNightPrice Float    @default(50)
+  defaultTax        Float    @default(0) // percentage
+  
+  // Notification settings
+  notifyOnBooking   Boolean   @default(true)
+  notifyOnCancellation Boolean @default(true)
+  
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([tenantId])
+}
+
+// ============= BOOKING MANAGEMENT =============
+
+model Booking {
+  id                String    @id @default(uuid())
+  tenantId          String
+  tenant            Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  // Guest info
+  guestName         String
+  guestEmail        String?
+  guestPhone        String?
+  city              String?
+  
+  // Room & dates
+  room              String
+  checkIn           DateTime
+  checkOut          DateTime
+  nights            Int
+  
+  // Pricing
+  nightPrice        Float    // Price per night
+  totalPrice        Float    // Total room charges
+  tax               Float    @default(0)
+  deposit           Float    // Amount paid as deposit
+  remaining         Float    // Outstanding balance
+  
+  // Status & metadata
+  status            String    @default("upcoming") // 'upcoming', 'active', 'completed', 'canceled', 'no-show'
+  notes             String?
+  
+  // Timestamps
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  // Optional: track who made the booking
+  createdBy         String?
+
+  @@index([tenantId])
+  @@index([room])
+  @@index([status])
+  @@index([checkIn])
+  @@index([checkOut])
+  @@index([createdAt])
+  @@unique([tenantId, id]) // Ensure tenant isolation
+}
+
+// ============= AUDIT & COMPLIANCE =============
+
+model AuditLog {
+  id                String    @id @default(uuid())
+  tenantId          String
+  tenant            Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  action            String    // BOOKING_CREATED, BOOKING_UPDATED, BOOKING_DELETED, TENANT_UPDATED
+  entityType        String    // 'Booking', 'Tenant'
+  entityId          String
+  
+  changes           Json?     // What changed: {before: {...}, after: {...}}
+  userId            String?   // Who made the change (future: userAuth)
+  
+  ipAddress         String?
+  userAgent         String?
+  
+  createdAt         DateTime  @default(now())
+
+  @@index([tenantId])
+  @@index([action])
+  @@index([createdAt])
+  @@index([entityType])
+}
+
+// ============= BILLING & PAYMENTS =============
+
+model Payment {
+  id                String    @id @default(uuid())
+  tenantId          String
+  tenant            Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  amount            Float
+  currency          String    @default("OMR")
+  status            String    @default("pending") // 'pending', 'completed', 'failed', 'refunded'
+  
+  // Payment details
+  stripeId          String?   // if using Stripe
+  transactionId     String?   // External transaction ID
+  
+  planType          String    @default("monthly") // 'trial', 'monthly', 'annual'
+  planDays          Int       @default(30)
+  
+  description       String?
+  
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([tenantId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// ============= GLOBAL SETTINGS (Not tenant-specific) =============
+
+model GlobalSettings {
+  id                Int       @id @default(1)
+  defaultTrialDays  Int       @default(14)
+  defaultCurrency   String    @default("OMR")
+  appVersion        String    @default("1.0.0")
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+}
