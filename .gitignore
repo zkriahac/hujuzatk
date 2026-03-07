@@ -60,3 +60,4 @@ prisma/migrations/
 .npm
 .eslintcache
 .node_repl_history
+.vercel

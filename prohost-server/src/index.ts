@@ -10,7 +10,7 @@ import { contextFromRequest } from './context';
 
 dotenv.config();
 
-const prisma = new PrismaClient();
+export const prisma = new PrismaClient();
 
 interface ApolloContext {
   prisma: PrismaClient;

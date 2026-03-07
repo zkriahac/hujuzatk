@@ -1,12 +1,12 @@
 {
+  "version": 2,
   "buildCommand": "npx prisma generate",
+  "builds": [
+    { "src": "api/graphql.ts", "use": "@vercel/node" },
+    { "src": "api/health.ts", "use": "@vercel/node" }
+  ],
   "rewrites": [
     { "source": "/graphql", "destination": "/api/graphql" },
     { "source": "/health", "destination": "/api/health" }
-  ],
-  "functions": {
-    "api/graphql.ts": {
-      "maxDuration": 30
-    }
-  }
+  ]
 }
