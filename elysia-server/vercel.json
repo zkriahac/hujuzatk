@@ -5,8 +5,8 @@
     { "src": "api/graphql.ts", "use": "@vercel/node" },
     { "src": "api/health.ts", "use": "@vercel/node" }
   ],
-  "rewrites": [
-    { "source": "/graphql", "destination": "/api/graphql" },
-    { "source": "/health", "destination": "/api/health" }
+  "routes": [
+    { "src": "/graphql", "dest": "/api/graphql.ts" },
+    { "src": "/health", "dest": "/api/health.ts" }
   ]
 }

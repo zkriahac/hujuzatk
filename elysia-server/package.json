@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "bun run index.ts",
     "start": "bun run index.ts",
-    "build": "npx prisma generate"
+    "build": "npx prisma generate",
+    "postinstall": "npx prisma generate"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
