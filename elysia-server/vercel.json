@@ -1,0 +1,12 @@
+{
+  "buildCommand": "npx prisma generate",
+  "rewrites": [
+    { "source": "/graphql", "destination": "/api/graphql" },
+    { "source": "/health", "destination": "/api/health" }
+  ],
+  "functions": {
+    "api/graphql.ts": {
+      "maxDuration": 30
+    }
+  }
+}
