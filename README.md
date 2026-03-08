@@ -1,4 +1,4 @@
-# ProHost — Booking Management
+# Hujuzatk — Booking Management
 
 Multi-tenant hotel booking management system.
 

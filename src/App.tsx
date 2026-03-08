@@ -20,7 +20,6 @@ import {
   Star,
   ShieldCheck,
   Sparkle,
-  House,
   Layout,
   Users,
   CreditCard,
@@ -101,14 +100,14 @@ const PrivacyPolicy = () => (
       <h1 className="text-3xl font-black mb-6 tracking-tight">Privacy Policy</h1>
       <p className="mb-4 text-slate-500 font-bold uppercase text-[10px] tracking-widest">Last updated: {new Date().toLocaleDateString()}</p>
       <section className="space-y-6 text-slate-700 leading-relaxed">
-        <p>At ProHost, we take your privacy seriously. This policy describes how we collect, use, and protect your data.</p>
+        <p>At Hujuzatk, we take your privacy seriously. This policy describes how we collect, use, and protect your data.</p>
         <div>
           <h2 className="text-xl font-black text-slate-900 mb-2">1. Data Collection</h2>
           <p>We collect information you provide directly to us when you create an account, such as your name, email address, and property details. All booking data is stored securely and is isolated per tenant.</p>
         </div>
         <div>
           <h2 className="text-xl font-black text-slate-900 mb-2">2. Data Usage</h2>
-          <p>Your data is used solely to provide and improve the ProHost service. We do not sell your personal information or booking data to third parties.</p>
+          <p>Your data is used solely to provide and improve the Hujuzatk service. We do not sell your personal information or booking data to third parties.</p>
         </div>
         <div>
           <h2 className="text-xl font-black text-slate-900 mb-2">3. Security</h2>
@@ -132,7 +131,7 @@ const TermsOfService = () => (
       <section className="space-y-6 text-slate-700 leading-relaxed">
         <div>
           <h2 className="text-xl font-black text-slate-900 mb-2">1. Acceptance of Terms</h2>
-          <p>By accessing ProHost, you agree to be bound by these terms. Our service is provided "as is" and "as available".</p>
+          <p>By accessing Hujuzatk, you agree to be bound by these terms. Our service is provided "as is" and "as available".</p>
         </div>
         <div>
           <h2 className="text-xl font-black text-slate-900 mb-2">2. Subscription & Trials</h2>
@@ -181,18 +180,23 @@ const LandingPage = () => {
       <header className="fixed top-0 z-50 w-full border-b border-slate-200 bg-white/70 backdrop-blur-xl">
         <nav className="container mx-auto flex items-center justify-between px-6 py-4">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-700 text-white shadow-lg shadow-emerald-200">
-              <House size={22} weight="bold" />
-            </div>
-            <span className="text-2xl font-black tracking-tight text-slate-900">ProHost</span>
+            {/* <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-700 text-white shadow-lg shadow-emerald-200"> */}
+              <div className="flex items-center justify-center w-full h-full rounded-xl">
+                <img
+                  src="/logo.svg"
+                  alt="Plus Logo"
+                  style={{ width: 40, height: 40 }}
+                />
+              </div>
+            {/* </div> */}
+            <span className="text-2xl font-black tracking-tight text-slate-900">Hujuzatk</span>
           </div>
           <div className="hidden items-center gap-8 md:flex">
             <a href="#features" className="text-sm font-semibold text-slate-600 hover:text-emerald-600 transition-colors">Features</a>
-            <a href="#reports" className="text-sm font-semibold text-slate-600 hover:text-emerald-600 transition-colors">Reporting</a>
             <a href="#pricing" className="text-sm font-semibold text-slate-600 hover:text-emerald-600 transition-colors">Pricing</a>
           </div>
           <div className="flex items-center gap-3">
-            <button onClick={() => navigate('/user')} className="hidden px-4 py-2 text-sm font-bold text-slate-700 hover:text-emerald-600 transition-colors sm:block">
+            <button onClick={() => navigate('/user')} className="px-4 py-2 text-sm font-bold text-slate-700 hover:text-emerald-600 transition-colors sm:block">
               Log in
             </button>
             <button 
@@ -321,7 +325,7 @@ const LandingPage = () => {
                 { icon: FileText, title: "Smart Invoicing", desc: "Automated calculation of nights, discounts, and deposits. Generate clean, printable PDF invoices in English or Arabic instantly." },
                 { icon: Globe, title: "Native Arabic & RTL", desc: "Not just a translation, but a complete localized experience. Perfect RTL layouts with OMR and regional date formats built-in." },
                 { icon: ChartPie, title: "Financial Intelligence", desc: "Advanced reporting on Stay Date vs Creation Date. Visualize fill rates, revenue per room, and identify your most profitable channels." },
-                { icon: DeviceMobile, title: "Native PWA Experience", desc: "Install ProHost directly on your device. It feels and acts like a native app with fast loading and push-notification readiness." },
+                { icon: DeviceMobile, title: "Native PWA Experience", desc: "Install Hujuzatk directly on your device. It feels and acts like a native app with fast loading and push-notification readiness." },
                 { icon: Database, title: "Enterprise Scaling", desc: "Start locally with high-speed Dexie DB and upgrade to PostgreSQL (Supabase) in seconds. Your data, your control." }
               ].map((feature, i) => (
                 <div key={i} className="group flex flex-col items-start transition-all">
@@ -343,7 +347,7 @@ const LandingPage = () => {
                       Bank-Grade Security
                    </div>
                    <h2 className="text-4xl font-black leading-tight sm:text-6xl">Your data is safe, private, and always yours.</h2>
-                   <p className="mt-8 text-xl text-slate-400 leading-relaxed">ProHost uses multi-tenant isolation. This means every hotel's data is mathematically separated from others. No leaks, no performance crosstalk, just pure reliability.</p>
+                   <p className="mt-8 text-xl text-slate-400 leading-relaxed">Hujuzatk uses multi-tenant isolation. This means every hotel's data is mathematically separated from others. No leaks, no performance crosstalk, just pure reliability.</p>
                    
                    <div className="mt-12 flex gap-12">
                       <div>
@@ -361,7 +365,7 @@ const LandingPage = () => {
                       <div className="flex gap-1 text-emerald-400 mb-6">
                          {[...Array(5)].map((_, i) => <Star key={i} size={20} weight="fill" />)}
                       </div>
-                      <p className="text-2xl font-medium leading-relaxed italic">"Switching to ProHost cut my check-in time by half. The 5-year calendar is a game changer for our vacation rental business in Salalah. We can now plan our entire year in minutes."</p>
+                      <p className="text-2xl font-medium leading-relaxed italic">"Switching to Hujuzatk cut my check-in time by half. The 5-year calendar is a game changer for our vacation rental business in Salalah. We can now plan our entire year in minutes."</p>
                       <div className="mt-10 flex items-center gap-4">
                          <div className="h-14 w-14 rounded-full bg-gradient-to-tr from-slate-600 to-slate-400 shadow-xl"></div>
                          <div>
@@ -417,16 +421,41 @@ const LandingPage = () => {
            <div className="flex flex-col md:flex-row justify-between items-start gap-12">
               <div className="max-w-sm">
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-900 text-white shadow-lg">
-                    <House size={20} weight="bold" />
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl text-white shadow-lg">
+                    <div className="flex items-center justify-center w-full h-full rounded-xl">
+                      <img
+                        src="/logo.svg"
+                        alt="Plus Logo"
+                        style={{ width: 40, height: 40 }}
+                      />
+                    </div>
                   </div>
-                  <span className="text-2xl font-black tracking-tight text-slate-900">ProHost</span>
+                  <span className="text-2xl font-black tracking-tight text-slate-900">Hujuzatk</span>
                 </div>
                 <p className="text-slate-500 text-sm mb-6 leading-relaxed">
                   The world's most intuitive Property Management System for modern hosts and professional property managers.
                 </p>
-                <a 
-                  href="https://wa.me/96899999999" 
+                {/* <a 
+                  href="https://wa.me/905523205496" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-5 py-2.5 rounded-full text-sm font-black transition-all shadow-lg shadow-emerald-200 active:scale-95"
+                >
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L0 24l6.335-1.662c1.72.937 3.659 1.432 5.634 1.432h.006c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
+                  WhatsApp Support
+                </a> */}
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-2 gap-16 text-sm font-bold uppercase tracking-widest">
+                <div className="flex flex-col gap-4">
+                  <span className="text-slate-900">Legal</span>
+                  <Link to="/privacy" className="text-slate-400 hover:text-emerald-600 transition-colors">Privacy</Link>
+                  <Link to="/terms" className="text-slate-400 hover:text-emerald-600 transition-colors">Terms</Link>
+                </div>
+                <div className="flex flex-col gap-4">
+                  <span className="text-slate-900">Support</span>
+                                  <a 
+                  href="https://wa.me/905523205496" 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-5 py-2.5 rounded-full text-sm font-black transition-all shadow-lg shadow-emerald-200 active:scale-95"
@@ -435,25 +464,16 @@ const LandingPage = () => {
                     <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L0 24l6.335-1.662c1.72.937 3.659 1.432 5.634 1.432h.006c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
                   WhatsApp Support
                 </a>
-              </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-16 text-sm font-bold uppercase tracking-widest">
-                <div className="flex flex-col gap-4">
-                  <span className="text-slate-900">Legal</span>
-                  <Link to="/privacy" className="text-slate-400 hover:text-emerald-600 transition-colors">Privacy</Link>
-                  <Link to="/terms" className="text-slate-400 hover:text-emerald-600 transition-colors">Terms</Link>
-                </div>
-                <div className="flex flex-col gap-4">
-                  <span className="text-slate-900">Support</span>
-                  <a href="#" className="text-slate-400 hover:text-emerald-600">Help Center</a>
-                  <a href="#" className="text-slate-400 hover:text-emerald-600">Contact</a>
+                  {/* <a href="#" className="text-slate-400 hover:text-emerald-600">Help Center</a>
+                  <a href="#" className="text-slate-400 hover:text-emerald-600">Contact</a> */}
                 </div>
               </div>
            </div>
            <div className="mt-12 border-t border-slate-200 pt-12 flex flex-col md:flex-row justify-between text-sm font-medium text-slate-400 items-center gap-6">
-              <p>© {new Date().getFullYear()} ProHost PMS. All rights reserved.</p>
+              <p>© {new Date().getFullYear()} Hujuzatk PMS. All rights reserved.</p>
               <div className="flex items-center gap-4">
                  <Globe size={16} />
-                 <span>Oman | United Kingdom | International</span>
+                 <span>Istanbul | Turkiye | International</span>
               </div>
            </div>
         </div>
@@ -581,10 +601,16 @@ function WorkspaceHeader({ username }: { username: string }) {
           onClick={() => navigate('/')}
           className="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-xs"
         >
-          <House size={16} />
+          <div className="flex items-center justify-center w-full h-full rounded-xl">
+            <img
+              src="/logo.svg"
+              alt="Plus Logo"
+              style={{ width: 40, height: 40 }}
+            />
+          </div>
         </button>
         <div className="flex flex-col">
-          <span className="font-semibold text-xs sm:text-sm">ProHost</span>
+          <span className="font-semibold text-xs sm:text-sm">Hujuzatk</span>
           <span className="text-[10px] text-gray-500 uppercase font-bold tracking-tighter">Workspace: {niceName}</span>
         </div>
       </div>
@@ -645,7 +671,7 @@ function SuperAdminShell() {
         <div className="bg-slate-900/80 border border-emerald-500/40 rounded-2xl shadow-2xl max-w-md w-full p-8">
           <h1 className="text-xl font-bold mb-2">Superadmin Login</h1>
           <p className="text-xs text-slate-300 mb-4">
-            Enter your credentials to manage global ProHost PMS settings.
+            Enter your credentials to manage global Hujuzatk PMS settings.
           </p>
           {error && (
             <div className="mb-3 text-xs text-red-300 bg-red-900/40 border border-red-500/40 rounded px-2 py-1.5">
@@ -823,11 +849,17 @@ function AuthScreen({ mode, onModeChange, onLoggedIn, error, setError, workspace
   return (
     <div className="bg-white/90 backdrop-blur shadow-xl rounded-2xl max-w-md w-full p-8 border border-emerald-100">
       <div className="flex items-center gap-3 mb-6">
-        <div className="w-10 h-10 rounded-xl bg-emerald-600 flex items-center justify-center text-white font-bold shadow-lg shadow-emerald-200">
-          <House size={22} weight="bold" />
+        <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold shadow-lg shadow-emerald-200">
+          <div className="flex items-center justify-center w-full h-full rounded-xl">
+            <img
+              src="/logo.svg"
+              alt="Plus Logo"
+              style={{ width: 40, height: 40 }}
+            />
+          </div>
         </div>
         <div>
-          <div className="font-bold text-lg">ProHost PMS</div>
+          <div className="font-bold text-lg">Hujuzatk PMS</div>
           <div className="text-xs text-gray-500">
             {workspaceLabel ? `Workspace: ${workspaceLabel}` : 'Professional Property Management'}
           </div>
@@ -1330,11 +1362,17 @@ function TenantApp({ session, onSessionChange }: TenantAppProps) {
       <nav className="bg-white border-b border-slate-200 sticky top-0 z-[100] h-14 backdrop-blur-xl bg-white/80">
         <div className="max-w-full mx-auto px-6 flex justify-between h-full items-center">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-emerald-600 rounded-xl flex items-center justify-center text-white font-bold shadow-lg shadow-emerald-100">
-               <House size={20} weight="bold" />
+            <div className="w-9 h-9  rounded-xl flex items-center justify-center text-white font-bold shadow-lg shadow-emerald-100">
+               <div className="flex items-center justify-center w-full h-full rounded-xl">
+                 <img
+                   src="/logo.svg"
+                   alt="Plus Logo"
+                   style={{ width: 40, height: 40 }}
+                 />
+               </div>
             </div>
             <div className="flex flex-col">
-              <span className="font-black text-sm tracking-tight">{session.tenant.name || 'ProHost Workspace'}</span>
+              <span className="font-black text-sm tracking-tight">{session.tenant.name || 'Hujuzatk Workspace'}</span>
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">{t(lang, 'misc.projectname')} PMS</span>
             </div>
           </div>
@@ -1773,7 +1811,7 @@ function CalendarView({
         >
           <Sparkle size={16} weight="fill" />
           <span className="hidden sm:inline">{t(lang, 'calendar.newBooking')}</span>
-          <span className="sm:hidden">New</span>
+          <span className="sm:hidden">{t(lang, 'calendar.newBooking')}</span>
         </button>
       </div>
     </div>

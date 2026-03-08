@@ -1,5 +1,5 @@
 /**
- * ProHost GraphQL Resolvers for Elysia Backend
+ * Hujuzatk GraphQL Resolvers for Elysia Backend
  *
  * This file contains all resolvers ported from the legacy Express/Apollo backend.
  * All business logic, authentication, and database access is handled here.

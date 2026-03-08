@@ -25,7 +25,7 @@ async function main() {
 
   const admin = await prisma.tenant.create({
     data: {
-      name: 'ProHost Admin',
+      name: 'Hujuzatk Admin',
       email: adminEmail,
       passwordHash,
       language: 'en',

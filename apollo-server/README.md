@@ -1,4 +1,4 @@
-# ProHost Server - GraphQL API
+# Hujuzatk Server - GraphQL API
 
 Production-grade booking management system backend built with Apollo Server, Prisma, and PostgreSQL.
 
