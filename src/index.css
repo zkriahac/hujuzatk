@@ -1,1 +1,6 @@
 @import "tailwindcss";
+
+[dir="rtl"],
+[dir="rtl"] * {
+  font-family: 'Cairo', sans-serif;
+}

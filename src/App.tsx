@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { cn } from './utils/cn';
 import { type Booking, type Tenant } from './db';
+import { gql } from '@apollo/client';
+import { apolloClient } from './lib/apolloClient';
 import { dataService } from './lib/dataService';
 import { authService, type SessionUser } from './lib/authService';
 import { getDir, type Language, t } from './lib/i18n';
@@ -23,7 +25,12 @@ import {
   Users,
   CreditCard,
   Target,
-  Plus
+  Plus,
+  Minus,
+  X,
+  Trash,
+  Prohibit,
+  PencilSimple,
 } from 'phosphor-react';
 import {
   addDays,
@@ -789,7 +796,18 @@ function AuthScreen({ mode, onModeChange, onLoggedIn, error, setError, workspace
     setError(null);
     try {
       if (mode === 'register') {
-        const s = await authService.registerLocalTenant({ email, name: name || email, password });
+        let defaults: any = {};
+        try { defaults = JSON.parse(localStorage.getItem('admin-defaults') || '{}'); } catch {}
+        const s = await authService.registerLocalTenant({
+          email, name: name || email, password,
+          language: defaults.language,
+          currency: defaults.currency,
+          timezone: defaults.timezone,
+        });
+        // Apply default rooms after registration if configured
+        if (defaults.rooms?.length) {
+          try { await authService.updateTenantConfig(s.tenantId, { rooms: defaults.rooms }); } catch {}
+        }
         onLoggedIn(s);
       } else {
         const s = await authService.loginLocal(email, password);
@@ -912,7 +930,7 @@ function TenantApp({ session, onSessionChange }: TenantAppProps) {
   const currency = session.tenant.currency || 'OMR';
   const dir = getDir(lang);
 
-  const [currentView, setCurrentView] = useState<View>('calendar');
+  const [currentView, setCurrentView] = useState<View>(session.isAdmin ? 'admin' : 'calendar');
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loadedMonths, setLoadedMonths] = useState<Set<string>>(new Set()); // Track which months are loaded
   const [selectedDateStr, setSelectedDateStr] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
@@ -1108,28 +1126,33 @@ function TenantApp({ session, onSessionChange }: TenantAppProps) {
       (bookingInput as any)[key] === undefined && delete (bookingInput as any)[key]
     );
     
-    await dataService.addBooking(bookingInput);
-    // Refresh the month where booking was added
-    await refreshMonthBookings(newBooking.checkIn);
+    const created = await dataService.addBooking(bookingInput);
+    if (created) setBookings(prev => [...prev.filter(b => b.id !== created.id), created]);
     setShowAddModal(false);
   };
 
   const handleUpdateBookingStatus = async (id: number | string, status: 'UPCOMING' | 'ACTIVE' | 'COMPLETED' | 'CANCELED' | 'NO_SHOW') => {
-    await dataService.updateBooking(id, { status });
-    // Refresh the month(s) affected by this booking
-    if (selectedBooking?.checkIn) {
-      await refreshMonthBookings(selectedBooking.checkIn);
+    const updated = await dataService.updateBooking(id, { status });
+    if (updated) {
+      setBookings(prev => prev.map(b => b.id === updated.id ? updated : b));
+    } else {
+      // Fallback: patch status in local state only
+      setBookings(prev => prev.map(b => b.id === id ? { ...b, status: status.toLowerCase() } : b));
+    }
+    setSelectedBooking(null);
+  };
+
+  const handleUpdateBooking = async (id: number | string, updates: any) => {
+    const updated = await dataService.updateBooking(id, updates);
+    if (updated) {
+      setBookings(prev => prev.map(b => b.id === updated.id ? updated : b));
     }
     setSelectedBooking(null);
   };
 
   const handleDeleteBooking = async (id: number | string) => {
-    const bookingToDelete = bookings.find(b => b.id === id);
     await dataService.deleteBooking(id);
-    // Refresh the month where booking was deleted
-    if (bookingToDelete?.checkIn) {
-      await refreshMonthBookings(bookingToDelete.checkIn);
-    }
+    setBookings(prev => prev.filter(b => b.id !== id));
     setSelectedBooking(null);
   };
 
@@ -1312,15 +1335,15 @@ function TenantApp({ session, onSessionChange }: TenantAppProps) {
             </div>
             <div className="flex flex-col">
               <span className="font-black text-sm tracking-tight">{session.tenant.name || 'ProHost Workspace'}</span>
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Professional PMS</span>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">{t(lang, 'misc.projectname')} PMS</span>
             </div>
           </div>
           <div className="flex items-center gap-4">
             <div className="hidden lg:flex items-center gap-2 text-xs">
-              {subscriptionBadge}
-              <span className={cn('px-2 py-0.5 rounded-full font-bold uppercase tracking-tighter', dataService.isCloud ? 'bg-blue-50 text-blue-600' : 'bg-slate-100 text-slate-500')}>
+              {session.isAdmin ?  '':subscriptionBadge}
+              {/* <span className={cn('px-2 py-0.5 rounded-full font-bold uppercase tracking-tighter', dataService.isCloud ? 'bg-blue-50 text-blue-600' : 'bg-slate-100 text-slate-500')}>
                 {dataService.isCloud ? t(lang, 'misc.cloudDB') : t(lang, 'misc.localDB')}
-              </span>
+              </span> */}
             </div>
             <button
               onClick={handleLogout}
@@ -1334,7 +1357,7 @@ function TenantApp({ session, onSessionChange }: TenantAppProps) {
       
       <div className="bg-white border-b border-slate-200 sticky top-14 z-[90] h-10 overflow-x-auto overflow-y-hidden">
         <div className="container mx-auto px-6 flex h-full items-center gap-1 scrollbar-hide">
-          {(['calendar', 'list', 'reports', 'settings', ...(session.isAdmin ? ['admin'] : [])] as View[]).map((v) => (
+          {(session.isAdmin ? ['admin'] as View[] : ['calendar', 'list', 'reports', 'settings'] as View[]).map((v) => (
             <button
               key={v}
               onClick={() => setCurrentView(v)}
@@ -1349,7 +1372,7 @@ function TenantApp({ session, onSessionChange }: TenantAppProps) {
         </div>
       </div>
 
-      <main className="container mx-auto p-6 pt-8">
+      <main className="container mx-auto p-4 pt-4">
         {currentView === 'calendar' && (
           <CalendarView
             rooms={rooms}
@@ -1433,10 +1456,12 @@ function TenantApp({ session, onSessionChange }: TenantAppProps) {
           onClose={() => setSelectedBooking(null)}
           onDelete={handleDeleteBooking}
           onUpdateStatus={handleUpdateBookingStatus}
+          onUpdate={handleUpdateBooking}
           onPrintInvoice={() => setShowInvoiceModal(true)}
           currency={currency}
           lang={lang}
           tz={tz}
+          rooms={rooms}
         />
       )}
 
@@ -1534,21 +1559,33 @@ function TenantApp({ session, onSessionChange }: TenantAppProps) {
 
 // ---------- SUB-COMPONENTS ----------
 
-// Soft color palette for bookings - paired colors that work well together
-const SOFT_BOOKING_COLORS = [
-  { bg: 'bg-rose-50', border: 'border-rose-200', text: 'text-rose-700' },
-  { bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-700' },
-  { bg: 'bg-yellow-50', border: 'border-yellow-200', text: 'text-yellow-700' },
-  { bg: 'bg-lime-50', border: 'border-lime-200', text: 'text-lime-700' },
-  { bg: 'bg-cyan-50', border: 'border-cyan-200', text: 'text-cyan-700' },
-  { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-700' },
-  { bg: 'bg-fuchsia-50', border: 'border-fuchsia-200', text: 'text-fuchsia-700' },
-  { bg: 'bg-purple-50', border: 'border-purple-200', text: 'text-purple-700 ' },
+// Room group color palettes — header bg/text and booking cell bg/border/text
+const ROOM_GROUP_PALETTES = [
+  { header: 'bg-blue-100 text-blue-800',    booking: { bg: 'bg-blue-50',    border: 'border-blue-300',    text: 'text-blue-800'    } },
+  { header: 'bg-emerald-100 text-emerald-800', booking: { bg: 'bg-emerald-50', border: 'border-emerald-300', text: 'text-emerald-800' } },
+  { header: 'bg-violet-100 text-violet-800', booking: { bg: 'bg-violet-50',  border: 'border-violet-300',  text: 'text-violet-800'  } },
+  { header: 'bg-rose-100 text-rose-800',    booking: { bg: 'bg-rose-50',    border: 'border-rose-300',    text: 'text-rose-800'    } },
+  { header: 'bg-amber-100 text-amber-800',  booking: { bg: 'bg-amber-50',   border: 'border-amber-300',   text: 'text-amber-800'   } },
+  { header: 'bg-cyan-100 text-cyan-800',    booking: { bg: 'bg-cyan-50',    border: 'border-cyan-300',    text: 'text-cyan-800'    } },
+  { header: 'bg-fuchsia-100 text-fuchsia-800', booking: { bg: 'bg-fuchsia-50', border: 'border-fuchsia-300', text: 'text-fuchsia-800' } },
+  { header: 'bg-lime-100 text-lime-800',    booking: { bg: 'bg-lime-50',    border: 'border-lime-300',    text: 'text-lime-800'    } },
 ];
 
-function getBookingColor(bookingId: number | string): { bg: string; border: string; text: string } {
-  const hash = String(bookingId).charCodeAt(0) + String(bookingId).length;
-  return SOFT_BOOKING_COLORS[hash % SOFT_BOOKING_COLORS.length];
+// Extract the alphabetic prefix of a room ID: "A1"→"A", "B102"→"B", "Room1"→"Room"
+function getRoomPrefix(roomId: string): string {
+  return roomId.match(/^[A-Za-z]+/)?.[0] || roomId[0] || 'R';
+}
+
+// Build roomId → palette index map from the rooms list
+function buildRoomPaletteMap(rooms: any[]): Record<string, number> {
+  const prefixOrder: string[] = [];
+  const map: Record<string, number> = {};
+  for (const r of rooms) {
+    const prefix = getRoomPrefix(r.id);
+    if (!prefixOrder.includes(prefix)) prefixOrder.push(prefix);
+    map[r.id] = prefixOrder.indexOf(prefix) % ROOM_GROUP_PALETTES.length;
+  }
+  return map;
 }
 
 function CalendarView({
@@ -1566,33 +1603,24 @@ function CalendarView({
   lang,
   tz,
 }: any) {
+  const [zoom, setZoom] = useState(() => {
+    const saved = localStorage.getItem('calendar-zoom');
+    const n = saved ? parseInt(saved) : 1;
+    return n >= 1 && n <= 3 ? n : 1;
+  });
+  const setZoomAndSave = (fn: (z: number) => number) => {
+    setZoom(prev => { const next = fn(prev); localStorage.setItem('calendar-zoom', String(next)); return next; });
+  };
+  const colW = [80, 140, 220][zoom - 1];
+  const rowH = [32, 40, 52][zoom - 1];
+  const bookingText = (['text-[10px]', 'text-[12px]', 'text-[15px]'] as const)[zoom - 1];
+  const roomPaletteMap = useMemo(() => buildRoomPaletteMap(rooms), [rooms]);
+
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-4 bg-white p-3 sm:p-4 rounded-3xl border border-slate-200 shadow-sm">
-        <div className="flex gap-2">
-          <button
-            onClick={jumpToToday}
-            className="text-xs bg-slate-900 text-white px-4 sm:px-5 py-2 sm:py-2.5 rounded-2xl font-black uppercase tracking-widest hover:bg-slate-800 transition-all active:scale-95"
-          >
-            {t(lang, 'calendar.jumpToday')}
-          </button>
-        </div>
-        <button
-          onClick={() => {
-            setAddModalInitialDate(selectedDateStr);
-            setShowAddModal(true);
-          }}
-          className="bg-emerald-600 text-white px-4 sm:px-6 py-2 sm:py-2.5 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-emerald-700 shadow-lg shadow-emerald-50 transition-all flex items-center gap-2 active:scale-95 whitespace-nowrap"
-        >
-          <Sparkle size={16} weight="fill" />
-          <span className="hidden sm:inline">{t(lang, 'calendar.newBooking')}</span>
-          <span className="sm:hidden">New</span>
-        </button>
-      </div>
-
       <div className="bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden flex flex-col h-[75vh]">
         <div className="overflow-auto flex-1 scrollbar-hide" ref={calendarContainerRef}>
-          <table className="w-full border-separate border-spacing-0 table-fixed min-w-[900px] sm:min-w-[1200px]">
+          <table className="border-separate border-spacing-0">
             <thead className="sticky top-0 z-40 bg-slate-50/90 backdrop-blur-md">
               <tr>
                 <th className="w-16 sm:w-24 p-2 sm:p-4 border-b border-r border-slate-200 sticky left-0 z-50 bg-slate-50/90 backdrop-blur-md text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-slate-400">
@@ -1601,7 +1629,11 @@ function CalendarView({
                 {rooms.map((r: any) => (
                   <th
                     key={r.id}
-                    className="w-20 sm:w-32 p-2 sm:p-4 border-b border-r border-slate-200 text-[10px] sm:text-[11px] font-black uppercase tracking-widest text-slate-600 text-center"
+                    style={{ width: colW, minWidth: colW }}
+                    className={cn(
+                      'p-2 sm:p-4 border-b border-r border-slate-200 text-[10px] sm:text-[11px] font-black uppercase tracking-widest text-center',
+                      ROOM_GROUP_PALETTES[roomPaletteMap[r.id] ?? 0].header,
+                    )}
                   >
                     <span className="hidden sm:inline">{r.name}</span>
                     <span className="sm:hidden font-black">{r.name}</span>
@@ -1628,7 +1660,7 @@ function CalendarView({
                         </td>
                       </tr>
                     )}
-                    <tr className="h-8 sm:h-10 group" data-today={isToday ? 'true' : 'false'}>
+                    <tr style={{ height: `${rowH}px` }} className="group" data-today={isToday ? 'true' : 'false'}>
                       <td
                         onClick={() => setSelectedDateStr(dStr)}
                         className={cn(
@@ -1647,15 +1679,14 @@ function CalendarView({
                         const cellBookings = bookings.filter((b: any) => {
                           if (b.status === 'CANCELED') return false;
                           const inRoom = b.room === r.id;
-                          // Parse dates properly for comparison
-                          const checkInDate = parseISO(b.checkIn);
-                          const checkOutDate = parseISO(b.checkOut);
-                          const cellDate = parseISO(dStr);
-                          return inRoom && cellDate >= checkInDate && cellDate < checkOutDate;
+                          const checkInStr = b.checkIn.split('T')[0];
+                          const checkOutStr = b.checkOut.split('T')[0];
+                          return inRoom && dStr >= checkInStr && dStr < checkOutStr;
                         });
                         return (
                           <td
                             key={r.id}
+                            style={{ width: colW, minWidth: colW }}
                             onClick={() => {
                               setSelectedDateStr(dStr);
                               setAddModalInitialDate(dStr);
@@ -1663,7 +1694,7 @@ function CalendarView({
                               setShowAddModal(true);
                             }}
                             className={cn(
-                              'border border-slate-100 relative p-0.5 sm:p-1 transition-all cursor-pointer hover:bg-emerald-100/80',
+                              'border border-slate-100 relative p-0 transition-all cursor-pointer hover:bg-emerald-100/80',
                               selectedDateStr === dStr && 'bg-emerald-50/30',
                             )}
                           >
@@ -1675,7 +1706,7 @@ function CalendarView({
                             )}
                             
                             {cellBookings.map((b: any) => {
-                              const color = getBookingColor(b.id);
+                              const palette = ROOM_GROUP_PALETTES[roomPaletteMap[b.room] ?? 0].booking;
                               return (
                                 <div
                                   key={b.id}
@@ -1684,10 +1715,11 @@ function CalendarView({
                                     setSelectedBooking(b);
                                   }}
                                   className={cn(
-                                    'mx-0.5 sm:mx-1 my-0 text-[8px] sm:text-[10px] font-black rounded-md sm:rounded-lg text-center leading-tight flex items-center justify-center shadow-sm cursor-pointer hover:shadow-lg transition-all hover:scale-[1.08] px-1 sm:px-2 py-0.5 sm:py-1 border truncate',
-                                    color.bg,
-                                    color.border,
-                                    color.text,
+                                    'absolute inset-0.5 font-black rounded-md sm:rounded-lg text-center leading-tight flex items-center justify-center shadow-sm cursor-pointer hover:shadow-lg transition-all hover:scale-[1.02] px-1 sm:px-2 border truncate',
+                                    bookingText,
+                                    palette.bg,
+                                    palette.border,
+                                    palette.text,
                                   )}
                                   title={b.guestName}
                                 >
@@ -1705,6 +1737,44 @@ function CalendarView({
             </tbody>
           </table>
         </div>
+      </div>
+      <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-4 bg-white p-3 sm:p-4 rounded-3xl border border-slate-200 shadow-sm">
+        <div className="flex gap-2 items-center">
+          <button
+            onClick={jumpToToday}
+            className="text-xs bg-slate-900 text-white px-4 sm:px-5 py-2 sm:py-2.5 rounded-2xl font-black uppercase tracking-widest hover:bg-slate-800 transition-all active:scale-95"
+          >
+            {t(lang, 'calendar.jumpToday')}
+          </button>
+          <div className="flex items-center gap-0.5 bg-slate-100 rounded-xl p-1">
+            <button
+              onClick={() => setZoomAndSave(z => Math.max(1, z - 1))}
+              disabled={zoom === 1}
+              className="p-1.5 rounded-lg text-slate-500 hover:bg-white hover:text-slate-900 disabled:opacity-30 transition-all"
+            >
+              <Minus size={13} weight="bold" />
+            </button>
+            <span className="text-[10px] font-black text-slate-500 w-4 text-center tabular-nums">{zoom}</span>
+            <button
+              onClick={() => setZoomAndSave(z => Math.min(3, z + 1))}
+              disabled={zoom === 3}
+              className="p-1.5 rounded-lg text-slate-500 hover:bg-white hover:text-slate-900 disabled:opacity-30 transition-all"
+            >
+              <Plus size={13} weight="bold" />
+            </button>
+          </div>
+        </div>
+        <button
+          onClick={() => {
+            setAddModalInitialDate(selectedDateStr);
+            setShowAddModal(true);
+          }}
+          className="bg-emerald-600 text-white px-4 sm:px-6 py-2 sm:py-2.5 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-emerald-700 shadow-lg shadow-emerald-50 transition-all flex items-center gap-2 active:scale-95 whitespace-nowrap"
+        >
+          <Sparkle size={16} weight="fill" />
+          <span className="hidden sm:inline">{t(lang, 'calendar.newBooking')}</span>
+          <span className="sm:hidden">New</span>
+        </button>
       </div>
     </div>
   );
@@ -1909,7 +1979,7 @@ function ReportsView({
             <select
               value={reportType}
               onChange={(e) => setReportType(e.target.value as 'stay' | 'created')}
-              className="border-slate-100 rounded-2xl px-4 py-2.5 text-sm font-black bg-slate-50 focus:ring-2 focus:ring-emerald-500 transition-all"
+              className="border-slate-100 rounded-2xl px-4 py-2 text-sm font-black bg-slate-50 focus:ring-2 focus:ring-emerald-500 transition-all"
             >
               <option value="stay">{t(lang, 'reports.stayDate')}</option>
               <option value="created">{t(lang, 'reports.createdDate')}</option>
@@ -1921,7 +1991,7 @@ function ReportsView({
               type="date"
               value={reportStartDate}
               onChange={(e) => setReportStartDate(e.target.value)}
-              className="border-slate-100 rounded-2xl px-4 py-2.5 text-sm font-black bg-slate-50"
+              className="border-slate-100 rounded-2xl px-4 py-3 text-sm font-black bg-slate-50"
             />
           </div>
           <div className="flex flex-col gap-2 w-full md:w-auto">
@@ -1930,7 +2000,7 @@ function ReportsView({
               type="date"
               value={reportEndDate}
               onChange={(e) => setReportEndDate(e.target.value)}
-              className="border-slate-100 rounded-2xl px-4 py-2.5 text-sm font-black bg-slate-50"
+              className="border-slate-100 rounded-2xl px-4 py-3 text-sm font-black bg-slate-50"
             />
           </div>
           <div className="flex flex-col gap-2 w-full md:w-auto">
@@ -1938,7 +2008,7 @@ function ReportsView({
             <select
               value={reportRoomFilter}
               onChange={(e) => setReportRoomFilter(e.target.value)}
-              className="border-slate-100 rounded-2xl px-4 py-2.5 text-sm font-black bg-slate-50"
+              className="border-slate-100 rounded-2xl px-4 py-2 text-sm font-black bg-slate-50"
             >
               <option value="ALL">{t(lang, 'reports.allRooms')}</option>
               {rooms.map((r: any) => (
@@ -2089,6 +2159,7 @@ function ReportsView({
 
 function AddBookingModal({ onClose, onAdd, initialDate, initialRoom, rooms, currency, lang }: any) {
   const guestNameInputRef = useRef<HTMLInputElement>(null);
+  const [nameError, setNameError] = useState(false);
 
   const [f, setF] = useState({
     guestName: '',
@@ -2110,9 +2181,22 @@ function AddBookingModal({ onClose, onAdd, initialDate, initialRoom, rooms, curr
   const totalPrice = Math.max(1, f.nights) * f.nightPrice;
   const remaining = totalPrice - f.deposit;
 
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!f.guestName.trim()) {
+      setNameError(true);
+      guestNameInputRef.current?.focus();
+      return;
+    }
+    onAdd({ guestName: f.guestName, city: f.city, phone: f.phone, room: f.room, checkIn: f.checkIn, checkOut, nightPrice: f.nightPrice, deposit: f.deposit });
+  };
+
   return (
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-[200] p-4">
-      <div className="bg-white rounded-[2.5rem] max-w-lg w-full p-10 shadow-3xl">
+      <form onSubmit={handleSubmit} dir={lang === 'ar' ? 'rtl' : 'ltr'} className="relative bg-white rounded-[2.5rem] max-w-lg w-full p-10 shadow-3xl">
+        <button type="button" onClick={onClose} className="absolute top-5 end-5 p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all">
+          <X size={20} weight="bold" />
+        </button>
         <h2 className="text-3xl font-black text-slate-900 tracking-tight mb-8 flex items-center gap-3">
            <Sparkle size={32} className="text-emerald-500" weight="fill" />
            {t(lang, 'booking.addTitle')}
@@ -2124,21 +2208,24 @@ function AddBookingModal({ onClose, onAdd, initialDate, initialRoom, rooms, curr
             </div>
             <input
               ref={guestNameInputRef}
-              className="w-full bg-slate-50 border-slate-100 rounded-2xl pl-11 pr-4 py-3.5 text-sm font-bold focus:ring-2 focus:ring-emerald-500 transition-all"
+              className={cn(
+                'w-full bg-slate-50 rounded-2xl pl-11 pr-4 py-3 text-sm font-bold focus:ring-2 transition-all',
+                nameError ? 'ring-2 ring-red-400 border-red-300 focus:ring-red-400' : 'border-slate-100 focus:ring-emerald-500'
+              )}
               placeholder={t(lang, 'booking.guestName')}
               value={f.guestName}
-              onChange={(e) => setF({ ...f, guestName: e.target.value })}
+              onChange={(e) => { setF({ ...f, guestName: e.target.value }); if (nameError) setNameError(false); }}
             />
           </div>
           <div className="flex gap-4">
             <input
-              className="w-1/2 bg-slate-50 border-slate-100 rounded-2xl px-4 py-3.5 text-sm font-bold focus:ring-2 focus:ring-emerald-500 transition-all"
+              className="w-1/2 bg-slate-50 border-slate-100 rounded-2xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-emerald-500 transition-all"
               placeholder={t(lang, 'booking.city')}
               value={f.city}
               onChange={(e) => setF({ ...f, city: e.target.value })}
             />
             <input
-              className="w-1/2 bg-slate-50 border-slate-100 rounded-2xl px-4 py-3.5 text-sm font-bold focus:ring-2 focus:ring-emerald-500 transition-all"
+              className="w-1/2 bg-slate-50 border-slate-100 rounded-2xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-emerald-500 transition-all"
               placeholder={t(lang, 'booking.phone')}
               value={f.phone}
               onChange={(e) => setF({ ...f, phone: e.target.value })}
@@ -2151,7 +2238,7 @@ function AddBookingModal({ onClose, onAdd, initialDate, initialRoom, rooms, curr
               </label>
               <input
                 type="date"
-                className="w-full bg-slate-50 border-slate-100 rounded-2xl px-4 py-3.5 text-sm font-black focus:ring-2 focus:ring-emerald-500 transition-all"
+                className="w-full bg-slate-50 border-slate-100 rounded-2xl px-4 py-3 text-sm font-black focus:ring-2 focus:ring-emerald-500 transition-all"
                 value={f.checkIn}
                 onChange={(e) => setF({ ...f, checkIn: e.target.value })}
               />
@@ -2160,13 +2247,31 @@ function AddBookingModal({ onClose, onAdd, initialDate, initialRoom, rooms, curr
               <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2 block px-2">
                 {t(lang, 'booking.nights')}
               </label>
-              <input
-                type="number"
-                min={1}
-                className="w-full bg-slate-50 border-slate-100 rounded-2xl px-4 py-3.5 text-sm font-black focus:ring-2 focus:ring-emerald-500 transition-all"
-                value={f.nights}
-                onChange={(e) => setF({ ...f, nights: Math.max(1, parseInt(e.target.value) || 1) })}
-              />
+              <div
+                className="flex items-center bg-slate-50 border border-slate-100 rounded-2xl overflow-hidden select-none"
+                onWheel={(e) => {
+                  const delta = e.deltaY < 0 ? 1 : -1;
+                  setF({ ...f, nights: Math.max(1, f.nights + delta) });
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={() => setF({ ...f, nights: Math.max(1, f.nights - 1) })}
+                  className="px-4 py-3.5 text-slate-400 hover:text-slate-900 hover:bg-slate-200 transition-colors active:bg-slate-300"
+                >
+                  <Minus size={18} weight="bold" />
+                </button>
+                <span className="flex-1 text-center text-sm font-black text-slate-900 tabular-nums">
+                  {f.nights}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setF({ ...f, nights: f.nights + 1 })}
+                  className="px-4 py-3.5 text-slate-400 hover:text-slate-900 hover:bg-slate-200 transition-colors active:bg-slate-300"
+                >
+                  <Plus size={18} weight="bold" />
+                </button>
+              </div>
             </div>
           </div>
           <div className="flex gap-4">
@@ -2175,7 +2280,7 @@ function AddBookingModal({ onClose, onAdd, initialDate, initialRoom, rooms, curr
                 {t(lang, 'booking.room')}
               </label>
               <select
-                className="w-full bg-slate-50 border-slate-100 rounded-2xl px-4 py-3.5 text-sm font-black focus:ring-2 focus:ring-emerald-500 transition-all"
+                className="w-full bg-slate-50 border-slate-100 rounded-2xl px-4 py-3 text-sm font-black focus:ring-2 focus:ring-emerald-500 transition-all"
                 value={f.room}
                 onChange={(e) => setF({ ...f, room: e.target.value })}
               >
@@ -2194,7 +2299,7 @@ function AddBookingModal({ onClose, onAdd, initialDate, initialRoom, rooms, curr
                  <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-slate-300 text-[10px] font-black uppercase">{currency}</div>
                  <input
                   type="number"
-                  className="w-full bg-slate-50 border-slate-100 rounded-2xl pl-12 pr-4 py-3.5 text-sm font-black focus:ring-2 focus:ring-emerald-500 transition-all"
+                  className="w-full bg-slate-50 border-slate-100 rounded-2xl pl-12 pr-4 py-3 text-sm font-black focus:ring-2 focus:ring-emerald-500 transition-all"
                   value={f.nightPrice}
                   onChange={(e) => setF({ ...f, nightPrice: parseInt(e.target.value) || 0 })}
                  />
@@ -2228,28 +2333,17 @@ function AddBookingModal({ onClose, onAdd, initialDate, initialRoom, rooms, curr
           </div>
         </div>
         <div className="mt-10 flex gap-4">
-          <button onClick={onClose} className="flex-1 py-4 border border-slate-200 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-slate-50 transition-all">
+          <button type="button" onClick={onClose} className="flex-1 py-4 border-2 border-slate-200 text-slate-500 rounded-2xl font-black uppercase tracking-widest text-xs hover:border-red-200 hover:bg-red-50 hover:text-red-500 transition-all">
             {t(lang, 'booking.cancel')}
           </button>
           <button
-            onClick={() =>
-              onAdd({
-                guestName: f.guestName,
-                city: f.city,
-                phone: f.phone, // Will be mapped to guestPhone in handleAddBooking
-                room: f.room,
-                checkIn: f.checkIn,
-                checkOut: checkOut,
-                nightPrice: f.nightPrice,
-                deposit: f.deposit,
-              })
-            }
+            type="submit"
             className="flex-[2] py-4 bg-emerald-600 text-white rounded-2xl font-black uppercase tracking-widest text-xs shadow-lg shadow-emerald-50 hover:bg-emerald-700 transition-all active:scale-95"
           >
             {t(lang, 'booking.save')}
           </button>
         </div>
-      </div>
+      </form>
     </div>
   );
 }
@@ -2260,13 +2354,174 @@ function BookingDetailsModal({
   onDelete,
   onPrintInvoice,
   onUpdateStatus,
+  onUpdate,
   currency,
   lang,
   tz,
+  rooms,
 }: any) {
+  const [editMode, setEditMode] = useState(false);
+
+  const nightsFromBooking = Math.round(
+    (new Date(booking.checkOut).getTime() - new Date(booking.checkIn).getTime()) / 86400000
+  ) || 1;
+
+  const [f, setF] = useState({
+    guestName: booking.guestName || '',
+    city: booking.city || '',
+    phone: booking.guestPhone || '',
+    room: booking.room || '',
+    checkIn: booking.checkIn ? booking.checkIn.split('T')[0] : '',
+    nights: nightsFromBooking,
+    nightPrice: booking.nightPrice || 0,
+    deposit: booking.deposit || 0,
+  });
+
+  const checkOut = format(addDays(parseISO(f.checkIn), Math.max(1, f.nights)), 'yyyy-MM-dd');
+  const totalPrice = Math.max(1, f.nights) * f.nightPrice;
+  const remaining = totalPrice - f.deposit;
+
+  const handleSave = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!f.guestName.trim()) return;
+    onUpdate(booking.id!, {
+      guestName: f.guestName,
+      city: f.city,
+      guestPhone: f.phone,
+      room: f.room,
+      checkIn: f.checkIn,
+      checkOut,
+      nightPrice: f.nightPrice,
+      deposit: f.deposit,
+    });
+  };
+
+  if (editMode) {
+    return (
+      <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-[200] p-4">
+        <form onSubmit={handleSave} dir={lang === 'ar' ? 'rtl' : 'ltr'} className="relative bg-white rounded-[2.5rem] max-w-lg w-full p-10 shadow-3xl max-h-[90vh] overflow-y-auto">
+          <button type="button" onClick={() => setEditMode(false)} className="absolute top-5 end-5 p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all">
+            <X size={20} weight="bold" />
+          </button>
+          <h2 className="text-2xl font-black text-slate-900 tracking-tight mb-8">{t(lang, 'booking.editTitle')}</h2>
+          <div className="space-y-4">
+            <input
+              className="w-full bg-slate-50 border-slate-100 rounded-2xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-emerald-500 transition-all"
+              placeholder={t(lang, 'booking.guestName')}
+              value={f.guestName}
+              onChange={(e) => setF({ ...f, guestName: e.target.value })}
+            />
+            <div className="flex gap-4">
+              <input
+                className="w-1/2 bg-slate-50 border-slate-100 rounded-2xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-emerald-500 transition-all"
+                placeholder={t(lang, 'booking.city')}
+                value={f.city}
+                onChange={(e) => setF({ ...f, city: e.target.value })}
+              />
+              <input
+                className="w-1/2 bg-slate-50 border-slate-100 rounded-2xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-emerald-500 transition-all"
+                placeholder={t(lang, 'booking.phone')}
+                value={f.phone}
+                onChange={(e) => setF({ ...f, phone: e.target.value })}
+              />
+            </div>
+            <div className="flex gap-4">
+              <div className="w-1/2">
+                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2 block px-2">{t(lang, 'booking.checkIn')}</label>
+                <input
+                  type="date"
+                  className="w-full bg-slate-50 border-slate-100 rounded-2xl px-4 py-3 text-sm font-black focus:ring-2 focus:ring-emerald-500 transition-all"
+                  value={f.checkIn}
+                  onChange={(e) => setF({ ...f, checkIn: e.target.value })}
+                />
+              </div>
+              <div className="w-1/2">
+                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2 block px-2">{t(lang, 'booking.nights')}</label>
+                <div
+                  className="flex items-center bg-slate-50 border border-slate-100 rounded-2xl overflow-hidden select-none"
+                  onWheel={(e) => setF({ ...f, nights: Math.max(1, f.nights + (e.deltaY < 0 ? 1 : -1)) })}
+                >
+                  <button type="button" onClick={() => setF({ ...f, nights: Math.max(1, f.nights - 1) })}
+                    className="px-4 py-3.5 text-slate-400 hover:text-slate-900 hover:bg-slate-200 transition-colors">
+                    <Minus size={18} weight="bold" />
+                  </button>
+                  <span className="flex-1 text-center text-sm font-black text-slate-900 tabular-nums">{f.nights}</span>
+                  <button type="button" onClick={() => setF({ ...f, nights: f.nights + 1 })}
+                    className="px-4 py-3.5 text-slate-400 hover:text-slate-900 hover:bg-slate-200 transition-colors">
+                    <Plus size={18} weight="bold" />
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div className="flex gap-4">
+              <div className="w-1/2">
+                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2 block px-2">{t(lang, 'booking.room')}</label>
+                <select
+                  className="w-full bg-slate-50 border-slate-100 rounded-2xl px-4 py-2 text-sm font-black focus:ring-2 focus:ring-emerald-500 transition-all"
+                  value={f.room}
+                  onChange={(e) => setF({ ...f, room: e.target.value })}
+                >
+                  {(rooms || []).map((r: any) => (
+                    <option key={r.id} value={r.id}>{r.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="w-1/2">
+                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2 block px-2">{t(lang, 'booking.priceNight')}</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-slate-300 text-[10px] font-black uppercase">{currency}</div>
+                  <input
+                    type="number"
+                    className="w-full bg-slate-50 border-slate-100 rounded-2xl pl-12 pr-4 py-3 text-sm font-black focus:ring-2 focus:ring-emerald-500 transition-all"
+                    value={f.nightPrice}
+                    onChange={(e) => setF({ ...f, nightPrice: parseInt(e.target.value) || 0 })}
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="bg-slate-900 rounded-[2rem] p-6 text-white">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-1">{t(lang, 'booking.total')}</p>
+                  <p className="text-2xl font-black">{currency} {totalPrice}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-1">{t(lang, 'booking.deposit')}</p>
+                  <input
+                    type="number"
+                    className="w-full bg-slate-800/50 border-0 rounded-xl px-3 py-1 text-lg font-black focus:ring-1 focus:ring-emerald-500 transition-all"
+                    value={f.deposit}
+                    onChange={(e) => setF({ ...f, deposit: parseInt(e.target.value) || 0 })}
+                  />
+                </div>
+                <div className="col-span-2 pt-4 border-t border-slate-800 flex justify-between items-center">
+                  <p className="text-xs font-black uppercase tracking-widest text-emerald-400">{t(lang, 'booking.remaining')}</p>
+                  <p className="text-3xl font-black">{currency} {remaining}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="mt-8 flex gap-4">
+            <button type="button" onClick={() => setEditMode(false)}
+              className="flex-1 py-4 border-2 border-slate-200 text-slate-500 rounded-2xl font-black uppercase tracking-widest text-xs hover:border-red-200 hover:bg-red-50 hover:text-red-500 transition-all">
+              {t(lang, 'booking.cancel')}
+            </button>
+            <button type="submit"
+              className="flex-[2] py-4 bg-emerald-600 text-white rounded-2xl font-black uppercase tracking-widest text-xs shadow-lg shadow-emerald-50 hover:bg-emerald-700 transition-all active:scale-95">
+              {t(lang, 'booking.save')}
+            </button>
+          </div>
+        </form>
+      </div>
+    );
+  }
+
   return (
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-[200] p-4">
-      <div className="bg-white rounded-[2.5rem] max-w-sm w-full p-10 shadow-3xl">
+      <div dir={lang === 'ar' ? 'rtl' : 'ltr'} className="relative bg-white rounded-[2.5rem] max-w-sm w-full p-10 shadow-3xl">
+        <button type="button" onClick={onClose} className="absolute top-5 end-5 p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all">
+          <X size={20} weight="bold" />
+        </button>
         <div className="flex justify-between items-start mb-8">
           <div>
             <h2 className="text-3xl font-black text-slate-900 tracking-tight leading-none mb-2">{booking.guestName}</h2>
@@ -2280,7 +2535,7 @@ function BookingDetailsModal({
             </div>
           </div>
         </div>
-        
+
         <div className="space-y-6 mb-10">
           <div className="grid grid-cols-2 gap-8 py-6 border-y border-slate-50">
             <div>
@@ -2292,7 +2547,7 @@ function BookingDetailsModal({
               <p className="font-black text-slate-700 uppercase tracking-tighter">{formatTz(booking.checkOut, 'dd MMM yyyy', tz, lang)}</p>
             </div>
           </div>
-          
+
           <div className="bg-slate-50 rounded-3xl p-6 space-y-3">
             <div className="flex justify-between items-center text-xs font-bold text-slate-400 uppercase tracking-widest">
               <span>{t(lang, 'booking.totalBill')}</span>
@@ -2304,48 +2559,52 @@ function BookingDetailsModal({
             </div>
           </div>
         </div>
-        
+
         <div className="flex flex-col gap-3">
-          <button
-            onClick={onPrintInvoice}
-            className="w-full bg-slate-900 text-white py-4 rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl shadow-slate-200 transition-all active:scale-95 flex items-center justify-center gap-2"
-          >
-            <FileText size={18} weight="bold" /> {t(lang, 'booking.printInvoice')}
-          </button>
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              onClick={onPrintInvoice}
+              className="py-4 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl shadow-slate-200 transition-all active:scale-95 flex items-center justify-center gap-2"
+            >
+              <FileText size={16} weight="bold" /> {t(lang, 'booking.printInvoice')}
+            </button>
+            <button
+              onClick={() => setEditMode(true)}
+              className="py-4 bg-blue-500 text-white rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-blue-600 active:scale-95 transition-all flex items-center justify-center gap-2"
+            >
+              <PencilSimple size={16} weight="bold" /> {t(lang, 'booking.editBooking')}
+            </button>
+          </div>
 
           <div className="grid grid-cols-2 gap-3">
-             {booking.status !== 'canceled' ? (
+            {booking.status !== 'canceled' ? (
               <button
                 onClick={() => {
                   if (confirm(t(lang, 'booking.confirmCancel'))) onUpdateStatus(booking.id!, 'canceled');
                 }}
-                className="py-3 bg-amber-50 text-amber-600 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-amber-100 transition-all"
+                className="py-3 bg-amber-500 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-amber-600 active:scale-95 transition-all flex items-center justify-center gap-1.5"
               >
-                {t(lang, 'booking.cancelBooking')}
+                <Prohibit size={14} weight="bold" /> {t(lang, 'booking.cancelBooking')}
               </button>
             ) : (
               <button
                 onClick={() => {
                   if (confirm(t(lang, 'booking.confirmReactivate'))) onUpdateStatus(booking.id!, 'confirmed');
                 }}
-                className="py-3 bg-emerald-50 text-emerald-600 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-emerald-100 transition-all"
+                className="py-3 bg-emerald-500 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-emerald-600 active:scale-95 transition-all flex items-center justify-center gap-1.5"
               >
-                {t(lang, 'booking.reactivate')}
+                <Check size={14} weight="bold" /> {t(lang, 'booking.reactivate')}
               </button>
             )}
             <button
               onClick={() => {
                 if (confirm(t(lang, 'booking.confirmDelete'))) onDelete(booking.id!);
               }}
-              className="py-3 border border-red-50 text-red-500 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-red-50 transition-all"
+              className="py-3 bg-red-500 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-red-600 active:scale-95 transition-all flex items-center justify-center gap-1.5"
             >
-              {t(lang, 'booking.delete')}
+              <Trash size={14} weight="bold" /> {t(lang, 'booking.delete')}
             </button>
           </div>
-          
-          <button onClick={onClose} className="mt-4 text-slate-300 font-black uppercase tracking-[0.3em] text-[10px] hover:text-slate-500 transition-colors">
-            {t(lang, 'booking.close')}
-          </button>
         </div>
       </div>
     </div>
@@ -2406,7 +2665,7 @@ function SettingsView({ session, onSessionChange, lang }: any) {
             <select
               value={tenant.language}
               onChange={(e) => setTenant({ ...tenant, language: e.target.value })}
-              className="w-full bg-slate-50 border-slate-100 rounded-2xl px-4 py-3 font-black focus:ring-2 focus:ring-emerald-500 transition-all"
+              className="w-full bg-slate-50 border-slate-100 rounded-2xl px-4 py-2 font-black focus:ring-2 focus:ring-emerald-500 transition-all"
             >
               <option value="en">English</option>
               <option value="ar">العربية</option>
@@ -2430,7 +2689,7 @@ function SettingsView({ session, onSessionChange, lang }: any) {
             <select
               value={tenant.timezone}
               onChange={(e) => setTenant({ ...tenant, timezone: e.target.value })}
-              className="w-full bg-slate-50 border-slate-100 rounded-2xl px-4 py-3 font-black focus:ring-2 focus:ring-emerald-500 transition-all"
+              className="w-full bg-slate-50 border-slate-100 rounded-2xl px-4 py-2 font-black focus:ring-2 focus:ring-emerald-500 transition-all"
             >
               {timezones.map((tz) => (
                 <option key={tz} value={tz}>
@@ -2482,6 +2741,218 @@ function SettingsView({ session, onSessionChange, lang }: any) {
   );
 }
 
+const ADMIN_UPDATE_TENANT = gql`
+  mutation AdminUpdateTenant($tenantId: ID!, $input: UpdateTenantInput!) {
+    adminUpdateTenant(tenantId: $tenantId, input: $input) {
+      id name email language currency timezone subscriptionStatus validUntil isAdmin
+    }
+  }
+`;
+
+const TIMEZONES = ['Asia/Muscat','Asia/Riyadh','Asia/Dubai','Asia/Kuwait','Asia/Qatar','Asia/Amman','Africa/Cairo','Europe/Istanbul','Europe/London','America/New_York','UTC'];
+const ADMIN_DEFAULTS_KEY = 'admin-defaults';
+
+function DefaultsView({ lang }: { lang: Language }) {
+  const getDefaults = () => {
+    try { return JSON.parse(localStorage.getItem(ADMIN_DEFAULTS_KEY) || '{}'); } catch { return {}; }
+  };
+  const [f, setF] = useState<any>(() => ({ language: 'en', currency: 'USD', timezone: 'UTC', rooms: [], ...getDefaults() }));
+  const [saved, setSaved] = useState(false);
+
+  const handleRoomChange = (i: number, name: string) => {
+    const rooms = [...f.rooms]; rooms[i] = { ...rooms[i], name }; setF({ ...f, rooms });
+  };
+  const handleAddRoom = () => setF({ ...f, rooms: [...f.rooms, { id: `R${Date.now()}`, name: `Room ${f.rooms.length + 1}` }] });
+  const handleRemoveRoom = (i: number) => setF({ ...f, rooms: f.rooms.filter((_: any, idx: number) => idx !== i) });
+  const handleSave = () => {
+    localStorage.setItem(ADMIN_DEFAULTS_KEY, JSON.stringify(f));
+    setSaved(true); setTimeout(() => setSaved(false), 2000);
+  };
+
+  return (
+    <div className="max-w-2xl mx-auto space-y-8 pb-20">
+      <div className="bg-slate-900 rounded-[2.5rem] border border-slate-800 p-10">
+        <h2 className="text-xl font-black text-emerald-400 mb-1">New Tenant Defaults</h2>
+        <p className="text-xs text-slate-500 mb-8">Applied automatically when a new workspace registers.</p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div>
+            <label className="text-[9px] font-black uppercase tracking-widest text-slate-500 block mb-2">{t(lang, 'settings.language')}</label>
+            <select value={f.language} onChange={e => setF({ ...f, language: e.target.value })}
+              className="w-full bg-slate-800 text-white rounded-2xl px-4 py-3 font-black focus:ring-2 focus:ring-emerald-500 outline-none">
+              <option value="en">English</option>
+              <option value="ar">العربية</option>
+            </select>
+          </div>
+          <div>
+            <label className="text-[9px] font-black uppercase tracking-widest text-slate-500 block mb-2">{t(lang, 'settings.currency')}</label>
+            <input value={f.currency} onChange={e => setF({ ...f, currency: e.target.value })}
+              className="w-full bg-slate-800 text-white rounded-2xl px-4 py-3 font-black focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="e.g. OMR" />
+          </div>
+          <div>
+            <label className="text-[9px] font-black uppercase tracking-widest text-slate-500 block mb-2">{t(lang, 'settings.timezone')}</label>
+            <select value={f.timezone} onChange={e => setF({ ...f, timezone: e.target.value })}
+              className="w-full bg-slate-800 text-white rounded-2xl px-4 py-3 font-black focus:ring-2 focus:ring-emerald-500 outline-none">
+              {TIMEZONES.map(tz => <option key={tz} value={tz}>{tz}</option>)}
+            </select>
+          </div>
+        </div>
+        <div className="mb-8">
+          <div className="flex justify-between items-center mb-3">
+            <label className="text-[9px] font-black uppercase tracking-widest text-slate-500">{t(lang, 'settings.rooms')}</label>
+            <button onClick={handleAddRoom} className="px-4 py-1.5 bg-slate-700 text-white rounded-xl text-[10px] font-black uppercase hover:bg-slate-600 transition-all">+ Add</button>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {f.rooms.map((r: any, i: number) => (
+              <div key={r.id} className="flex gap-2 items-center">
+                <input value={r.name} onChange={e => handleRoomChange(i, e.target.value)}
+                  className="flex-1 bg-slate-800 text-white rounded-xl px-3 py-2 text-sm font-black focus:ring-2 focus:ring-emerald-500 outline-none" />
+                <button onClick={() => handleRemoveRoom(i)} className="text-slate-600 hover:text-red-400 transition-colors"><X size={14} weight="bold" /></button>
+              </div>
+            ))}
+            {f.rooms.length === 0 && <p className="col-span-4 text-[10px] text-slate-600 font-black uppercase tracking-widest py-2">No default rooms — tenants start empty</p>}
+          </div>
+        </div>
+        <button onClick={handleSave} className="bg-emerald-600 text-white px-10 py-4 rounded-2xl font-black uppercase tracking-widest text-sm hover:bg-emerald-500 transition-all active:scale-95">
+          {saved ? '✓ Saved' : t(lang, 'settings.save')}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function AdminTenantRow({ tObj, onReload, lang, tz }: { tObj: Tenant; onReload: () => void; lang: Language; tz: string }) {
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [f, setF] = useState({
+    name: tObj.name || '',
+    language: tObj.language || 'en',
+    currency: tObj.currency || 'USD',
+    timezone: tObj.timezone || 'UTC',
+    rooms: (tObj.rooms || []).map((r: any) => ({ id: r.id, name: r.name })),
+  });
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await apolloClient.mutate({ mutation: ADMIN_UPDATE_TENANT, variables: { tenantId: tObj.id, input: f } });
+      setEditing(false);
+      onReload();
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleActivate = async () => {
+    await authService.adminSetSubscriptionStatus(tObj.uuid, 'ACTIVE', tObj.validUntil || new Date().toISOString().slice(0, 10));
+    onReload();
+  };
+
+  const handleRoomChange = (i: number, name: string) => {
+    const rooms = [...f.rooms]; rooms[i] = { ...rooms[i], name }; setF({ ...f, rooms });
+  };
+  const handleAddRoom = () => setF({ ...f, rooms: [...f.rooms, { id: `R${Date.now()}`, name: `Room ${f.rooms.length + 1}` }] });
+  const handleRemoveRoom = (i: number) => setF({ ...f, rooms: f.rooms.filter((_: any, idx: number) => idx !== i) });
+
+  return (
+    <>
+      <tr className="hover:bg-slate-800/50 transition-colors group">
+        <td className="px-6 py-4 font-black text-white">{tObj.name}</td>
+        <td className="px-6 py-4 text-xs font-bold text-slate-400">{tObj.email}</td>
+        <td className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-tighter">
+          {tObj.language?.toUpperCase()} · {tObj.currency} · {tObj.timezone}
+          {tObj.rooms?.length ? ` · ${tObj.rooms.length} rooms` : ''}
+        </td>
+        <td className="px-6 py-4">
+          <span className={cn('px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest',
+            tObj.subscriptionStatus === 'ACTIVE' ? 'bg-emerald-500/10 text-emerald-400' :
+            tObj.subscriptionStatus === 'TRIAL'  ? 'bg-blue-500/10 text-blue-400' :
+            'bg-red-500/10 text-red-400'
+          )}>
+            {t(lang, `status.${tObj.subscriptionStatus}`)}
+          </span>
+        </td>
+        <td className="px-6 py-4 text-xs font-black text-slate-400">
+          {tObj.validUntil ? formatTz(tObj.validUntil, 'yyyy-MM-dd', tz, lang) : '—'}
+        </td>
+        <td className="px-6 py-4 text-right whitespace-nowrap">
+          <div className="flex gap-2 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+            <button onClick={() => setEditing(e => !e)}
+              className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-[10px] font-black uppercase tracking-tighter hover:bg-blue-500">
+              {editing ? 'Close' : 'Edit'}
+            </button>
+            {tObj.subscriptionStatus !== 'ACTIVE' && (
+              <button onClick={handleActivate}
+                className="px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-[10px] font-black uppercase tracking-tighter hover:bg-emerald-500">
+                {t(lang, 'admin.activate')}
+              </button>
+            )}
+          </div>
+        </td>
+      </tr>
+      {editing && (
+        <tr className="bg-slate-800/60">
+          <td colSpan={6} className="px-6 py-5">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+              <div>
+                <label className="text-[9px] font-black uppercase tracking-widest text-slate-500 block mb-1">Name</label>
+                <input value={f.name} onChange={e => setF({ ...f, name: e.target.value })}
+                  className="w-full bg-slate-700 text-white rounded-xl px-3 py-2 text-sm font-bold focus:ring-2 focus:ring-emerald-500 outline-none" />
+              </div>
+              <div>
+                <label className="text-[9px] font-black uppercase tracking-widest text-slate-500 block mb-1">{t(lang, 'settings.language')}</label>
+                <select value={f.language} onChange={e => setF({ ...f, language: e.target.value })}
+                  className="w-full bg-slate-700 text-white rounded-xl px-3 py-2 text-sm font-bold focus:ring-2 focus:ring-emerald-500 outline-none">
+                  <option value="en">English</option>
+                  <option value="ar">العربية</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-[9px] font-black uppercase tracking-widest text-slate-500 block mb-1">{t(lang, 'settings.currency')}</label>
+                <input value={f.currency} onChange={e => setF({ ...f, currency: e.target.value })}
+                  className="w-full bg-slate-700 text-white rounded-xl px-3 py-2 text-sm font-bold focus:ring-2 focus:ring-emerald-500 outline-none" />
+              </div>
+              <div>
+                <label className="text-[9px] font-black uppercase tracking-widest text-slate-500 block mb-1">{t(lang, 'settings.timezone')}</label>
+                <select value={f.timezone} onChange={e => setF({ ...f, timezone: e.target.value })}
+                  className="w-full bg-slate-700 text-white rounded-xl px-3 py-2 text-sm font-bold focus:ring-2 focus:ring-emerald-500 outline-none">
+                  {TIMEZONES.map(tz => <option key={tz} value={tz}>{tz}</option>)}
+                </select>
+              </div>
+            </div>
+            <div className="mb-4">
+              <div className="flex justify-between items-center mb-2">
+                <label className="text-[9px] font-black uppercase tracking-widest text-slate-500">{t(lang, 'settings.rooms')}</label>
+                <button onClick={handleAddRoom} className="px-3 py-1 bg-slate-600 text-white rounded-lg text-[9px] font-black uppercase hover:bg-slate-500">+ Add</button>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                {f.rooms.map((r: any, i: number) => (
+                  <div key={r.id} className="flex gap-1.5 items-center">
+                    <span className="text-[9px] font-black text-slate-600 uppercase w-6 shrink-0">{r.id}</span>
+                    <input value={r.name} onChange={e => handleRoomChange(i, e.target.value)}
+                      className="flex-1 bg-slate-700 text-white rounded-lg px-2 py-1.5 text-xs font-black focus:ring-1 focus:ring-emerald-500 outline-none" />
+                    <button onClick={() => handleRemoveRoom(i)} className="text-slate-600 hover:text-red-400 transition-colors"><X size={12} weight="bold" /></button>
+                  </div>
+                ))}
+                {f.rooms.length === 0 && <p className="col-span-4 text-[9px] text-slate-600 font-black uppercase tracking-widest py-1">No rooms</p>}
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <button onClick={handleSave} disabled={saving}
+                className="px-6 py-2 bg-emerald-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-500 disabled:opacity-50 transition-all">
+                {saving ? 'Saving…' : t(lang, 'settings.save')}
+              </button>
+              <button onClick={() => setEditing(false)}
+                className="px-6 py-2 bg-slate-700 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-600 transition-all">
+                {t(lang, 'booking.cancel')}
+              </button>
+            </div>
+          </td>
+        </tr>
+      )}
+    </>
+  );
+}
+
 function AdminView({ lang, tz }: { lang: Language; tz: string; superadmin?: boolean }) {
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [loading, setLoading] = useState(true);
@@ -2496,43 +2967,22 @@ function AdminView({ lang, tz }: { lang: Language; tz: string; superadmin?: bool
     }
   };
 
-  useEffect(() => {
-    void loadTenants();
-  }, []);
-
-  const handleStatusChange = async (
-    tObj: Tenant,
-    status: 'TRIAL' | 'ACTIVE' | 'EXPIRED' | 'CANCELED',
-  ) => {
-    const validUntil = tObj.validUntil || new Date().toISOString().slice(0, 10);
-    await authService.adminSetSubscriptionStatus(tObj.uuid, status, validUntil);
-    await loadTenants();
-  };
-
-  const navigate = useNavigate();
-
-  const handleImpersonate = async (tenant: Tenant) => {
-    localStorage.setItem('hotel-pms-session', JSON.stringify({ tenantUuid: tenant.uuid }));
-    const slug = encodeURIComponent((tenant.name || tenant.email || 'workspace').replace(/\s+/g, '-'));
-    navigate(`/${slug}`);
-  };
+  useEffect(() => { void loadTenants(); }, []);
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center px-4">
-        <h2 className="text-2xl font-black text-white flex items-center gap-3">
-           <Users size={32} className="text-emerald-400" />
-           {t(lang, 'admin.title')}
+        <h2 className="text-2xl font-black text-emerald-400 flex items-center gap-3">
+          <Users size={32} className="text-emerald-400" />
+          {t(lang, 'admin.title')}
         </h2>
-        <button
-          onClick={loadTenants}
-          className="bg-emerald-600 text-white px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-500 transition-all"
-        >
+        <button onClick={loadTenants}
+          className="bg-emerald-600 text-white px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-500 transition-all">
           {t(lang, 'admin.refresh')}
         </button>
       </div>
       <div className="bg-slate-900 rounded-[2.5rem] border border-slate-800 overflow-hidden shadow-2xl">
-        <div className="overflow-auto max-h-[60vh] scrollbar-hide">
+        <div className="overflow-auto max-h-[75vh] scrollbar-hide">
           <table className="w-full text-sm">
             <thead className="bg-slate-950/80 sticky top-0 z-10">
               <tr className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
@@ -2546,56 +2996,12 @@ function AdminView({ lang, tz }: { lang: Language; tz: string; superadmin?: bool
             </thead>
             <tbody className="divide-y divide-slate-800">
               {loading ? (
-                <tr>
-                  <td colSpan={6} className="px-6 py-20 text-center text-slate-500 font-black uppercase text-xs tracking-widest">
-                    {t(lang, 'admin.loading')}
-                  </td>
-                </tr>
+                <tr><td colSpan={6} className="px-6 py-20 text-center text-slate-500 font-black uppercase text-xs tracking-widest">{t(lang, 'admin.loading')}</td></tr>
               ) : tenants.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="px-6 py-20 text-center text-slate-500 font-black uppercase text-xs tracking-widest">
-                    {t(lang, 'admin.noTenants')}
-                  </td>
-                </tr>
-              ) : (
-                tenants.map((tObj) => (
-                  <tr key={tObj.uuid} className="hover:bg-slate-800/50 transition-colors group">
-                    <td className="px-6 py-5 font-black text-white">{tObj.name}</td>
-                    <td className="px-6 py-5 text-xs font-bold text-slate-400">{tObj.email}</td>
-                    <td className="px-6 py-5 text-[10px] font-black text-slate-500 uppercase tracking-tighter">
-                      {tObj.language?.toUpperCase()} · {tObj.currency} · {tObj.timezone}
-                    </td>
-                    <td className="px-6 py-5">
-                      <span className={cn('px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest', 
-                        tObj.subscriptionStatus === 'ACTIVE' ? 'bg-emerald-500/10 text-emerald-400' :
-                        tObj.subscriptionStatus === 'TRIAL' ? 'bg-blue-500/10 text-blue-400' :
-                        'bg-red-500/10 text-red-400'
-                      )}>
-                        {t(lang, `status.${tObj.subscriptionStatus}`)}
-                      </span>
-                    </td>
-                    <td className="px-6 py-5 text-xs font-black text-slate-400">
-                      {tObj.validUntil ? formatTz(tObj.validUntil, 'yyyy-MM-dd', tz, lang) : ''}
-                    </td>
-                    <td className="px-6 py-5 text-right whitespace-nowrap">
-                       <div className="flex gap-2 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button
-                          onClick={() => handleStatusChange(tObj, 'ACTIVE')}
-                          className="px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-[10px] font-black uppercase tracking-tighter hover:bg-emerald-500"
-                        >
-                          {t(lang, 'admin.activate')}
-                        </button>
-                        <button
-                          onClick={() => handleImpersonate(tObj)}
-                          className="px-3 py-1.5 bg-slate-700 text-white rounded-lg text-[10px] font-black uppercase tracking-tighter hover:bg-slate-600"
-                        >
-                          Login as User
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
+                <tr><td colSpan={6} className="px-6 py-20 text-center text-slate-500 font-black uppercase text-xs tracking-widest">{t(lang, 'admin.noTenants')}</td></tr>
+              ) : tenants.map((tObj) => (
+                <AdminTenantRow key={tObj.uuid} tObj={tObj} onReload={loadTenants} lang={lang} tz={tz} />
+              ))}
             </tbody>
           </table>
         </div>

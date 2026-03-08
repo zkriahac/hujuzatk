@@ -2,6 +2,7 @@ export type Language = 'en' | 'ar';
 
 export const translations: Record<Language, Record<string, string>> = {
   en: {
+    'misc.projectname': 'HUJUZATK',
     // Navigation
     'nav.calendar': 'Calendar',
     'nav.list': 'Bookings',
@@ -94,9 +95,11 @@ export const translations: Record<Language, Record<string, string>> = {
     // Booking Details
     'booking.detailsTitle': 'Booking Details',
     'booking.printInvoice': 'Print Invoice',
-    'booking.cancelBooking': 'Cancel Booking',
+    'booking.editBooking': 'Edit Booking',
+    'booking.editTitle': 'Edit Booking',
+    'booking.cancelBooking': 'Cancel',
     'booking.reactivate': 'Reactivate Booking',
-    'booking.delete': 'Delete Permanently',
+    'booking.delete': 'Delete',
     'booking.close': 'Close Window',
     'booking.totalBill': 'Total Bill',
     'booking.confirmCancel': 'Are you sure you want to cancel this booking?',
@@ -152,6 +155,7 @@ export const translations: Record<Language, Record<string, string>> = {
     'misc.scrollMore': 'Scroll or adjust filters to see more',
   },
   ar: {
+    'misc.projectname': 'حجوزاتك',
     // Navigation
     'nav.calendar': 'التقويم',
     'nav.list': 'الحجوزات',
@@ -244,6 +248,8 @@ export const translations: Record<Language, Record<string, string>> = {
     // Booking Details
     'booking.detailsTitle': 'تفاصيل الحجز',
     'booking.printInvoice': 'طباعة الفاتورة',
+    'booking.editBooking': 'تعديل الحجز',
+    'booking.editTitle': 'تعديل الحجز',
     'booking.cancelBooking': 'إلغاء الحجز',
     'booking.reactivate': 'إعادة تفعيل الحجز',
     'booking.delete': 'حذف نهائي',

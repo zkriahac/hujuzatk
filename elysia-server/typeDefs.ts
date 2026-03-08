@@ -172,6 +172,7 @@ export const typeDefs = `
     bulkDeleteBookings(ids: [ID!]!): Boolean!
     createAdminSubscription(tenantId: ID!, days: Int!): Tenant!
     cancelSubscription(tenantId: ID!): Boolean!
+    adminUpdateTenant(tenantId: ID!, input: UpdateTenantInput!): Tenant!
   }
 
   input RegisterInput {
@@ -183,11 +184,17 @@ export const typeDefs = `
     language: String
   }
 
+  input RoomInput {
+    id: String!
+    name: String!
+  }
+
   input UpdateTenantInput {
     name: String
     language: String
     currency: String
     timezone: String
+    rooms: [RoomInput!]
   }
 
   input UpdateTenantSettingsInput {

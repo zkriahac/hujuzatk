@@ -118,6 +118,9 @@ export const authService = {
     email: string;
     name: string;
     password: string;
+    language?: string;
+    currency?: string;
+    timezone?: string;
   }): Promise<SessionUser> {
     // Try GraphQL registration first
     try {
@@ -151,6 +154,9 @@ export const authService = {
               email: payload.email,
               name: payload.name,
               password: payload.password,
+              ...(payload.language && { language: payload.language }),
+              ...(payload.currency && { currency: payload.currency }),
+              ...(payload.timezone && { timezone: payload.timezone }),
             },
           },
         }),
@@ -301,6 +307,7 @@ export const authService = {
       if (updates.language !== undefined) input.language = updates.language;
       if (updates.currency !== undefined) input.currency = updates.currency;
       if (updates.timezone !== undefined) input.timezone = updates.timezone;
+      if (updates.rooms !== undefined) input.rooms = updates.rooms?.map((r: any) => ({ id: r.id, name: r.name }));
       
       const response = await fetch(GRAPHQL_URL, {
         method: 'POST',

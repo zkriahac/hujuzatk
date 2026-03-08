@@ -1,12 +1,18 @@
 {
   "version": 2,
-  "buildCommand": "npx prisma generate",
+  "regions": ["sin1"],
   "builds": [
-    { "src": "api/graphql.ts", "use": "@vercel/node" },
+    {
+      "src": "api/graphql.ts",
+      "use": "@vercel/node",
+      "config": {
+        "includeFiles": ["node_modules/.prisma/**", "prisma/schema.prisma"]
+      }
+    },
     { "src": "api/health.ts", "use": "@vercel/node" }
   ],
   "routes": [
-    { "src": "/graphql", "dest": "/api/graphql.ts" },
+    { "src": "/graphql", "methods": ["GET", "POST", "OPTIONS"], "dest": "/api/graphql.ts" },
     { "src": "/health", "dest": "/api/health.ts" }
   ]
 }
