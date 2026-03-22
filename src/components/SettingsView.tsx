@@ -1,9 +1,11 @@
 import { useState } from 'react';
-import { Globe, Layout } from 'phosphor-react';
+import { Globe, Layout, X, CurrencyDollar } from 'phosphor-react';
 import { authService } from '../lib/authService';
 import type { SessionUser } from '../lib/authService';
 import { t, type Language } from '../lib/i18n';
 import type { Tenant } from '../db';
+import { apolloClient } from '../lib/apolloClient';
+import { UPDATE_TENANT_SETTINGS_MUTATION } from '../lib/graphql';
 
 const TIMEZONES = [
   'Asia/Muscat', 'Asia/Riyadh', 'Asia/Dubai', 'Asia/Kuwait', 'Asia/Qatar', 'Asia/Amman',
@@ -20,6 +22,8 @@ interface SettingsViewProps {
 export default function SettingsView({ session, onSessionChange, lang }: SettingsViewProps) {
   const [tenant, setTenant] = useState<Tenant>(session.tenant);
   const [saving, setSaving] = useState(false);
+  const [defaultNightPrice, setDefaultNightPrice] = useState<number>(session.tenant.defaultNightPrice ?? 50);
+  const [defaultTax, setDefaultTax] = useState<number>(session.tenant.defaultTax ?? 0);
 
   const handleRoomChange = (index: number, value: string) => {
     const rooms = [...(tenant.rooms || [])];
@@ -29,8 +33,14 @@ export default function SettingsView({ session, onSessionChange, lang }: Setting
 
   const handleAddRoom = () => {
     const rooms = [...(tenant.rooms || [])];
-    const id = `R${rooms.length + 1}`;
-    rooms.push({ id, name: id });
+    const nextNum = rooms.length + 1;
+    const id = `r${nextNum}`;
+    rooms.push({ id, name: `Room ${nextNum}` });
+    setTenant({ ...tenant, rooms });
+  };
+
+  const handleRemoveRoom = (index: number) => {
+    const rooms = [...(tenant.rooms || [])].filter((_, i) => i !== index);
     setTenant({ ...tenant, rooms });
   };
 
@@ -43,8 +53,16 @@ export default function SettingsView({ session, onSessionChange, lang }: Setting
         timezone: tenant.timezone,
         rooms: tenant.rooms,
       });
-      setTenant(updated);
-      onSessionChange({ ...session, tenant: updated });
+
+      // Save default settings
+      await apolloClient.mutate({
+        mutation: UPDATE_TENANT_SETTINGS_MUTATION,
+        variables: { input: { defaultNightPrice, defaultTax } },
+      });
+
+      const updatedTenant = { ...updated, defaultNightPrice, defaultTax };
+      setTenant(updatedTenant);
+      onSessionChange({ ...session, tenant: updatedTenant });
     } finally {
       setSaving(false);
     }
@@ -100,6 +118,42 @@ export default function SettingsView({ session, onSessionChange, lang }: Setting
       </div>
 
       <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-xl p-10">
+        <h2 className="text-2xl font-black text-slate-900 mb-8 flex items-center gap-3">
+          <CurrencyDollar size={28} className="text-amber-500" />
+          {t(lang, 'settings.defaults')}
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-sm">
+          <div className="space-y-2">
+            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 block px-2">
+              {t(lang, 'settings.defaultNightPrice')}
+            </label>
+            <input
+              type="number"
+              min="0"
+              step="0.1"
+              value={defaultNightPrice}
+              onChange={(e) => setDefaultNightPrice(parseFloat(e.target.value) || 0)}
+              className="w-full bg-slate-50 border-slate-100 rounded-2xl px-4 py-3 font-black focus:ring-2 focus:ring-emerald-500 transition-all"
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 block px-2">
+              {t(lang, 'settings.defaultTax')}
+            </label>
+            <input
+              type="number"
+              min="0"
+              max="100"
+              step="0.1"
+              value={defaultTax}
+              onChange={(e) => setDefaultTax(parseFloat(e.target.value) || 0)}
+              className="w-full bg-slate-50 border-slate-100 rounded-2xl px-4 py-3 font-black focus:ring-2 focus:ring-emerald-500 transition-all"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-xl p-10">
         <div className="flex justify-between items-center mb-8">
           <h2 className="text-2xl font-black text-slate-900 flex items-center gap-3">
             <Layout size={28} className="text-blue-500" />
@@ -115,12 +169,20 @@ export default function SettingsView({ session, onSessionChange, lang }: Setting
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
           {(tenant.rooms || []).map((room, idx) => (
             <div key={room.id} className="flex flex-col gap-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-slate-300 block px-2">{room.id}</label>
-              <input
-                value={room.name}
-                onChange={(e) => handleRoomChange(idx, e.target.value)}
-                className="w-full bg-slate-50 border-slate-100 rounded-2xl px-4 py-3 font-black focus:ring-2 focus:ring-emerald-500 transition-all"
-              />
+              <label className="text-[10px] font-black uppercase tracking-widest text-slate-300 block px-2">{room.name}</label>
+              <div className="flex gap-2">
+                <input
+                  value={room.name}
+                  onChange={(e) => handleRoomChange(idx, e.target.value)}
+                  className="w-full bg-slate-50 border-slate-100 rounded-2xl px-4 py-3 font-black focus:ring-2 focus:ring-emerald-500 transition-all"
+                />
+                <button
+                  onClick={() => handleRemoveRoom(idx)}
+                  className="text-slate-400 hover:text-red-500 transition-colors px-2"
+                >
+                  <X size={16} weight="bold" />
+                </button>
+              </div>
             </div>
           ))}
         </div>

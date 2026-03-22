@@ -1,5 +1,13 @@
 {
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "www.hujuzatk.com" }],
+      "destination": "https://hujuzatk.com/:path*",
+      "permanent": true
+    }
+  ],
   "rewrites": [{ "source": "/((?!index.html).*)", "destination": "/index.html" }]
 }

@@ -73,6 +73,9 @@ export const translations: Record<Language, Record<string, string>> = {
     'settings.timezone': 'Timezone',
     'settings.rooms': 'Rooms Configuration',
     'settings.addRoom': '+ Add Room',
+    'settings.defaultNightPrice': 'Default Night Price',
+    'settings.defaultTax': 'Default Tax %',
+    'settings.defaults': 'Default Settings',
     'settings.save': 'Save Settings',
     'settings.saving': 'Saving…',
     
@@ -105,7 +108,9 @@ export const translations: Record<Language, Record<string, string>> = {
     'booking.confirmCancel': 'Are you sure you want to cancel this booking?',
     'booking.confirmReactivate': 'Reactivate booking?',
     'booking.confirmDelete': 'Permanently delete?',
-    
+    'booking.yes': 'Yes',
+    'booking.no': 'No',
+
     // Invoice
     'invoice.title': 'INVOICE',
     'invoice.bookingId': 'Booking ID',
@@ -226,6 +231,9 @@ export const translations: Record<Language, Record<string, string>> = {
     'settings.timezone': 'المنطقة الزمنية',
     'settings.rooms': 'إعدادات الغرف',
     'settings.addRoom': '+ إضافة غرفة',
+    'settings.defaultNightPrice': 'سعر الليلة الافتراضي',
+    'settings.defaultTax': 'الضريبة الافتراضية %',
+    'settings.defaults': 'الإعدادات الافتراضية',
     'settings.save': 'حفظ الإعدادات',
     'settings.saving': 'جاري الحفظ…',
     
@@ -258,6 +266,8 @@ export const translations: Record<Language, Record<string, string>> = {
     'booking.confirmCancel': 'هل أنت متأكد من إلغاء هذا الحجز؟',
     'booking.confirmReactivate': 'إعادة تفعيل الحجز؟',
     'booking.confirmDelete': 'حذف نهائي؟',
+    'booking.yes': 'نعم',
+    'booking.no': 'لا',
     
     // Invoice
     'invoice.title': 'فاتورة',

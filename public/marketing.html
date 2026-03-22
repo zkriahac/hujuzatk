@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hujuzatk — Marketing Assets</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Cairo', sans-serif; background: #f1f5f9; color: #1e293b; }
+
+  .page-header {
+    text-align: center; padding: 40px 20px 20px;
+    font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.3em; color: #94a3b8;
+  }
+  .page-header span { color: #10b981; }
+
+  /* ===== CARD WRAPPER ===== */
+  .card-wrap {
+    display: flex; flex-direction: column; align-items: center; gap: 60px;
+    padding: 20px 20px 80px;
+  }
+
+  /* ===== SOCIAL CARD BASE ===== */
+  .social-card {
+    position: relative; overflow: hidden; border-radius: 32px;
+    box-shadow: 0 25px 80px rgba(0,0,0,0.12);
+  }
+
+  /* ===== 1. INSTAGRAM POST (1080×1080) ===== */
+  .ig-post {
+    width: 1080px; height: 1080px;
+    background: linear-gradient(145deg, #064e3b 0%, #0f172a 50%, #1e1b4b 100%);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 60px;
+  }
+  .ig-post .badge {
+    background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.3);
+    color: #34d399; font-size: 13px; font-weight: 800; text-transform: uppercase;
+    letter-spacing: 0.25em; padding: 8px 24px; border-radius: 100px; margin-bottom: 28px;
+  }
+  .ig-post h1 {
+    font-size: 52px; font-weight: 900; color: #fff; text-align: center;
+    line-height: 1.15; margin-bottom: 12px;
+  }
+  .ig-post h1 span { color: #10b981; }
+  .ig-post .subtitle {
+    font-size: 18px; color: #94a3b8; text-align: center; margin-bottom: 40px; font-weight: 600;
+  }
+  .ig-post .laptop-frame {
+    width: 780px; height: 480px; background: #111827; border-radius: 16px;
+    border: 3px solid #374151; padding: 8px; position: relative;
+    box-shadow: 0 30px 60px rgba(0,0,0,0.4);
+  }
+  .ig-post .laptop-frame::after {
+    content: ''; position: absolute; bottom: -20px; left: 50%; transform: translateX(-50%);
+    width: 200px; height: 14px; background: #1f2937; border-radius: 0 0 8px 8px;
+  }
+  .ig-post .laptop-frame img {
+    width: 100%; height: 100%; object-fit: cover; border-radius: 10px;
+  }
+  .ig-post .cta {
+    margin-top: 40px; display: flex; align-items: center; gap: 16px;
+  }
+  .ig-post .cta-btn {
+    background: #10b981; color: #fff; font-size: 14px; font-weight: 800;
+    text-transform: uppercase; letter-spacing: 0.15em; padding: 14px 36px;
+    border-radius: 16px; border: none;
+  }
+  .ig-post .cta-url {
+    color: #64748b; font-size: 14px; font-weight: 700;
+  }
+
+  /* ===== 2. TWITTER / X BANNER (1200×628) ===== */
+  .tw-banner {
+    width: 1200px; height: 628px;
+    background: linear-gradient(135deg, #0f172a 0%, #064e3b 100%);
+    display: flex; align-items: center; padding: 60px 70px; gap: 50px;
+  }
+  .tw-left { flex: 1; }
+  .tw-left .badge {
+    display: inline-block;
+    background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.3);
+    color: #34d399; font-size: 11px; font-weight: 800; text-transform: uppercase;
+    letter-spacing: 0.25em; padding: 6px 18px; border-radius: 100px; margin-bottom: 20px;
+  }
+  .tw-left h1 {
+    font-size: 42px; font-weight: 900; color: #fff; line-height: 1.15; margin-bottom: 14px;
+  }
+  .tw-left h1 span { color: #10b981; }
+  .tw-left p { color: #94a3b8; font-size: 16px; font-weight: 600; line-height: 1.6; margin-bottom: 28px; }
+  .tw-left .features {
+    display: flex; gap: 12px; flex-wrap: wrap;
+  }
+  .tw-left .feat-pill {
+    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+    color: #e2e8f0; font-size: 11px; font-weight: 700; padding: 6px 14px;
+    border-radius: 10px; text-transform: uppercase; letter-spacing: 0.1em;
+  }
+  .tw-right {
+    width: 520px; height: 340px; background: #111827; border-radius: 14px;
+    border: 3px solid #374151; padding: 6px; flex-shrink: 0;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.4); transform: perspective(800px) rotateY(-4deg);
+  }
+  .tw-right img { width: 100%; height: 100%; object-fit: cover; border-radius: 9px; }
+
+  /* ===== 3. FEATURES GRID (1080×1350 — IG PORTRAIT) ===== */
+  .ig-features {
+    width: 1080px; height: 1350px;
+    background: linear-gradient(180deg, #0f172a 0%, #1e1b4b 100%);
+    padding: 60px; display: flex; flex-direction: column;
+  }
+  .ig-features .top {
+    text-align: center; margin-bottom: 40px;
+  }
+  .ig-features .top h1 {
+    font-size: 40px; font-weight: 900; color: #fff; margin-bottom: 8px;
+  }
+  .ig-features .top h1 span { color: #10b981; }
+  .ig-features .top p { color: #94a3b8; font-size: 16px; font-weight: 600; }
+  .ig-features .grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 20px; flex: 1;
+  }
+  .ig-features .grid-item {
+    background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 24px; overflow: hidden; display: flex; flex-direction: column;
+  }
+  .ig-features .grid-item img {
+    width: 100%; height: 280px; object-fit: cover; object-position: top left;
+  }
+  .ig-features .grid-item .caption {
+    padding: 16px 20px; text-align: center;
+  }
+  .ig-features .grid-item .caption h3 {
+    color: #fff; font-size: 16px; font-weight: 800; text-transform: uppercase;
+    letter-spacing: 0.15em;
+  }
+  .ig-features .grid-item .caption p {
+    color: #64748b; font-size: 12px; font-weight: 600; margin-top: 4px;
+  }
+  .ig-features .bottom {
+    text-align: center; margin-top: 30px;
+  }
+  .ig-features .bottom .cta-btn {
+    display: inline-block; background: #10b981; color: #fff; font-size: 14px;
+    font-weight: 800; text-transform: uppercase; letter-spacing: 0.15em;
+    padding: 16px 48px; border-radius: 20px; border: none;
+  }
+  .ig-features .bottom .url { color: #64748b; font-size: 13px; font-weight: 600; margin-top: 12px; }
+
+  /* ===== 4. ARABIC VERSION (1080×1080) ===== */
+  .ig-ar {
+    width: 1080px; height: 1080px;
+    background: linear-gradient(145deg, #064e3b 0%, #0f172a 50%, #1e1b4b 100%);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 60px; direction: rtl; text-align: center;
+  }
+  .ig-ar .badge {
+    background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.3);
+    color: #34d399; font-size: 14px; font-weight: 800; padding: 8px 24px;
+    border-radius: 100px; margin-bottom: 28px;
+  }
+  .ig-ar h1 {
+    font-size: 50px; font-weight: 900; color: #fff; line-height: 1.3; margin-bottom: 12px;
+  }
+  .ig-ar h1 span { color: #10b981; }
+  .ig-ar .subtitle {
+    font-size: 18px; color: #94a3b8; margin-bottom: 36px; font-weight: 600;
+  }
+  .ig-ar .laptop-frame {
+    width: 780px; height: 480px; background: #111827; border-radius: 16px;
+    border: 3px solid #374151; padding: 8px; position: relative;
+    box-shadow: 0 30px 60px rgba(0,0,0,0.4);
+  }
+  .ig-ar .laptop-frame::after {
+    content: ''; position: absolute; bottom: -20px; left: 50%; transform: translateX(-50%);
+    width: 200px; height: 14px; background: #1f2937; border-radius: 0 0 8px 8px;
+  }
+  .ig-ar .laptop-frame img {
+    width: 100%; height: 100%; object-fit: cover; border-radius: 10px;
+  }
+  .ig-ar .cta {
+    margin-top: 40px;
+  }
+  .ig-ar .cta-btn {
+    background: #10b981; color: #fff; font-size: 16px; font-weight: 800;
+    padding: 14px 40px; border-radius: 16px; border: none;
+  }
+
+  /* ===== 5. LINKEDIN BANNER (1200×627) ===== */
+  .li-banner {
+    width: 1200px; height: 627px;
+    background: linear-gradient(135deg, #fff 55%, #ecfdf5 100%);
+    display: flex; align-items: center; padding: 60px 70px; gap: 50px;
+    border: 1px solid #e2e8f0;
+  }
+  .li-left { flex: 1; }
+  .li-left .badge {
+    display: inline-block; background: #ecfdf5; color: #059669;
+    font-size: 11px; font-weight: 800; text-transform: uppercase;
+    letter-spacing: 0.2em; padding: 6px 16px; border-radius: 100px; margin-bottom: 18px;
+  }
+  .li-left h1 {
+    font-size: 38px; font-weight: 900; color: #0f172a; line-height: 1.2; margin-bottom: 14px;
+  }
+  .li-left h1 span { color: #10b981; }
+  .li-left p { color: #64748b; font-size: 15px; font-weight: 600; line-height: 1.7; margin-bottom: 24px; }
+  .li-left .stats {
+    display: flex; gap: 24px;
+  }
+  .li-left .stat {
+    text-align: center;
+  }
+  .li-left .stat-num {
+    font-size: 28px; font-weight: 900; color: #10b981;
+  }
+  .li-left .stat-label {
+    font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.15em;
+  }
+  .li-right {
+    width: 500px; height: 340px; background: #f8fafc; border-radius: 20px;
+    border: 2px solid #e2e8f0; padding: 8px; flex-shrink: 0;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.08); transform: perspective(800px) rotateY(-3deg);
+  }
+  .li-right img { width: 100%; height: 100%; object-fit: cover; border-radius: 14px; }
+
+  /* ===== 6. STORY FORMAT (1080×1920) ===== */
+  .ig-story {
+    width: 1080px; height: 1920px;
+    background: linear-gradient(180deg, #064e3b 0%, #0f172a 40%, #1e1b4b 100%);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 80px 60px; text-align: center;
+  }
+  .ig-story .badge {
+    background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.3);
+    color: #34d399; font-size: 14px; font-weight: 800; text-transform: uppercase;
+    letter-spacing: 0.25em; padding: 10px 28px; border-radius: 100px; margin-bottom: 40px;
+  }
+  .ig-story h1 {
+    font-size: 56px; font-weight: 900; color: #fff; line-height: 1.2; margin-bottom: 16px;
+  }
+  .ig-story h1 span { color: #10b981; }
+  .ig-story .subtitle {
+    font-size: 20px; color: #94a3b8; font-weight: 600; margin-bottom: 50px; line-height: 1.5;
+  }
+  .ig-story .phone-frame {
+    width: 380px; height: 760px; background: #1f2937; border-radius: 40px;
+    border: 4px solid #374151; padding: 12px; position: relative;
+    box-shadow: 0 40px 80px rgba(0,0,0,0.4);
+  }
+  .ig-story .phone-frame::before {
+    content: ''; position: absolute; top: 14px; left: 50%; transform: translateX(-50%);
+    width: 120px; height: 28px; background: #111827; border-radius: 20px; z-index: 2;
+  }
+  .ig-story .phone-frame img {
+    width: 100%; height: 100%; object-fit: cover; object-position: top; border-radius: 28px;
+  }
+  .ig-story .features-list {
+    margin-top: 50px; display: flex; flex-direction: column; gap: 16px; width: 100%;
+  }
+  .ig-story .feat-row {
+    display: flex; align-items: center; gap: 14px; justify-content: center;
+  }
+  .ig-story .feat-dot {
+    width: 10px; height: 10px; border-radius: 50%; background: #10b981; flex-shrink: 0;
+  }
+  .ig-story .feat-text {
+    color: #e2e8f0; font-size: 18px; font-weight: 700;
+  }
+  .ig-story .cta-btn {
+    margin-top: 50px; background: #10b981; color: #fff; font-size: 18px; font-weight: 800;
+    text-transform: uppercase; letter-spacing: 0.15em; padding: 18px 56px;
+    border-radius: 24px; border: none;
+  }
+
+  /* ===== LABEL ===== */
+  .card-label {
+    text-align: center; margin-bottom: 12px;
+    font-size: 11px; font-weight: 800; text-transform: uppercase;
+    letter-spacing: 0.3em; color: #94a3b8;
+  }
+  .card-label span {
+    background: #e2e8f0; padding: 4px 12px; border-radius: 6px; color: #475569;
+  }
+
+  /* Scale down for preview */
+  .scale-wrap {
+    transform-origin: top center;
+  }
+  @media (max-width: 1300px) {
+    .scale-wrap { transform: scale(0.5); margin-bottom: -30%; }
+  }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <span>Hujuzatk</span> — Marketing Assets · Open in browser → Right-click each card → "Save as image" or screenshot
+</div>
+
+<div class="card-wrap">
+
+  <!-- ==================== 1. INSTAGRAM POST ==================== -->
+  <div>
+    <div class="card-label"><span>Instagram Post · 1080×1080</span></div>
+    <div class="scale-wrap">
+      <div class="social-card ig-post">
+        <div class="badge">Hotel Management System</div>
+        <h1>Manage Your Hotel<br><span>Like Never Before</span></h1>
+        <div class="subtitle">5-Year Calendar · Smart Reports · Arabic RTL · PWA</div>
+        <div class="laptop-frame">
+          <img src="/screenshots/calendar.png" alt="Calendar View">
+        </div>
+        <div class="cta">
+          <div class="cta-btn">Start Free Trial</div>
+          <div class="cta-url">hujuzatk.com</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 2. TWITTER/X BANNER ==================== -->
+  <div>
+    <div class="card-label"><span>Twitter / X · 1200×628</span></div>
+    <div class="scale-wrap">
+      <div class="social-card tw-banner">
+        <div class="tw-left">
+          <div class="badge">Hujuzatk PMS</div>
+          <h1>Your Hotel,<br><span>Fully Managed.</span></h1>
+          <p>The all-in-one property management system built for hotels, apartments &amp; vacation rentals in the Middle East.</p>
+          <div class="features">
+            <div class="feat-pill">5-Year Calendar</div>
+            <div class="feat-pill">Auto Invoicing</div>
+            <div class="feat-pill">Arabic RTL</div>
+            <div class="feat-pill">PWA</div>
+            <div class="feat-pill">Reports</div>
+          </div>
+        </div>
+        <div class="tw-right">
+          <img src="/screenshots/calendar.png" alt="Calendar">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 3. FEATURES GRID ==================== -->
+  <div>
+    <div class="card-label"><span>Instagram Portrait · 1080×1350</span></div>
+    <div class="scale-wrap">
+      <div class="social-card ig-features">
+        <div class="top">
+          <h1>Everything You Need to<br><span>Run Your Property</span></h1>
+          <p>Four powerful views. One simple platform.</p>
+        </div>
+        <div class="grid">
+          <div class="grid-item">
+            <img src="/screenshots/calendar.png" alt="Calendar">
+            <div class="caption">
+              <h3>Calendar</h3>
+              <p>5-year visual booking grid</p>
+            </div>
+          </div>
+          <div class="grid-item">
+            <img src="/screenshots/list.png" alt="List">
+            <div class="caption">
+              <h3>Bookings</h3>
+              <p>Search, filter &amp; manage guests</p>
+            </div>
+          </div>
+          <div class="grid-item">
+            <img src="/screenshots/reports.png" alt="Reports">
+            <div class="caption">
+              <h3>Reports</h3>
+              <p>Revenue, occupancy &amp; analytics</p>
+            </div>
+          </div>
+          <div class="grid-item">
+            <img src="/screenshots/settings.png" alt="Settings">
+            <div class="caption">
+              <h3>Settings</h3>
+              <p>Rooms, pricing &amp; preferences</p>
+            </div>
+          </div>
+        </div>
+        <div class="bottom">
+          <div class="cta-btn">Try Free for 14 Days</div>
+          <div class="url">hujuzatk.com</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 4. ARABIC VERSION ==================== -->
+  <div>
+    <div class="card-label"><span>Instagram Arabic · 1080×1080</span></div>
+    <div class="scale-wrap">
+      <div class="social-card ig-ar">
+        <div class="badge">نظام إدارة الفنادق</div>
+        <h1>أدر فندقك<br><span>بذكاء وسهولة</span></h1>
+        <div class="subtitle">تقويم حجوزات ٥ سنوات · تقارير مالية · دعم عربي كامل</div>
+        <div class="laptop-frame">
+          <img src="/screenshots/calendar.png" alt="تقويم الحجوزات">
+        </div>
+        <div class="cta">
+          <div class="cta-btn">ابدأ تجربتك المجانية</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 5. LINKEDIN BANNER ==================== -->
+  <div>
+    <div class="card-label"><span>LinkedIn · 1200×627</span></div>
+    <div class="scale-wrap">
+      <div class="social-card li-banner">
+        <div class="li-left">
+          <div class="badge">SaaS for Hospitality</div>
+          <h1>Property Management<br><span>Made Simple.</span></h1>
+          <p>Hujuzatk helps hotels and vacation rentals manage bookings, invoices, and finances — with native Arabic support.</p>
+          <div class="stats">
+            <div class="stat">
+              <div class="stat-num">5yr</div>
+              <div class="stat-label">Calendar</div>
+            </div>
+            <div class="stat">
+              <div class="stat-num">50+</div>
+              <div class="stat-label">Rooms</div>
+            </div>
+            <div class="stat">
+              <div class="stat-num">2</div>
+              <div class="stat-label">Languages</div>
+            </div>
+            <div class="stat">
+              <div class="stat-num">14</div>
+              <div class="stat-label">Free Days</div>
+            </div>
+          </div>
+        </div>
+        <div class="li-right">
+          <img src="/screenshots/reports.png" alt="Reports">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 6. INSTAGRAM STORY ==================== -->
+  <div>
+    <div class="card-label"><span>Instagram / TikTok Story · 1080×1920</span></div>
+    <div class="scale-wrap">
+      <div class="social-card ig-story">
+        <div class="badge">Hujuzatk PMS</div>
+        <h1>Your Hotel<br>In Your <span>Pocket</span></h1>
+        <div class="subtitle">Manage bookings, invoices &amp;<br>reports from anywhere</div>
+        <div class="phone-frame">
+          <img src="/screenshots/calendar.png" alt="Mobile Calendar">
+        </div>
+        <div class="features-list">
+          <div class="feat-row"><div class="feat-dot"></div><div class="feat-text">5-Year Booking Calendar</div></div>
+          <div class="feat-row"><div class="feat-dot"></div><div class="feat-text">Automated PDF Invoicing</div></div>
+          <div class="feat-row"><div class="feat-dot"></div><div class="feat-text">Full Arabic RTL Support</div></div>
+          <div class="feat-row"><div class="feat-dot"></div><div class="feat-text">Works on Any Device (PWA)</div></div>
+        </div>
+        <div class="cta-btn">Start Free · hujuzatk.com</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

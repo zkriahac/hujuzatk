@@ -180,7 +180,7 @@ export const resolvers = {
 			if (existing) throw new GraphQLError('Email already registered', { extensions: { code: 'BAD_USER_INPUT', http: { status: 400 } } });
 			if (input.password.length < 8) throw new GraphQLError('Password must be at least 8 characters', { extensions: { code: 'BAD_USER_INPUT', http: { status: 400 } } });
 			const passwordHash = await bcrypt.hash(input.password, 10);
-			const tenant = await prisma.tenant.create({ data: { name: input.name, email: input.email, passwordHash, currency: input.currency || 'OMR', timezone: input.timezone || 'Asia/Muscat', language: input.language || 'en', subscriptionStatus: 'TRIAL', validUntil: calculateValidUntil(TRIAL_DAYS), rooms: JSON.stringify([{ id: 'A1', name: 'A1' }, { id: 'A2', name: 'A2' }, { id: 'A3', name: 'A3' }, { id: 'A4', name: 'A4' }, { id: 'A5', name: 'A5' }]), isAdmin: false, isActive: true, settings: { create: { defaultNightPrice: 50, defaultTax: 0 } } }, include: { settings: true } });
+			const tenant = await prisma.tenant.create({ data: { name: input.name, email: input.email, passwordHash, currency: input.currency || 'OMR', timezone: input.timezone || 'Asia/Muscat', language: input.language || 'en', subscriptionStatus: 'TRIAL', validUntil: calculateValidUntil(TRIAL_DAYS), rooms: JSON.stringify([{ id: 'r1', name: 'Room 1' }, { id: 'r2', name: 'Room 2' }, { id: 'r3', name: 'Room 3' }, { id: 'r4', name: 'Room 4' }, { id: 'r5', name: 'Room 5' }]), isAdmin: false, isActive: true, settings: { create: { defaultNightPrice: 50, defaultTax: 0 } } }, include: { settings: true } });
 			const { token, refreshToken } = generateTokens(tenant.id, tenant.email);
 			await prisma.auditLog.create({ data: { tenantId: tenant.id, action: 'TENANT_UPDATED', entityType: 'Tenant', entityId: tenant.id, changes: { action: 'tenant_created' } } });
 			return { token, refreshToken, tenant: { ...normalizeTenant(tenant), bookingsCount: 0 } };
@@ -339,7 +339,11 @@ export const resolvers = {
 			if (!tenant) throw new GraphQLError('Tenant not found', { extensions: { code: 'NOT_FOUND', http: { status: 404 } } });
 			const rooms = Array.isArray(tenant.rooms) ? tenant.rooms : JSON.parse(tenant.rooms as any);
 			if (rooms.some((r: any) => r.name === name)) throw new GraphQLError('Room name already exists', { extensions: { code: 'BAD_USER_INPUT', http: { status: 400 } } });
-			const newRoom = { id: `R${Date.now()}`, name };
+			const maxNum = rooms.reduce((max: number, r: any) => {
+				const m = r.id.match(/^r(\d+)$/);
+				return m ? Math.max(max, parseInt(m[1])) : max;
+			}, 0);
+			const newRoom = { id: `r${maxNum + 1}`, name };
 			rooms.push(newRoom);
 			const updated = await prisma.tenant.update({ where: { id: context.user.tenantId }, data: { rooms: rooms }, include: { settings: true, _count: { select: { bookings: true } } } });
 			return { ...normalizeTenant(updated), bookingsCount: updated._count?.bookings || 0 };

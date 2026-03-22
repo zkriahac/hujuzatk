@@ -81,7 +81,7 @@ export function AuthScreen({ mode, onModeChange, onLoggedIn, error, setError, wo
         <div>
           <div className="font-bold text-lg">Hujuzatk PMS</div>
           <div className="text-xs text-gray-500">
-            {workspaceLabel ? `Workspace: ${workspaceLabel}` : (lang === 'ar' ? 'إدارة العقارات الاحترافية' : 'Professional Property Management')}
+            {workspaceLabel ? `Workspace: ${workspaceLabel}` : (lang === 'ar' ? 'إدارة الحجوزات الاحترافية' : 'Professional Property Management')}
           </div>
         </div>
       </div>

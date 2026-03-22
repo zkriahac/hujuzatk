@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { format, isSameDay, startOfToday } from 'date-fns';
-import { Minus, Plus, Sparkle } from 'phosphor-react';
+import { Minus, Plus, Sparkle, DotsThreeVertical, X } from 'phosphor-react';
 import { cn } from '../utils/cn';
 import { t, type Language } from '../lib/i18n';
 import { formatTz } from '../utils/formatTz';
@@ -17,17 +17,12 @@ export const ROOM_GROUP_PALETTES = [
   { header: 'bg-lime-100 text-lime-800',       booking: { bg: 'bg-lime-50',    border: 'border-lime-300',    text: 'text-lime-800'    } },
 ];
 
-// Extract the alphabetic prefix of a room ID: "A1"→"A", "B102"→"B"
-export function getRoomPrefix(roomId: string): string {
-  return roomId.match(/^[A-Za-z]+/)?.[0] || roomId[0] || 'R';
-}
-
-// Build roomId → palette index map from the rooms list
+// Build roomId → palette index map from the rooms list, grouped by room name prefix
 export function buildRoomPaletteMap(rooms: any[]): Record<string, number> {
   const prefixOrder: string[] = [];
   const map: Record<string, number> = {};
   for (const r of rooms) {
-    const prefix = getRoomPrefix(r.id);
+    const prefix = r.name.match(/^[A-Za-z\u0600-\u06FF]+/)?.[0] || r.name[0] || 'R';
     if (!prefixOrder.includes(prefix)) prefixOrder.push(prefix);
     map[r.id] = prefixOrder.indexOf(prefix) % ROOM_GROUP_PALETTES.length;
   }
@@ -70,6 +65,7 @@ export default function CalendarView({
     const n = saved ? parseInt(saved) : 1;
     return n >= 1 && n <= 3 ? n : 1;
   });
+  const [showToolbar, setShowToolbar] = useState(false);
 
   const setZoomAndSave = (fn: (z: number) => number) => {
     setZoom(prev => {
@@ -79,19 +75,24 @@ export default function CalendarView({
     });
   };
 
-  const colW = [80, 140, 220][zoom - 1];
-  const rowH = [32, 40, 52][zoom - 1];
-  const bookingText = (['text-[10px]', 'text-[12px]', 'text-[15px]'] as const)[zoom - 1];
+  // Zoom only controls column width (how many rooms fit on screen)
+  const colW = [48, 90, 160][zoom - 1];
+  const rowH = 28;
+  const bookingText = 'text-[10px]';
   const roomPaletteMap = useMemo(() => buildRoomPaletteMap(rooms), [rooms]);
+  const isRtl = lang === 'ar';
 
   return (
-    <div className="space-y-4">
-      <div className="bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden flex flex-col h-[75vh]">
+    <div className="relative space-y-0">
+      <div className={cn(
+        'bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden flex flex-col',
+        'h-[calc(100dvh-4rem)] sm:h-[75vh]',
+      )}>
         <div className="overflow-auto flex-1 scrollbar-hide" ref={calendarContainerRef}>
           <table className="border-separate border-spacing-0">
-            <thead className="sticky top-0 z-40 bg-slate-50/90 backdrop-blur-md">
+            <thead className="sticky top-0 z-40 bg-slate-50">
               <tr>
-                <th className="w-16 sm:w-24 p-2 sm:p-4 border-b border-r border-slate-200 sticky left-0 z-50 bg-slate-50/90 backdrop-blur-md text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-slate-400">
+                <th className={cn('w-10 sm:w-20 p-1 sm:p-3 border-b border-slate-200 sticky z-50 bg-slate-50 text-[7px] sm:text-[10px] font-black uppercase tracking-widest text-slate-400', isRtl ? 'right-0 border-l' : 'left-0 border-r')}>
                   {t(lang, 'calendar.date')}
                 </th>
                 {rooms.map((r: any) => (
@@ -99,12 +100,11 @@ export default function CalendarView({
                     key={r.id}
                     style={{ width: colW, minWidth: colW }}
                     className={cn(
-                      'p-2 sm:p-4 border-b border-r border-slate-200 text-[10px] sm:text-[11px] font-black uppercase tracking-widest text-center',
+                      'p-1 sm:p-3 border-b border-r border-slate-200 text-[7px] sm:text-[11px] font-black uppercase tracking-widest text-center whitespace-nowrap',
                       ROOM_GROUP_PALETTES[roomPaletteMap[r.id] ?? 0].header,
                     )}
                   >
-                    <span className="hidden sm:inline">{r.name}</span>
-                    <span className="sm:hidden font-black">{r.name}</span>
+                    {r.name}
                   </th>
                 ))}
               </tr>
@@ -122,26 +122,28 @@ export default function CalendarView({
                       <tr>
                         <td
                           colSpan={rooms.length + 1}
-                          className="bg-slate-900 text-white text-[8px] sm:text-[10px] font-black uppercase tracking-[0.3em] px-2 sm:px-4 py-1.5 sm:py-2 sticky left-0 z-30"
+                          className={cn('bg-slate-900 text-white text-[7px] sm:text-[10px] font-black uppercase tracking-[0.3em] px-2 sm:px-4 py-1 sm:py-2 sticky z-30', isRtl ? 'right-0' : 'left-0')}
                         >
                           {formatTz(date, 'MMMM yyyy', tz, lang).toUpperCase()}
                         </td>
                       </tr>
                     )}
-                    <tr style={{ height: `${rowH}px` }} className="group" data-today={isToday ? 'true' : 'false'}>
+                    <tr style={{ height: rowH }} className="group" data-today={isToday ? 'true' : 'false'} data-date={dStr}>
                       <td
                         onClick={() => setSelectedDateStr(dStr)}
                         className={cn(
-                          'border-r border-slate-200 text-center text-[9px] sm:text-[11px] font-black cursor-pointer sticky left-0 z-30 transition-colors p-1 sm:p-4',
+                          'w-10 sm:w-20 border-slate-200 text-center text-[7px] sm:text-[11px] font-black cursor-pointer sticky z-30 transition-colors p-0 sm:p-2 whitespace-nowrap',
+                          isRtl ? 'right-0 border-l' : 'left-0 border-r',
                           isToday
                             ? 'bg-emerald-600 text-white shadow-xl scale-105 z-40'
                             : isPast
-                            ? 'bg-red-50/40 text-red-400'
+                            ? 'bg-red-50 text-red-400'
                             : 'bg-white text-slate-500 hover:bg-slate-100/30',
                           selectedDateStr === dStr && !isToday && 'bg-emerald-50 text-emerald-600 border-l-4 border-l-emerald-600',
                         )}
                       >
-                        {formatTz(date, 'dd MMM', tz, lang)}
+                        <span className="sm:hidden">{format(date, 'dd')}<span className="text-[6px] block leading-none">{formatTz(date, 'MMM', tz, lang)}</span></span>
+                        <span className="hidden sm:inline">{formatTz(date, 'dd MMM', tz, lang)}</span>
                       </td>
                       {rooms.map((r: any) => {
                         const cellBookings = bookings.filter((b: any) => {
@@ -168,7 +170,7 @@ export default function CalendarView({
                           >
                             {cellBookings.length === 0 && (
                               <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
-                                <Plus size={20} weight="bold" className="text-emerald-600" />
+                                <Plus size={12} weight="bold" className="text-emerald-600" />
                               </div>
                             )}
                             {cellBookings.map((b: any) => {
@@ -181,7 +183,7 @@ export default function CalendarView({
                                     setSelectedBooking(b);
                                   }}
                                   className={cn(
-                                    'absolute inset-0.5 font-black rounded-md sm:rounded-lg text-center leading-tight flex items-center justify-center shadow-sm cursor-pointer hover:shadow-lg transition-all hover:scale-[1.02] px-1 sm:px-2 border truncate',
+                                    'absolute inset-0.5 font-black rounded-md text-center leading-tight flex items-center justify-center shadow-sm cursor-pointer hover:shadow-lg transition-all hover:scale-[1.02] px-0.5 border truncate',
                                     bookingText,
                                     palette.bg,
                                     palette.border,
@@ -204,43 +206,61 @@ export default function CalendarView({
           </table>
         </div>
       </div>
-      <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-4 bg-white p-3 sm:p-4 rounded-3xl border border-slate-200 shadow-sm">
-        <div className="flex gap-2 items-center">
+
+      {/* Floating Action Button */}
+      <button
+        onClick={() => setShowToolbar(v => !v)}
+        className={cn(
+          'fixed bottom-6 z-50 w-10 h-10 rounded-full shadow-2xl flex items-center justify-center transition-all active:scale-90',
+          showToolbar ? 'bg-slate-800 text-white' : 'bg-emerald-600 text-white hover:bg-emerald-700',
+          isRtl ? 'left-6' : 'right-6',
+        )}
+      >
+        {showToolbar ? <X size={24} weight="bold" /> : <DotsThreeVertical size={24} weight="bold" />}
+      </button>
+
+      {/* Toolbar popup */}
+      {showToolbar && (
+        <div className={cn(
+          'fixed bottom-18 z-50 flex flex-col gap-2 bg-white p-4 rounded-3xl border border-slate-200 shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-200',
+          isRtl ? 'left-4' : 'right-4',
+        )}>
           <button
-            onClick={jumpToToday}
-            className="text-xs bg-slate-900 text-white px-4 sm:px-5 py-2 sm:py-2.5 rounded-2xl font-black uppercase tracking-widest hover:bg-slate-800 transition-all active:scale-95"
+            onClick={() => { jumpToToday(); setShowToolbar(false); }}
+            className="text-xs bg-slate-900 text-white px-5 py-2.5 rounded-2xl font-black uppercase tracking-widest hover:bg-slate-800 transition-all active:scale-95"
           >
             {t(lang, 'calendar.jumpToday')}
           </button>
-          <div className="flex items-center gap-0.5 bg-slate-100 rounded-xl p-1">
+          <div className="flex items-center justify-center gap-1 bg-slate-100 rounded-xl p-1">
             <button
               onClick={() => setZoomAndSave(z => Math.max(1, z - 1))}
               disabled={zoom === 1}
-              className="p-1.5 rounded-lg text-slate-500 hover:bg-white hover:text-slate-900 disabled:opacity-30 transition-all"
+              className="p-2 rounded-lg text-slate-500 hover:bg-white hover:text-slate-900 disabled:opacity-30 transition-all"
             >
-              <Minus size={13} weight="bold" />
+              <Minus size={14} weight="bold" />
             </button>
-            <span className="text-[10px] font-black text-slate-500 w-4 text-center tabular-nums">{zoom}</span>
+            <span className="text-[11px] font-black text-slate-500 w-5 text-center tabular-nums">{zoom}x</span>
             <button
               onClick={() => setZoomAndSave(z => Math.min(3, z + 1))}
               disabled={zoom === 3}
-              className="p-1.5 rounded-lg text-slate-500 hover:bg-white hover:text-slate-900 disabled:opacity-30 transition-all"
+              className="p-2 rounded-lg text-slate-500 hover:bg-white hover:text-slate-900 disabled:opacity-30 transition-all"
             >
-              <Plus size={13} weight="bold" />
+              <Plus size={14} weight="bold" />
             </button>
           </div>
+          <button
+            onClick={() => {
+              setAddModalInitialDate(selectedDateStr);
+              setShowAddModal(true);
+              setShowToolbar(false);
+            }}
+            className="bg-emerald-600 text-white px-5 py-2.5 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-emerald-700 shadow-lg shadow-emerald-50 transition-all flex items-center justify-center gap-2 active:scale-95"
+          >
+            <Sparkle size={16} weight="fill" />
+            {t(lang, 'calendar.newBooking')}
+          </button>
         </div>
-        <button
-          onClick={() => {
-            setAddModalInitialDate(selectedDateStr);
-            setShowAddModal(true);
-          }}
-          className="bg-emerald-600 text-white px-4 sm:px-6 py-2 sm:py-2.5 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-emerald-700 shadow-lg shadow-emerald-50 transition-all flex items-center gap-2 active:scale-95 whitespace-nowrap"
-        >
-          <Sparkle size={16} weight="fill" />
-          {t(lang, 'calendar.newBooking')}
-        </button>
-      </div>
+      )}
     </div>
   );
 }

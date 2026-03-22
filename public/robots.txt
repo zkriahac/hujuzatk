@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /user/
+Disallow: /superadmin/
+
+Sitemap: https://hujuzatk.com/sitemap.xml

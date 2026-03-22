@@ -2,11 +2,45 @@ import React, { useEffect, useRef, useState } from 'react';
 import { format, addDays, parseISO } from 'date-fns';
 import {
   X, Sparkle, Users, Minus, Plus, CreditCard, FileText,
-  PencilSimple, Prohibit, Trash, Check,
+  PencilSimple, Prohibit, Trash, Check, WarningCircle,
 } from 'phosphor-react';
 import { cn } from '../utils/cn';
 import { t, type Language } from '../lib/i18n';
 import { formatTz } from '../utils/formatTz';
+
+// ---------- CONFIRM MODAL ----------
+
+function ConfirmModal({ message, onConfirm, onCancel, confirmColor = 'bg-red-500 hover:bg-red-600', confirmLabel, cancelLabel }: {
+  message: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+  confirmColor?: string;
+  confirmLabel: string;
+  cancelLabel: string;
+}) {
+  return (
+    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={onCancel}>
+      <div className="bg-white rounded-3xl shadow-2xl max-w-sm w-full p-8 text-center space-y-6" onClick={e => e.stopPropagation()}>
+        <WarningCircle size={48} weight="fill" className="text-amber-500 mx-auto" />
+        <p className="text-sm font-bold text-slate-700">{message}</p>
+        <div className="flex gap-3">
+          <button
+            onClick={onCancel}
+            className="flex-1 py-3 border-2 border-slate-200 text-slate-500 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-slate-50 transition-all"
+          >
+            {cancelLabel}
+          </button>
+          <button
+            onClick={onConfirm}
+            className={`flex-1 py-3 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] active:scale-95 transition-all ${confirmColor}`}
+          >
+            {confirmLabel}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // ---------- ADD BOOKING MODAL ----------
 
@@ -55,15 +89,15 @@ export function AddBookingModal({ onClose, onAdd, initialDate, initialRoom, room
 
   return (
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-[200] p-4">
-      <form onSubmit={handleSubmit} dir={lang === 'ar' ? 'rtl' : 'ltr'} className="relative bg-white rounded-[2.5rem] max-w-lg w-full p-10 shadow-3xl">
-        <button type="button" onClick={onClose} className="absolute top-5 end-5 p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all">
+      <form onSubmit={handleSubmit} dir={lang === 'ar' ? 'rtl' : 'ltr'} className="relative bg-white rounded-[2.5rem] max-w-lg w-full p-6 sm:p-10 shadow-3xl max-h-[95vh] overflow-y-auto">
+        <button type="button" onClick={onClose} className="absolute top-4 end-4 p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all">
           <X size={20} weight="bold" />
         </button>
-        <h2 className="text-3xl font-black text-slate-900 tracking-tight mb-8 flex items-center gap-3">
-          <Sparkle size={32} className="text-emerald-500" weight="fill" />
+        <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight mb-5 flex items-center gap-3">
+          <Sparkle size={28} className="text-emerald-500" weight="fill" />
           {t(lang, 'booking.addTitle')}
         </h2>
-        <div className="space-y-5">
+        <div className="space-y-3">
           <div className="relative group">
             <div className={cn('absolute inset-y-0 flex items-center pointer-events-none text-slate-300 group-focus-within:text-emerald-500 transition-colors', lang === 'ar' ? 'right-4' : 'left-4')}>
               <Users size={18} weight="bold" />
@@ -71,7 +105,7 @@ export function AddBookingModal({ onClose, onAdd, initialDate, initialRoom, room
             <input
               ref={guestNameInputRef}
               className={cn(
-                'w-full bg-slate-50 rounded-2xl py-3 text-sm font-bold focus:ring-2 transition-all',
+                'w-full bg-slate-50 rounded-2xl py-2.5 text-sm font-bold focus:ring-2 transition-all',
                 lang === 'ar' ? 'pr-11 pl-4' : 'pl-11 pr-4',
                 nameError ? 'ring-2 ring-red-400 border-red-300 focus:ring-red-400' : 'border-slate-100 focus:ring-emerald-500'
               )}
@@ -80,34 +114,34 @@ export function AddBookingModal({ onClose, onAdd, initialDate, initialRoom, room
               onChange={(e) => { setF({ ...f, guestName: e.target.value }); if (nameError) setNameError(false); }}
             />
           </div>
-          <div className="flex gap-4">
+          <div className="flex gap-3">
             <input
-              className="w-1/2 bg-slate-50 border-slate-100 rounded-2xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-emerald-500 transition-all"
+              className="w-1/2 bg-slate-50 border-slate-100 rounded-2xl px-4 py-2.5 text-sm font-bold focus:ring-2 focus:ring-emerald-500 transition-all"
               placeholder={t(lang, 'booking.city')}
               value={f.city}
               onChange={(e) => setF({ ...f, city: e.target.value })}
             />
             <input
-              className="w-1/2 bg-slate-50 border-slate-100 rounded-2xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-emerald-500 transition-all"
+              className="w-1/2 bg-slate-50 border-slate-100 rounded-2xl px-4 py-2.5 text-sm font-bold focus:ring-2 focus:ring-emerald-500 transition-all"
               placeholder={t(lang, 'booking.phone')}
               value={f.phone}
               onChange={(e) => setF({ ...f, phone: e.target.value })}
             />
           </div>
-          <div className="flex gap-4">
+          <div className="flex gap-3">
             <div className="w-1/2">
-              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2 block px-2">
+              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1 block px-2">
                 {t(lang, 'booking.checkIn')}
               </label>
               <input
                 type="date"
-                className="w-full bg-slate-50 border-slate-100 rounded-2xl px-4 py-3 text-sm font-black focus:ring-2 focus:ring-emerald-500 transition-all"
+                className="w-full bg-slate-50 border-slate-100 rounded-2xl px-4 py-2.5 text-sm font-black focus:ring-2 focus:ring-emerald-500 transition-all"
                 value={f.checkIn}
                 onChange={(e) => setF({ ...f, checkIn: e.target.value })}
               />
             </div>
             <div className="w-1/2">
-              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2 block px-2">
+              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1 block px-2">
                 {t(lang, 'booking.nights')}
               </label>
               <div
@@ -118,24 +152,24 @@ export function AddBookingModal({ onClose, onAdd, initialDate, initialRoom, room
                 }}
               >
                 <button type="button" onClick={() => setF({ ...f, nights: Math.max(1, f.nights - 1) })}
-                  className="px-4 py-3.5 text-slate-400 hover:text-slate-900 hover:bg-slate-200 transition-colors active:bg-slate-300">
+                  className="px-3 py-2.5 text-slate-400 hover:text-slate-900 hover:bg-slate-200 transition-colors active:bg-slate-300">
                   <Minus size={18} weight="bold" />
                 </button>
                 <span className="flex-1 text-center text-sm font-black text-slate-900 tabular-nums">{f.nights}</span>
                 <button type="button" onClick={() => setF({ ...f, nights: f.nights + 1 })}
-                  className="px-4 py-3.5 text-slate-400 hover:text-slate-900 hover:bg-slate-200 transition-colors active:bg-slate-300">
+                  className="px-3 py-2.5 text-slate-400 hover:text-slate-900 hover:bg-slate-200 transition-colors active:bg-slate-300">
                   <Plus size={18} weight="bold" />
                 </button>
               </div>
             </div>
           </div>
-          <div className="flex gap-4">
+          <div className="flex gap-3">
             <div className="w-1/2">
-              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2 block px-2">
+              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1 block px-2">
                 {t(lang, 'booking.room')}
               </label>
               <select
-                className="w-full bg-slate-50 border-slate-100 rounded-2xl px-4 py-3 text-sm font-black focus:ring-2 focus:ring-emerald-500 transition-all"
+                className="w-full bg-slate-50 border-slate-100 rounded-2xl px-4 py-2.5 text-sm font-black focus:ring-2 focus:ring-emerald-500 transition-all"
                 value={f.room}
                 onChange={(e) => setF({ ...f, room: e.target.value })}
               >
@@ -145,14 +179,14 @@ export function AddBookingModal({ onClose, onAdd, initialDate, initialRoom, room
               </select>
             </div>
             <div className="w-1/2">
-              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2 block px-2">
+              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1 block px-2">
                 {t(lang, 'booking.priceNight')}
               </label>
               <div className="relative">
                 <div className={cn('absolute inset-y-0 flex items-center pointer-events-none text-slate-300 text-[10px] font-black uppercase', lang === 'ar' ? 'right-4' : 'left-4')}>{currency}</div>
                 <input
                   type="number"
-                  className={cn('w-full bg-slate-50 border-slate-100 rounded-2xl py-3 text-sm font-black focus:ring-2 focus:ring-emerald-500 transition-all', lang === 'ar' ? 'pr-12 pl-4' : 'pl-12 pr-4')}
+                  className={cn('w-full bg-slate-50 border-slate-100 rounded-2xl py-2.5 text-sm font-black focus:ring-2 focus:ring-emerald-500 transition-all', lang === 'ar' ? 'pr-12 pl-4' : 'pl-12 pr-4')}
                   value={f.nightPrice}
                   onChange={(e) => setF({ ...f, nightPrice: parseInt(e.target.value) || 0 })}
                 />
@@ -160,17 +194,17 @@ export function AddBookingModal({ onClose, onAdd, initialDate, initialRoom, room
             </div>
           </div>
 
-          <div className="bg-slate-900 rounded-[2rem] p-6 text-white mt-4 relative overflow-hidden group">
-            <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:rotate-12 transition-all">
-              <CreditCard size={100} weight="duotone" />
+          <div className="bg-slate-900 rounded-2xl p-4 text-white mt-2 relative overflow-hidden group">
+            <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:rotate-12 transition-all">
+              <CreditCard size={80} weight="duotone" />
             </div>
-            <div className="grid grid-cols-2 gap-4 relative z-10">
+            <div className="grid grid-cols-2 gap-3 relative z-10">
               <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-1">{t(lang, 'booking.total')}</p>
-                <p className="text-2xl font-black">{currency} {totalPrice}</p>
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-0.5">{t(lang, 'booking.total')}</p>
+                <p className="text-xl font-black">{currency} {totalPrice}</p>
               </div>
               <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-1">{t(lang, 'booking.deposit')}</p>
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-0.5">{t(lang, 'booking.deposit')}</p>
                 <input
                   type="number"
                   className="w-full bg-slate-800/50 border-0 rounded-xl px-3 py-1 text-lg font-black focus:ring-1 focus:ring-emerald-500 transition-all"
@@ -178,20 +212,20 @@ export function AddBookingModal({ onClose, onAdd, initialDate, initialRoom, room
                   onChange={(e) => setF({ ...f, deposit: parseInt(e.target.value) || 0 })}
                 />
               </div>
-              <div className="col-span-2 pt-4 border-t border-slate-800 flex justify-between items-center">
+              <div className="col-span-2 pt-3 border-t border-slate-800 flex justify-between items-center">
                 <p className="text-xs font-black uppercase tracking-widest text-emerald-400">{t(lang, 'booking.remaining')}</p>
-                <p className="text-3xl font-black text-white">{currency} {remaining}</p>
+                <p className="text-2xl font-black text-white">{currency} {remaining}</p>
               </div>
             </div>
           </div>
         </div>
-        <div className="mt-10 flex gap-4">
-          <button type="button" onClick={onClose} className="flex-1 py-4 border-2 border-slate-200 text-slate-500 rounded-2xl font-black uppercase tracking-widest text-xs hover:border-red-200 hover:bg-red-50 hover:text-red-500 transition-all">
+        <div className="mt-5 flex gap-3">
+          <button type="button" onClick={onClose} className="flex-1 py-3 border-2 border-slate-200 text-slate-500 rounded-2xl font-black uppercase tracking-widest text-xs hover:border-red-200 hover:bg-red-50 hover:text-red-500 transition-all">
             {t(lang, 'booking.cancel')}
           </button>
           <button
             type="submit"
-            className="flex-[2] py-4 bg-emerald-600 text-white rounded-2xl font-black uppercase tracking-widest text-xs shadow-lg shadow-emerald-50 hover:bg-emerald-700 transition-all active:scale-95"
+            className="flex-[2] py-3 bg-emerald-600 text-white rounded-2xl font-black uppercase tracking-widest text-xs shadow-lg shadow-emerald-50 hover:bg-emerald-700 transition-all active:scale-95"
           >
             {t(lang, 'booking.save')}
           </button>
@@ -221,6 +255,7 @@ export function BookingDetailsModal({
   currency, lang, tz, rooms,
 }: BookingDetailsModalProps) {
   const [editMode, setEditMode] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<{ message: string; action: () => void; color?: string } | null>(null);
 
   const nightsFromBooking = Math.round(
     (new Date(booking.checkOut).getTime() - new Date(booking.checkIn).getTime()) / 86400000
@@ -259,65 +294,65 @@ export function BookingDetailsModal({
   if (editMode) {
     return (
       <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-[200] p-4">
-        <form onSubmit={handleSave} dir={lang === 'ar' ? 'rtl' : 'ltr'} className="relative bg-white rounded-[2.5rem] max-w-lg w-full p-10 shadow-3xl max-h-[90vh] overflow-y-auto">
-          <button type="button" onClick={() => setEditMode(false)} className="absolute top-5 end-5 p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all">
+        <form onSubmit={handleSave} dir={lang === 'ar' ? 'rtl' : 'ltr'} className="relative bg-white rounded-[2.5rem] max-w-lg w-full p-6 sm:p-10 shadow-3xl max-h-[95vh] overflow-y-auto">
+          <button type="button" onClick={() => setEditMode(false)} className="absolute top-4 end-4 p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all">
             <X size={20} weight="bold" />
           </button>
-          <h2 className="text-2xl font-black text-slate-900 tracking-tight mb-8">{t(lang, 'booking.editTitle')}</h2>
-          <div className="space-y-4">
+          <h2 className="text-2xl font-black text-slate-900 tracking-tight mb-5">{t(lang, 'booking.editTitle')}</h2>
+          <div className="space-y-3">
             <input
-              className="w-full bg-slate-50 border-slate-100 rounded-2xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-emerald-500 transition-all"
+              className="w-full bg-slate-50 border-slate-100 rounded-2xl px-4 py-2.5 text-sm font-bold focus:ring-2 focus:ring-emerald-500 transition-all"
               placeholder={t(lang, 'booking.guestName')}
               value={f.guestName}
               onChange={(e) => setF({ ...f, guestName: e.target.value })}
             />
-            <div className="flex gap-4">
+            <div className="flex gap-3">
               <input
-                className="w-1/2 bg-slate-50 border-slate-100 rounded-2xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-emerald-500 transition-all"
+                className="w-1/2 bg-slate-50 border-slate-100 rounded-2xl px-4 py-2.5 text-sm font-bold focus:ring-2 focus:ring-emerald-500 transition-all"
                 placeholder={t(lang, 'booking.city')}
                 value={f.city}
                 onChange={(e) => setF({ ...f, city: e.target.value })}
               />
               <input
-                className="w-1/2 bg-slate-50 border-slate-100 rounded-2xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-emerald-500 transition-all"
+                className="w-1/2 bg-slate-50 border-slate-100 rounded-2xl px-4 py-2.5 text-sm font-bold focus:ring-2 focus:ring-emerald-500 transition-all"
                 placeholder={t(lang, 'booking.phone')}
                 value={f.phone}
                 onChange={(e) => setF({ ...f, phone: e.target.value })}
               />
             </div>
-            <div className="flex gap-4">
+            <div className="flex gap-3">
               <div className="w-1/2">
-                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2 block px-2">{t(lang, 'booking.checkIn')}</label>
+                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1 block px-2">{t(lang, 'booking.checkIn')}</label>
                 <input
                   type="date"
-                  className="w-full bg-slate-50 border-slate-100 rounded-2xl px-4 py-3 text-sm font-black focus:ring-2 focus:ring-emerald-500 transition-all"
+                  className="w-full bg-slate-50 border-slate-100 rounded-2xl px-4 py-2.5 text-sm font-black focus:ring-2 focus:ring-emerald-500 transition-all"
                   value={f.checkIn}
                   onChange={(e) => setF({ ...f, checkIn: e.target.value })}
                 />
               </div>
               <div className="w-1/2">
-                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2 block px-2">{t(lang, 'booking.nights')}</label>
+                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1 block px-2">{t(lang, 'booking.nights')}</label>
                 <div
                   className="flex items-center bg-slate-50 border border-slate-100 rounded-2xl overflow-hidden select-none"
                   onWheel={(e) => setF({ ...f, nights: Math.max(1, f.nights + (e.deltaY < 0 ? 1 : -1)) })}
                 >
                   <button type="button" onClick={() => setF({ ...f, nights: Math.max(1, f.nights - 1) })}
-                    className="px-4 py-3.5 text-slate-400 hover:text-slate-900 hover:bg-slate-200 transition-colors">
+                    className="px-3 py-2.5 text-slate-400 hover:text-slate-900 hover:bg-slate-200 transition-colors">
                     <Minus size={18} weight="bold" />
                   </button>
                   <span className="flex-1 text-center text-sm font-black text-slate-900 tabular-nums">{f.nights}</span>
                   <button type="button" onClick={() => setF({ ...f, nights: f.nights + 1 })}
-                    className="px-4 py-3.5 text-slate-400 hover:text-slate-900 hover:bg-slate-200 transition-colors">
+                    className="px-3 py-2.5 text-slate-400 hover:text-slate-900 hover:bg-slate-200 transition-colors">
                     <Plus size={18} weight="bold" />
                   </button>
                 </div>
               </div>
             </div>
-            <div className="flex gap-4">
+            <div className="flex gap-3">
               <div className="w-1/2">
-                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2 block px-2">{t(lang, 'booking.room')}</label>
+                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1 block px-2">{t(lang, 'booking.room')}</label>
                 <select
-                  className="w-full bg-slate-50 border-slate-100 rounded-2xl px-4 py-2 text-sm font-black focus:ring-2 focus:ring-emerald-500 transition-all"
+                  className="w-full bg-slate-50 border-slate-100 rounded-2xl px-4 py-2.5 text-sm font-black focus:ring-2 focus:ring-emerald-500 transition-all"
                   value={f.room}
                   onChange={(e) => setF({ ...f, room: e.target.value })}
                 >
@@ -327,26 +362,26 @@ export function BookingDetailsModal({
                 </select>
               </div>
               <div className="w-1/2">
-                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2 block px-2">{t(lang, 'booking.priceNight')}</label>
+                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1 block px-2">{t(lang, 'booking.priceNight')}</label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-slate-300 text-[10px] font-black uppercase">{currency}</div>
                   <input
                     type="number"
-                    className="w-full bg-slate-50 border-slate-100 rounded-2xl pl-12 pr-4 py-3 text-sm font-black focus:ring-2 focus:ring-emerald-500 transition-all"
+                    className="w-full bg-slate-50 border-slate-100 rounded-2xl pl-12 pr-4 py-2.5 text-sm font-black focus:ring-2 focus:ring-emerald-500 transition-all"
                     value={f.nightPrice}
                     onChange={(e) => setF({ ...f, nightPrice: parseInt(e.target.value) || 0 })}
                   />
                 </div>
               </div>
             </div>
-            <div className="bg-slate-900 rounded-[2rem] p-6 text-white">
-              <div className="grid grid-cols-2 gap-4">
+            <div className="bg-slate-900 rounded-2xl p-4 text-white">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-1">{t(lang, 'booking.total')}</p>
-                  <p className="text-2xl font-black">{currency} {totalPrice}</p>
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-0.5">{t(lang, 'booking.total')}</p>
+                  <p className="text-xl font-black">{currency} {totalPrice}</p>
                 </div>
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-1">{t(lang, 'booking.deposit')}</p>
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-0.5">{t(lang, 'booking.deposit')}</p>
                   <input
                     type="number"
                     className="w-full bg-slate-800/50 border-0 rounded-xl px-3 py-1 text-lg font-black focus:ring-1 focus:ring-emerald-500 transition-all"
@@ -354,20 +389,20 @@ export function BookingDetailsModal({
                     onChange={(e) => setF({ ...f, deposit: parseInt(e.target.value) || 0 })}
                   />
                 </div>
-                <div className="col-span-2 pt-4 border-t border-slate-800 flex justify-between items-center">
+                <div className="col-span-2 pt-3 border-t border-slate-800 flex justify-between items-center">
                   <p className="text-xs font-black uppercase tracking-widest text-emerald-400">{t(lang, 'booking.remaining')}</p>
-                  <p className="text-3xl font-black">{currency} {remaining}</p>
+                  <p className="text-2xl font-black">{currency} {remaining}</p>
                 </div>
               </div>
             </div>
           </div>
-          <div className="mt-8 flex gap-4">
+          <div className="mt-5 flex gap-3">
             <button type="button" onClick={() => setEditMode(false)}
-              className="flex-1 py-4 border-2 border-slate-200 text-slate-500 rounded-2xl font-black uppercase tracking-widest text-xs hover:border-red-200 hover:bg-red-50 hover:text-red-500 transition-all">
+              className="flex-1 py-3 border-2 border-slate-200 text-slate-500 rounded-2xl font-black uppercase tracking-widest text-xs hover:border-red-200 hover:bg-red-50 hover:text-red-500 transition-all">
               {t(lang, 'booking.cancel')}
             </button>
             <button type="submit"
-              className="flex-[2] py-4 bg-emerald-600 text-white rounded-2xl font-black uppercase tracking-widest text-xs shadow-lg shadow-emerald-50 hover:bg-emerald-700 transition-all active:scale-95">
+              className="flex-[2] py-3 bg-emerald-600 text-white rounded-2xl font-black uppercase tracking-widest text-xs shadow-lg shadow-emerald-50 hover:bg-emerald-700 transition-all active:scale-95">
               {t(lang, 'booking.save')}
             </button>
           </div>
@@ -438,27 +473,32 @@ export function BookingDetailsModal({
           <div className="grid grid-cols-2 gap-3">
             {booking.status !== 'CANCELED' ? (
               <button
-                onClick={() => {
-                  if (confirm(t(lang, 'booking.confirmCancel'))) onUpdateStatus(booking.id!, 'CANCELED');
-                }}
+                onClick={() => setConfirmAction({
+                  message: t(lang, 'booking.confirmCancel'),
+                  action: () => onUpdateStatus(booking.id!, 'CANCELED'),
+                  color: 'bg-amber-500 hover:bg-amber-600',
+                })}
                 className="py-3 bg-amber-500 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-amber-600 active:scale-95 transition-all flex items-center justify-center gap-1.5"
               >
                 <Prohibit size={14} weight="bold" /> {t(lang, 'booking.cancelBooking')}
               </button>
             ) : (
               <button
-                onClick={() => {
-                  if (confirm(t(lang, 'booking.confirmReactivate'))) onUpdateStatus(booking.id!, 'UPCOMING');
-                }}
+                onClick={() => setConfirmAction({
+                  message: t(lang, 'booking.confirmReactivate'),
+                  action: () => onUpdateStatus(booking.id!, 'UPCOMING'),
+                  color: 'bg-emerald-500 hover:bg-emerald-600',
+                })}
                 className="py-3 bg-emerald-500 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-emerald-600 active:scale-95 transition-all flex items-center justify-center gap-1.5"
               >
                 <Check size={14} weight="bold" /> {t(lang, 'booking.reactivate')}
               </button>
             )}
             <button
-              onClick={() => {
-                if (confirm(t(lang, 'booking.confirmDelete'))) onDelete(booking.id!);
-              }}
+              onClick={() => setConfirmAction({
+                message: t(lang, 'booking.confirmDelete'),
+                action: () => onDelete(booking.id!),
+              })}
               className="py-3 bg-red-500 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-red-600 active:scale-95 transition-all flex items-center justify-center gap-1.5"
             >
               <Trash size={14} weight="bold" /> {t(lang, 'booking.delete')}
@@ -466,6 +506,17 @@ export function BookingDetailsModal({
           </div>
         </div>
       </div>
+
+      {confirmAction && (
+        <ConfirmModal
+          message={confirmAction.message}
+          confirmColor={confirmAction.color}
+          confirmLabel={t(lang, 'booking.yes')}
+          cancelLabel={t(lang, 'booking.no')}
+          onConfirm={() => { confirmAction.action(); setConfirmAction(null); }}
+          onCancel={() => setConfirmAction(null)}
+        />
+      )}
     </div>
   );
 }

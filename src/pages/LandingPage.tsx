@@ -69,7 +69,7 @@ const content = {
       heading: 'Simple, honest pricing.',
       sub: 'One plan, all features, infinite possibilities. No hidden fees or per-user charges.',
       plan: 'Professional Plan',
-      perMonth: '/mo',
+      perYear: '/Year',
       items: ['Unlimited Bookings', 'Up to 50 Rooms', 'Full Reporting Suite', 'Multi-Language (AR/EN)', 'Desktop PWA Install', 'Advanced 5-Year Calendar'],
       cta: 'Start Your 14-Day Free Trial',
       note: 'Cancel anytime. No lock-in contracts.',
@@ -103,8 +103,8 @@ const content = {
     dir: 'rtl' as const,
     nav: { features: 'المميزات', pricing: 'الأسعار', login: 'دخول', startTrial: 'جرب مجانا' },
     hero: {
-      badge: 'جيل جديد من إدارة العقارات',
-      headline: 'إدارة العقارات',
+      badge: 'جيل جديد من إدارة الحجوزات',
+      headline: 'إدارة الحجوزات',
       italic: 'أصبحت أبسط.',
       sub: 'وسّع نطاق فندقك أو شققك أو إيجاراتك السياحية مع تقويمنا الفائق السرعة لـ 5 سنوات، والفوترة التلقائية، والتحليلات المالية المتعمقة.',
       placeholder: 'أدخل اسم الفندق أو مساحة العمل...',
@@ -157,13 +157,13 @@ const content = {
       heading: 'أسعار بسيطة وصريحة.',
       sub: 'خطة واحدة، جميع المميزات، إمكانيات لا نهائية. لا رسوم خفية أو رسوم لكل مستخدم.',
       plan: 'الخطة المهنية',
-      perMonth: '/شهر',
+      perYear: '/سنة',
       items: ['حجوزات غير محدودة', 'حتى 50 غرفة', 'مجموعة تقارير كاملة', 'متعدد اللغات (AR/EN)', 'تثبيت PWA للكمبيوتر', 'تقويم 5 سنوات متقدم'],
       cta: 'ابدأ تجربتك المجانية لـ 14 يوم',
       note: 'إلغاء في أي وقت. لا عقود ملزمة.',
     },
     footer: {
-      tagline: 'نظام إدارة العقارات الأكثر سهولة في العالم للمضيفين المعاصرين ومديري العقارات المحترفين.',
+      tagline: 'نظام إدارة الحجوزات الأكثر سهولة في العالم للمضيفين المعاصرين ومديري الحجوزات المحترفين.',
       legal: 'قانوني', support: 'الدعم', privacy: 'الخصوصية', terms: 'الشروط',
       whatsapp: 'دعم واتساب',
       rights: `© ${new Date().getFullYear()} حجوزاتك PMS. جميع الحقوق محفوظة.`,
@@ -219,15 +219,15 @@ function applySEO(lang: Lang) {
   const isAr = lang === 'ar';
 
   const title = isAr
-    ? 'حجوزاتك PMS – نظام إدارة الفنادق والعقارات | برنامج الحجوزات العربي'
+    ? 'حجوزاتك PMS – نظام إدارة الفنادق والحجوزات | برنامج الحجوزات العربي'
     : 'Hujuzatk PMS – Hotel & Property Management System | Free 14-Day Trial';
 
   const description = isAr
-    ? 'حجوزاتك هو نظام إدارة الفنادق والعقارات الأحدث جيلاً. تقويم حجوزات 5 سنوات، فوترة تلقائية، تحليلات مالية متعمقة، دعم عربي كامل RTL. جرّب مجاناً 14 يوم بدون بطاقة ائتمان.'
+    ? 'حجوزاتك هو نظام إدارة الفنادق والحجوزات الأحدث جيلاً. تقويم حجوزات 5 سنوات، فوترة تلقائية، تحليلات مالية متعمقة، دعم عربي كامل RTL. جرّب مجاناً 14 يوم بدون بطاقة ائتمان.'
     : 'Hujuzatk is the next-gen Hotel & Property Management System for hotels, apartments, and vacation rentals. 5-year calendar, automated PDF invoicing, financial analytics, native Arabic RTL. Start free 14-day trial.';
 
   const keywords = isAr
-    ? 'نظام إدارة الفنادق, برنامج إدارة العقارات, نظام الحجوزات الفندقية, PMS عربي, نظام إدارة الشقق الفندقية, برنامج حجز الغرف, نظام إدارة الإيجارات, برنامج فندقي عمان, نظام PMS الخليج, إدارة العقارات بالعربية, برنامج فواتير فندقية, نظام إشغال الفنادق, برنامج حجوزات سياحية, إدارة الفنادق السعودية, نظام فندقي الإمارات, برنامج إدارة الشقق المفروشة'
+    ? 'نظام إدارة الفنادق, برنامج إدارة الحجوزات, نظام الحجوزات الفندقية, PMS عربي, نظام إدارة الشقق الفندقية, برنامج حجز الغرف, نظام إدارة الإيجارات, برنامج فندقي عمان, نظام PMS الخليج, إدارة الحجوزات بالعربية, برنامج فواتير فندقية, نظام إشغال الفنادق, برنامج حجوزات سياحية, إدارة الفنادق السعودية, نظام فندقي الإمارات, برنامج إدارة الشقق المفروشة'
     : 'hotel management software, property management system, PMS software, hotel booking software, vacation rental management, apartment management system, hotel reservation system, Arabic hotel PMS, hotel software Oman, property management UAE, Saudi Arabia hotel software, Middle East PMS, hospitality management software, hotel invoicing software, 5-year booking calendar, occupancy tracking software, room booking system, hotel analytics software, PWA hotel app';
 
   document.title = title;
@@ -267,7 +267,7 @@ function applySEO(lang: Lang) {
     '@context': 'https://schema.org',
     '@type': 'SoftwareApplication',
     name: 'Hujuzatk PMS',
-    alternateName: 'حجوزاتك - نظام إدارة العقارات',
+    alternateName: 'حجوزاتك - نظام إدارة الحجوزات',
     url: 'https://hujuzatk.com',
     applicationCategory: 'BusinessApplication',
     applicationSubCategory: 'Hotel Management Software',
@@ -309,7 +309,7 @@ function applySEO(lang: Lang) {
     '@type': 'FAQPage',
     mainEntity: isAr
       ? [
-          { '@type': 'Question', name: 'ما هو نظام حجوزاتك PMS؟', acceptedAnswer: { '@type': 'Answer', text: 'حجوزاتك هو نظام إدارة العقارات والفنادق المبني على السحابة، مصمم للفنادق والشقق والإيجارات السياحية. يتميز بتقويم حجوزات لـ5 سنوات، وفوترة تلقائية، وتحليلات مالية، ودعم كامل للغة العربية والإنجليزية.' } },
+          { '@type': 'Question', name: 'ما هو نظام حجوزاتك PMS؟', acceptedAnswer: { '@type': 'Answer', text: 'حجوزاتك هو نظام إدارة الحجوزات والفنادق المبني على السحابة، مصمم للفنادق والشقق والإيجارات السياحية. يتميز بتقويم حجوزات لـ5 سنوات، وفوترة تلقائية، وتحليلات مالية، ودعم كامل للغة العربية والإنجليزية.' } },
           { '@type': 'Question', name: 'هل حجوزاتك يدعم اللغة العربية؟', acceptedAnswer: { '@type': 'Answer', text: 'نعم، يدعم حجوزاتك اللغة العربية بشكل كامل مع تخطيط RTL أصيل، وتنسيقات التواريخ العربية، وعملة OMR، وواجهة كاملة من اليمين إلى اليسار.' } },
           { '@type': 'Question', name: 'كم تكلفة حجوزاتك؟', acceptedAnswer: { '@type': 'Answer', text: 'تبلغ تكلفة الخطة المهنية 45 ريال عُماني شهرياً، وتشمل حجوزات غير محدودة وحتى 50 غرفة وتقارير كاملة ودعم متعدد اللغات وتقويم 5 سنوات. تتوفر تجربة مجانية لمدة 14 يوماً بدون بطاقة ائتمان.' } },
           { '@type': 'Question', name: 'هل حجوزاتك متاح كتطبيق جوال؟', acceptedAnswer: { '@type': 'Answer', text: 'حجوزاتك هو تطبيق ويب تقدمي (PWA) يمكن تثبيته على أي جهاز – آيفون أو أندرويد أو سطح المكتب – مباشرة من المتصفح دون الحاجة لتنزيل من متجر التطبيقات.' } },
@@ -348,12 +348,19 @@ export function LandingPage() {
   const c = content[lang];
 
   const handleOpenWorkspace = async () => {
-    if (!workspaceName.trim()) return;
+    if (!workspaceName.trim()) {
+      navigate('/user?tab=register');
+      return;
+    }
     const slug = workspaceName.trim().replace(/\s+/g, '-');
-    const exists = await authService.checkWorkspaceExists(slug);
-    if (exists) {
-      navigate(`/${slug}`);
-    } else {
+    try {
+      const exists = await authService.checkWorkspaceExists(slug);
+      if (exists) {
+        navigate(`/${slug}`);
+      } else {
+        navigate(`/user?workspace=${encodeURIComponent(workspaceName)}&tab=register`);
+      }
+    } catch {
       navigate(`/user?workspace=${encodeURIComponent(workspaceName)}&tab=register`);
     }
   };
@@ -649,9 +656,9 @@ export function LandingPage() {
               <div className="rounded-[2.5rem] bg-slate-50 p-12 text-center">
                 <p className="text-sm font-black uppercase tracking-[0.2em] text-emerald-600 mb-4">{c.pricing.plan}</p>
                 <div className="flex items-center justify-center gap-1">
-                  <span className="text-3xl font-bold text-slate-400 uppercase">OMR</span>
-                  <span className="text-7xl font-black text-slate-900">45</span>
-                  <span className="text-xl font-bold text-slate-400">{c.pricing.perMonth}</span>
+                  <span className="text-3xl font-bold text-slate-400 uppercase">USD</span>
+                  <span className="text-7xl font-black text-slate-900">40</span>
+                  <span className="text-xl font-bold text-slate-400">{c.pricing.perYear}</span>
                 </div>
                 <ul className="mt-10 space-y-4 text-left">
                   {c.pricing.items.map((li, i) => (

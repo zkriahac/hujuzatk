@@ -72,7 +72,7 @@ export const dataService = {
     try {
       const { data } = await apolloClient.mutate({
         mutation: gql`
-          mutation UpdateBooking($id: ID!, $input: BookingInput!) {
+          mutation UpdateBooking($id: ID!, $input: UpdateBookingInput!) {
             updateBooking(id: $id, input: $input) {
               id tenantId guestName guestEmail guestPhone city room
               checkIn checkOut nights nightPrice totalPrice tax deposit remaining

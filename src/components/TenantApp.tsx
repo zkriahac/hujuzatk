@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { format, addMonths, differenceInCalendarDays, differenceInDays, eachMonthOfInterval, endOfMonth, parseISO, startOfMonth, startOfToday } from 'date-fns';
+import { CaretDown } from 'phosphor-react';
 import { authService, type SessionUser } from '../lib/authService';
 import { dataService } from '../lib/dataService';
 import { getDir, type Language } from '../lib/i18n';
@@ -25,8 +26,10 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
   const tz = session.tenant.timezone || 'Asia/Muscat';
   const currency = session.tenant.currency || 'OMR';
   const dir = getDir(lang);
+  const isRtl = dir === 'rtl';
 
   const [currentView, setCurrentView] = useState<View>(session.isAdmin ? 'admin' : 'calendar');
+  const [showViewMenu, setShowViewMenu] = useState(false);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loadedMonths, setLoadedMonths] = useState<Set<string>>(new Set());
   const [selectedDateStr, setSelectedDateStr] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
@@ -328,26 +331,45 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
 
   return (
     <div className={cn('min-h-screen bg-slate-50 text-slate-900 font-sans selection:bg-emerald-100', dir === 'rtl' && 'rtl')} dir={dir}>
-      <nav className="bg-white border-b border-slate-200 sticky top-0 z-[100] h-14 backdrop-blur-xl bg-white/80">
-        <div className="max-w-full mx-auto px-3 sm:px-6 flex justify-between h-full items-center gap-2">
+      <nav className="bg-white border-b border-slate-200 sticky top-0 z-100 h-12 sm:h-14">
+        <div className="px-3 sm:px-6 flex justify-between h-full items-center gap-2">
           <div className="flex items-center gap-2 min-w-0">
-            <div className="w-9 h-9 shrink-0 rounded-xl flex items-center justify-center text-white font-bold shadow-lg shadow-emerald-100">
-              <div className="flex items-center justify-center w-full h-full rounded-xl">
-                <img src="/logo.svg" alt="Plus Logo" style={{ width: 40, height: 40 }} />
-              </div>
-            </div>
-            <div className="flex flex-col min-w-0">
-              <span className="font-black text-sm tracking-tight truncate max-w-[120px] sm:max-w-none">{session.tenant.name || 'Hujuzatk Workspace'}</span>
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter hidden sm:block">{t(lang, 'misc.projectname')} PMS</span>
-            </div>
+            <img src="/logo.svg" alt="Logo" className="w-8 h-8 sm:w-9 sm:h-9 shrink-0" />
+            <span className="font-black text-sm tracking-tight truncate max-w-[100px] sm:max-w-none">{session.tenant.name || 'Hujuzatk'}</span>
+            {!session.isAdmin && <span className="hidden sm:inline">{subscriptionBadge}</span>}
           </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <div className="hidden lg:flex items-center gap-2 text-xs">
-              {session.isAdmin ? '' : subscriptionBadge}
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            <div className="relative">
+              <button
+                onClick={() => setShowViewMenu(v => !v)}
+                className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 text-[10px] sm:text-[11px] font-black uppercase tracking-widest hover:bg-emerald-100 transition-colors"
+              >
+                {t(lang, `nav.${currentView}`)}
+                <CaretDown size={11} weight="bold" className={cn('transition-transform', showViewMenu && 'rotate-180')} />
+              </button>
+              {showViewMenu && (
+                <>
+                  <div className="fixed inset-0 z-99" onClick={() => setShowViewMenu(false)} />
+                  <div className={cn('absolute top-full mt-1 z-100 bg-white rounded-2xl border border-slate-200 shadow-2xl py-1 min-w-[130px]', isRtl ? 'left-0' : 'right-0')}>
+                    {(session.isAdmin ? ['admin'] as View[] : ['calendar', 'list', 'reports', 'settings'] as View[]).map((v) => (
+                      <button
+                        key={v}
+                        onClick={() => { setCurrentView(v); setShowViewMenu(false); }}
+                        className={cn(
+                          'w-full px-4 py-2.5 text-[11px] font-black uppercase tracking-widest transition-colors text-start',
+                          currentView === v ? 'text-emerald-600 bg-emerald-50' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'
+                        )}
+                      >
+                        {t(lang, `nav.${v}`)}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
             <button
               onClick={handleLogout}
-              className="text-[11px] font-black uppercase text-slate-400 hover:text-red-600 transition-colors whitespace-nowrap"
+              className="text-[10px] sm:text-[11px] font-black uppercase text-slate-400 hover:text-red-600 transition-colors whitespace-nowrap"
             >
               {t(lang, 'misc.logout')}
             </button>
@@ -355,24 +377,7 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
         </div>
       </nav>
 
-      <div className="bg-white border-b border-slate-200 sticky top-14 z-[90] h-10 overflow-x-auto overflow-y-hidden">
-        <div className="container mx-auto px-3 sm:px-6 flex h-full items-center gap-1 scrollbar-hide">
-          {(session.isAdmin ? ['admin'] as View[] : ['calendar', 'list', 'reports', 'settings'] as View[]).map((v) => (
-            <button
-              key={v}
-              onClick={() => setCurrentView(v)}
-              className={cn(
-                'px-4 h-full text-xs font-black uppercase tracking-widest transition-all border-b-2',
-                currentView === v ? 'border-emerald-600 text-emerald-600 bg-emerald-50/30' : 'border-transparent text-slate-400 hover:text-slate-600'
-              )}
-            >
-              {t(lang, `nav.${v}`)}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <main className="container mx-auto p-4 pt-4">
+      <main className="container mx-auto p-2 pt-2">
         {currentView === 'calendar' && (
           <CalendarView
             rooms={rooms}
@@ -403,7 +408,6 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
             setListSearchTerm={setListSearchTerm}
             setShowAddModal={setShowAddModal}
             setSelectedBooking={setSelectedBooking}
-            setShowInvoiceModal={setShowInvoiceModal}
             listContainerRef={listContainerRef}
             currency={currency}
             lang={lang}

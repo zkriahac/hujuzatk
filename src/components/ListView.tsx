@@ -1,5 +1,5 @@
 import { parseISO, isSameDay, startOfToday } from 'date-fns';
-import { MagnifyingGlass, Users, FileText } from 'phosphor-react';
+import { MagnifyingGlass, Users, Eye } from 'phosphor-react';
 import { cn } from '../utils/cn';
 import { t, type Language } from '../lib/i18n';
 import { formatTz } from '../utils/formatTz';
@@ -17,7 +17,6 @@ interface ListViewProps {
   setListSearchTerm: (s: string) => void;
   setShowAddModal: (v: boolean) => void;
   setSelectedBooking: (b: any) => void;
-  setShowInvoiceModal: (v: boolean) => void;
   listContainerRef: React.RefObject<HTMLDivElement | null>;
   currency: string;
   lang: Language;
@@ -36,7 +35,6 @@ export default function ListView({
   setListSearchTerm,
   setShowAddModal,
   setSelectedBooking,
-  setShowInvoiceModal,
   listContainerRef,
   currency,
   lang,
@@ -45,13 +43,13 @@ export default function ListView({
   return (
     <div className="space-y-6">
       <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col lg:flex-row gap-6 items-center justify-between">
-        <div className="flex gap-1 bg-slate-100 p-1.5 rounded-[1.25rem] w-full lg:w-auto">
+        <div className="flex gap-1 bg-slate-100 p-1.5 rounded-[1.25rem] w-full lg:w-auto overflow-x-auto">
           {(['upcoming', 'active', 'past', 'canceled', 'all'] as ListFilter[]).map((f) => (
             <button
               key={f}
               onClick={() => setListFilter(f)}
               className={cn(
-                'flex-1 lg:flex-none px-5 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all',
+                'flex-none px-5 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all whitespace-nowrap',
                 listFilter === f ? 'bg-white text-slate-900 shadow-md' : 'text-slate-400 hover:text-slate-600',
               )}
             >
@@ -87,14 +85,14 @@ export default function ListView({
       >
         <table className="w-full text-sm">
           <thead>
-            <tr className="bg-slate-50 border-b border-slate-100 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
-              <th className="px-6 py-5 text-left">{t(lang, 'list.guest')}</th>
-              <th className="px-6 py-5 text-left">{t(lang, 'list.room')}</th>
-              <th className="px-6 py-5 text-left">{t(lang, 'list.dates')}</th>
-              <th className="px-6 py-5 text-right">{t(lang, 'list.amount')}</th>
-              <th className="px-6 py-5 text-right">{t(lang, 'list.balance')}</th>
-              <th className="px-6 py-5 text-center">{t(lang, 'list.status')}</th>
-              <th className="px-6 py-5" />
+            <tr className="bg-slate-50 border-b border-slate-100 text-[11px] font-black uppercase tracking-[0.2em] text-slate-400">
+              <th className="px-4 py-3 text-left">{t(lang, 'list.guest')}</th>
+              <th className="px-4 py-3 text-left w-16">{t(lang, 'list.room')}</th>
+              <th className="px-4 py-3 text-left min-w-40">{t(lang, 'list.dates')}</th>
+              <th className="px-4 py-3 text-right">{t(lang, 'list.amount')}</th>
+              <th className="px-4 py-3 text-right">{t(lang, 'list.balance')}</th>
+              <th className="px-4 py-3 text-center">{t(lang, 'list.status')}</th>
+              <th className="px-4 py-3" />
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-50">
@@ -136,36 +134,33 @@ export default function ListView({
                     key={b.id}
                     className={cn('group hover:bg-slate-50 transition-colors', b.status === 'CANCELED' && 'opacity-60')}
                   >
-                    <td className="px-6 py-5">
-                      <div className="font-black text-slate-900 leading-tight">{b.guestName}</div>
-                      <div className="text-[10px] font-bold text-slate-400 mt-0.5 tracking-tight uppercase">{b.guestPhone}</div>
+                    <td className="px-4 py-3">
+                      <div className="font-black text-slate-900 text-sm leading-tight">{b.guestName}</div>
+                      <div className="text-xs font-bold text-slate-400 mt-0.5 tracking-tight uppercase">{b.guestPhone}</div>
                     </td>
-                    <td className="px-6 py-5 font-black text-slate-900">{b.room}</td>
-                    <td className="px-6 py-5">
-                      <div className="font-black text-slate-700 text-[11px] uppercase tracking-tighter">{formatTz(b.checkIn, 'dd MMM yyyy', tz, lang)}</div>
-                      <div className="text-[10px] font-black text-slate-300 uppercase tracking-tighter">
+                    <td className="px-4 py-3 font-black text-slate-900 text-sm">{b.room}</td>
+                    <td className="px-4 py-3">
+                      <div className="font-black text-slate-700 text-xs uppercase tracking-tighter">{formatTz(b.checkIn, 'dd MMM yyyy', tz, lang)}</div>
+                      <div className="text-[11px] font-black text-slate-500 uppercase tracking-tighter">
                         {b.nights} {t(lang, 'list.nights')} · {formatTz(b.checkOut, 'dd MMM', tz, lang)}
                       </div>
                     </td>
-                    <td className="px-6 py-5 text-right font-black text-slate-900">
+                    <td className="px-4 py-3 text-right font-black text-slate-900 text-sm">
                       {currency} {b.totalPrice}
                     </td>
-                    <td className={cn('px-6 py-5 text-right font-black', b.remaining > 0 ? 'text-red-500' : 'text-emerald-600')}>
+                    <td className={cn('px-4 py-3 text-right font-black text-sm', b.remaining > 0 ? 'text-red-500' : 'text-emerald-600')}>
                       {currency} {b.remaining}
                     </td>
-                    <td className="px-6 py-5 text-center">
-                      <span className={cn('px-2.5 py-1 rounded-[10px] text-[10px] font-black uppercase tracking-widest', statusColor)}>{statusText}</span>
+                    <td className="px-4 py-3 text-center">
+                      <span className={cn('inline-block px-3 py-1 rounded-[10px] text-[10px] font-black uppercase tracking-wider whitespace-nowrap', statusColor)}>{statusText}</span>
                     </td>
-                    <td className="px-6 py-5 text-right">
+                    <td className="px-4 py-3 text-right">
                       <button
-                        onClick={() => {
-                          setSelectedBooking(b);
-                          setShowInvoiceModal(true);
-                        }}
+                        onClick={() => setSelectedBooking(b)}
                         className="h-10 w-10 flex items-center justify-center rounded-xl text-emerald-600 hover:bg-emerald-50 transition-all"
                         title={t(lang, 'list.view')}
                       >
-                        <FileText size={20} weight="bold" />
+                        <Eye size={20} weight="bold" />
                       </button>
                     </td>
                   </tr>

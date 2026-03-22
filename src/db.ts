@@ -21,6 +21,8 @@ export interface Tenant {
   validUntil?: string; // YYYY-MM-DD, last day of access (for trial or paid)
   createdAt: string; // ISO
   isAdmin?: boolean;
+  defaultNightPrice?: number;
+  defaultTax?: number;
   // Local-only password hash for Dexie mode (Supabase Auth is used in cloud mode)
   passwordHash?: string;
 }
@@ -78,6 +80,13 @@ export class MyDatabase extends Dexie {
           if (!booking.status) booking.status = 'confirmed';
           if (!booking.tenantId) booking.tenantId = 'local-single';
         });
+    });
+
+    // Add name index to tenants for workspace lookup (v4)
+    this.version(4).stores({
+      bookings:
+        '++id, tenantId, guestName, room, checkIn, checkOut, createdAt, status',
+      tenants: '++id, uuid, email, name, subscriptionStatus, isAdmin',
     });
   }
 }

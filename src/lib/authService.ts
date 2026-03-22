@@ -34,6 +34,8 @@ function convertGraphQLTenantToLocal(graphqlTenant: any): Tenant {
     validUntil: graphqlTenant.validUntil,
     createdAt: graphqlTenant.createdAt,
     isAdmin: graphqlTenant.isAdmin || false,
+    defaultNightPrice: graphqlTenant.settings?.defaultNightPrice ?? 50,
+    defaultTax: graphqlTenant.settings?.defaultTax ?? 0,
   };
 }
 

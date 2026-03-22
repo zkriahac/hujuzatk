@@ -208,7 +208,7 @@ export const CREATE_BOOKING_MUTATION = gql`
 `;
 
 export const UPDATE_BOOKING_MUTATION = gql`
-  mutation UpdateBooking($id: ID!, $input: BookingInput!) {
+  mutation UpdateBooking($id: ID!, $input: UpdateBookingInput!) {
     updateBooking(id: $id, input: $input) {
       id
       guestName

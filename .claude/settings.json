@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -E \"\\\\.ts$|\\\\.prisma$\")",
+      "Bash(ls -la /opt/homebrew/var/www/booking-app-v1-graphql/elysia-server/*.ts)",
+      "Bash(grep -r \"cancelBooking\\\\|CANCEL_BOOKING\" /opt/homebrew/var/www/booking-app-v1-graphql --include=*.ts --include=*.tsx)",
+      "Bash(grep -E \"\\\\.\\(ts|tsx\\)$\")",
+      "Bash(curl -s -X POST http://localhost:4000/graphql -H 'Content-Type: application/json' -d '{\"\"\"\"query\"\"\"\":\"\"\"\"{ __schema { types { name } } }\"\"\"\"}')",
+      "Bash(nc -z -w 5 db.fjxexvotksxsyxgkekgs.supabase.co 5432)"
+    ]
+  }
+}

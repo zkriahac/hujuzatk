@@ -166,7 +166,7 @@ export const typeDefs = `
     addRoom(name: String!): Tenant!
     removeRoom(roomId: String!): Tenant!
     createBooking(input: BookingInput!): Booking!
-    updateBooking(id: ID!, input: BookingInput!): Booking!
+    updateBooking(id: ID!, input: UpdateBookingInput!): Booking!
     deleteBooking(id: ID!): Boolean!
     bulkImportBookings(bookings: [BookingInput!]!): [Booking!]!
     bulkDeleteBookings(ids: [ID!]!): Boolean!
@@ -214,6 +214,20 @@ export const typeDefs = `
     checkOut: DateTime!
     nightPrice: Float!
     deposit: Float!
+    notes: String
+    status: BookingStatus
+  }
+
+  input UpdateBookingInput {
+    guestName: String
+    guestEmail: String
+    guestPhone: String
+    city: String
+    room: String
+    checkIn: DateTime
+    checkOut: DateTime
+    nightPrice: Float
+    deposit: Float
     notes: String
     status: BookingStatus
   }
