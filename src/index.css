@@ -1,5 +1,22 @@
 @import "tailwindcss";
 
+html {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+body {
+  height: 100%;
+  margin: 0;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+#root {
+  min-height: 100%;
+}
+
 [dir="rtl"],
 [dir="rtl"] * {
   font-family: 'Cairo', sans-serif;

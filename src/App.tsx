@@ -1,12 +1,18 @@
+import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { LandingPage, PrivacyPolicy, TermsOfService } from './pages/LandingPage';
 import { UserAuthShell, WorkspaceShell } from './pages/AuthShell';
 import { SuperAdminShell } from './pages/SuperAdminShell';
 import { NotFound } from './pages/NotFound';
+import { trackPageView } from './lib/analytics';
 
 export function App() {
   const location = useLocation();
   const path = location.pathname || '/';
+
+  useEffect(() => {
+    trackPageView(path);
+  }, [path]);
 
   if (path === '/') return <LandingPage />;
   if (path === '/privacy') return <PrivacyPolicy />;

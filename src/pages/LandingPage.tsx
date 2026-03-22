@@ -6,6 +6,7 @@ import {
   List, X,
 } from 'phosphor-react';
 import { authService } from '../lib/authService';
+import { trackCTA, trackWorkspaceSearch } from '../lib/analytics';
 import { cn } from '../utils/cn';
 
 type Lang = 'en' | 'ar';
@@ -349,9 +350,11 @@ export function LandingPage() {
 
   const handleOpenWorkspace = async () => {
     if (!workspaceName.trim()) {
+      trackCTA('get_started_empty', 'hero');
       navigate('/user?tab=register');
       return;
     }
+    trackWorkspaceSearch(workspaceName.trim());
     const slug = workspaceName.trim().replace(/\s+/g, '-');
     try {
       const exists = await authService.checkWorkspaceExists(slug);
@@ -398,7 +401,7 @@ export function LandingPage() {
               {c.nav.login}
             </button>
             <button
-              onClick={() => navigate('/user?tab=register')}
+              onClick={() => { trackCTA('start_trial', 'nav'); navigate('/user?tab=register'); }}
               className="group flex items-center gap-2 rounded-full bg-slate-900 px-6 py-2.5 text-sm font-bold text-white transition-all hover:bg-emerald-600 active:scale-95"
             >
               {c.nav.startTrial}
@@ -463,7 +466,7 @@ export function LandingPage() {
               {lang === 'en' ? 'العربية' : 'English'}
             </button>
             <button
-              onClick={() => { navigate('/user?tab=register'); setMenuOpen(false); }}
+              onClick={() => { trackCTA('start_trial', 'mobile_menu'); navigate('/user?tab=register'); setMenuOpen(false); }}
               className="mt-2 w-full flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-6 py-3.5 text-sm font-black text-white transition-all hover:bg-emerald-700 active:scale-95"
             >
               {c.nav.startTrial}
@@ -671,7 +674,7 @@ export function LandingPage() {
                   ))}
                 </ul>
                 <button
-                  onClick={() => navigate('/user?tab=register')}
+                  onClick={() => { trackCTA('start_trial', 'pricing'); navigate('/user?tab=register'); }}
                   className="mt-12 w-full rounded-2xl bg-emerald-600 py-5 text-xl font-black text-white transition-all hover:bg-emerald-700 hover:shadow-xl hover:shadow-emerald-100 active:scale-[0.98]"
                 >
                   {c.pricing.cta}

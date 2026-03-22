@@ -5,6 +5,7 @@ import { type AuthMode } from '../utils/constants';
 import { cn } from '../utils/cn';
 import { Sparkle } from 'phosphor-react';
 import { t, getDir, type Language } from '../lib/i18n';
+import { trackLogin, trackRegister } from '../lib/analytics';
 import TenantApp from '../components/TenantApp';
 
 function detectLang(): Language {
@@ -58,9 +59,11 @@ export function AuthScreen({ mode, onModeChange, onLoggedIn, error, setError, wo
         if (defaults.rooms?.length) {
           try { await authService.updateTenantConfig(s.tenantId, { rooms: defaults.rooms }); } catch {}
         }
+        trackRegister(name || email);
         onLoggedIn(s);
       } else {
         const s = await authService.loginLocal(email, password);
+        trackLogin('email');
         onLoggedIn(s);
       }
     } catch (err: any) {

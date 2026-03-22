@@ -3,6 +3,7 @@ import { format, addMonths, differenceInCalendarDays, differenceInDays, eachMont
 import { CaretDown } from 'phosphor-react';
 import { authService, type SessionUser } from '../lib/authService';
 import { dataService } from '../lib/dataService';
+import { trackLogout, trackBookingCreated, trackBookingCanceled, trackViewChange } from '../lib/analytics';
 import { getDir, type Language } from '../lib/i18n';
 import { t } from '../lib/i18n';
 import { cn } from '../utils/cn';
@@ -173,11 +174,15 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
       (bookingInput as any)[key] === undefined && delete (bookingInput as any)[key]
     );
     const created = await dataService.addBooking(bookingInput);
-    if (created) setBookings(prev => [...prev.filter(b => b.id !== created.id), created]);
+    if (created) {
+      setBookings(prev => [...prev.filter(b => b.id !== created.id), created]);
+      trackBookingCreated({ room: created.room, nights: created.nights, totalPrice: created.totalPrice, currency });
+    }
     setShowAddModal(false);
   };
 
   const handleUpdateBookingStatus = async (id: number | string, status: string) => {
+    if (status === 'CANCELED') trackBookingCanceled(String(id));
     const updated = await dataService.updateBooking(id, { status });
     if (updated) {
       setBookings(prev => prev.map(b => b.id === updated.id ? updated : b));
@@ -307,6 +312,7 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
   }, [bookings, reportStartDate, reportEndDate, reportRoomFilter, reportType, rooms, tz, lang]);
 
   const handleLogout = async () => {
+    trackLogout();
     await authService.logout();
     onSessionChange(null);
     window.location.href = '/';
@@ -330,7 +336,7 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
   })();
 
   return (
-    <div className={cn('min-h-screen bg-slate-50 text-slate-900 font-sans selection:bg-emerald-100', dir === 'rtl' && 'rtl')} dir={dir}>
+    <div className={cn('bg-slate-50 text-slate-900 font-sans selection:bg-emerald-100', currentView === 'calendar' ? 'fixed inset-0 flex flex-col overflow-hidden' : 'min-h-screen', dir === 'rtl' && 'rtl')} dir={dir}>
       <nav className="bg-white border-b border-slate-200 sticky top-0 z-100 h-12 sm:h-14">
         <div className="px-3 sm:px-6 flex justify-between h-full items-center gap-2">
           <div className="flex items-center gap-2 min-w-0">
@@ -354,7 +360,7 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
                     {(session.isAdmin ? ['admin'] as View[] : ['calendar', 'list', 'reports', 'settings'] as View[]).map((v) => (
                       <button
                         key={v}
-                        onClick={() => { setCurrentView(v); setShowViewMenu(false); }}
+                        onClick={() => { setCurrentView(v); trackViewChange(v); setShowViewMenu(false); }}
                         className={cn(
                           'w-full px-4 py-2.5 text-[11px] font-black uppercase tracking-widest transition-colors text-start',
                           currentView === v ? 'text-emerald-600 bg-emerald-50' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'
@@ -378,7 +384,7 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
       </nav>
 
       {currentView === 'calendar' && (
-        <div className="p-1 sm:p-2">
+        <div className="overflow-hidden sm:p-2 flex-1 min-h-0">
           <CalendarView
             rooms={rooms}
             bookings={bookings}
