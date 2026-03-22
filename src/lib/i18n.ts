@@ -26,6 +26,8 @@ export const translations: Record<Language, Record<string, string>> = {
     'calendar.jumpToday': 'Jump to Today',
     'calendar.newBooking': '+ New Booking',
     'calendar.date': 'Date',
+    'calendar.loadPast': 'Load Earlier Months',
+    'calendar.loadFuture': 'Load More Months',
     
     // List View
     'list.upcoming': 'Upcoming',
@@ -184,7 +186,9 @@ export const translations: Record<Language, Record<string, string>> = {
     'calendar.jumpToday': 'الانتقال إلى اليوم',
     'calendar.newBooking': '+ حجز جديد',
     'calendar.date': 'التاريخ',
-    
+    'calendar.loadPast': 'تحميل أشهر سابقة',
+    'calendar.loadFuture': 'تحميل أشهر قادمة',
+
     // List View
     'list.upcoming': 'قادم',
     'list.active': 'نشط',

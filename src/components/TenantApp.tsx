@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { format, addMonths, differenceInCalendarDays, differenceInDays, eachMonthOfInterval, endOfMonth, parseISO, startOfMonth, startOfToday } from 'date-fns';
-import { CaretDown } from 'phosphor-react';
+import { CaretDown, CalendarBlank, ListBullets, ChartPie, GearSix, ShieldCheck } from 'phosphor-react';
 import { authService, type SessionUser } from '../lib/authService';
 import { dataService } from '../lib/dataService';
 import { trackLogout, trackBookingCreated, trackBookingCanceled, trackViewChange } from '../lib/analytics';
@@ -62,16 +62,47 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
     return days;
   };
 
+  const [calRange, setCalRange] = useState({ before: 6, after: 6 });
+
   const calendarDays = useMemo(() => {
     const days: Date[] = [];
     const today = startOfMonth(new Date());
-    for (let m = -12; m <= 12; m++) {
+    for (let m = -calRange.before; m <= calRange.after; m++) {
       const monthDate = addMonths(today, m);
       const monthDays = generateMonthDays(monthDate.getFullYear(), monthDate.getMonth());
       days.push(...monthDays);
     }
     return days;
-  }, []);
+  }, [calRange]);
+
+  const loadMorePast = async () => {
+    const container = calendarContainerRef.current;
+    const prevScrollHeight = container?.scrollHeight || 0;
+    const prevScrollTop = container?.scrollTop || 0;
+    const newBefore = calRange.before + 6;
+    // Load bookings for the new months
+    const today = startOfMonth(new Date());
+    for (let m = -newBefore; m < -calRange.before; m++) {
+      await loadMonthBookings(addMonths(today, m));
+    }
+    setCalRange(prev => ({ ...prev, before: newBefore }));
+    // Restore scroll position after React re-renders
+    requestAnimationFrame(() => {
+      if (container) {
+        const newScrollHeight = container.scrollHeight;
+        container.scrollTop = prevScrollTop + (newScrollHeight - prevScrollHeight);
+      }
+    });
+  };
+
+  const loadMoreFuture = async () => {
+    const newAfter = calRange.after + 6;
+    const today = startOfMonth(new Date());
+    for (let m = calRange.after + 1; m <= newAfter; m++) {
+      await loadMonthBookings(addMonths(today, m));
+    }
+    setCalRange(prev => ({ ...prev, after: newAfter }));
+  };
 
   const calendarContainerRef = useRef<HTMLDivElement | null>(null);
 
@@ -348,8 +379,9 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
             <div className="relative">
               <button
                 onClick={() => setShowViewMenu(v => !v)}
-                className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 text-[10px] sm:text-[11px] font-black uppercase tracking-widest hover:bg-emerald-100 transition-colors"
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 text-[10px] sm:text-[11px] font-black uppercase tracking-widest hover:bg-emerald-100 transition-colors"
               >
+                {(() => { const I = { calendar: CalendarBlank, list: ListBullets, reports: ChartPie, settings: GearSix, admin: ShieldCheck }[currentView]; return <I size={14} weight="fill" />; })()}
                 {t(lang, `nav.${currentView}`)}
                 <CaretDown size={11} weight="bold" className={cn('transition-transform', showViewMenu && 'rotate-180')} />
               </button>
@@ -357,18 +389,22 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
                 <>
                   <div className="fixed inset-0 z-99" onClick={() => setShowViewMenu(false)} />
                   <div className={cn('absolute top-full mt-1 z-100 bg-white rounded-2xl border border-slate-200 shadow-2xl py-1 min-w-[130px]', isRtl ? 'left-0' : 'right-0')}>
-                    {(session.isAdmin ? ['admin'] as View[] : ['calendar', 'list', 'reports', 'settings'] as View[]).map((v) => (
-                      <button
-                        key={v}
-                        onClick={() => { setCurrentView(v); trackViewChange(v); setShowViewMenu(false); }}
-                        className={cn(
-                          'w-full px-4 py-2.5 text-[11px] font-black uppercase tracking-widest transition-colors text-start',
-                          currentView === v ? 'text-emerald-600 bg-emerald-50' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'
-                        )}
-                      >
-                        {t(lang, `nav.${v}`)}
-                      </button>
-                    ))}
+                    {(session.isAdmin ? ['admin'] as View[] : ['calendar', 'list', 'reports', 'settings'] as View[]).map((v) => {
+                      const Icon = { calendar: CalendarBlank, list: ListBullets, reports: ChartPie, settings: GearSix, admin: ShieldCheck }[v];
+                      return (
+                        <button
+                          key={v}
+                          onClick={() => { setCurrentView(v); trackViewChange(v); setShowViewMenu(false); }}
+                          className={cn(
+                            'w-full px-4 py-2.5 text-[11px] font-black uppercase tracking-widest transition-colors text-start flex items-center gap-2.5',
+                            currentView === v ? 'text-emerald-600 bg-emerald-50' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'
+                          )}
+                        >
+                          <Icon size={15} weight={currentView === v ? 'fill' : 'bold'} />
+                          {t(lang, `nav.${v}`)}
+                        </button>
+                      );
+                    })}
                   </div>
                 </>
               )}
@@ -397,6 +433,8 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
             setAddModalInitialRoom={setAddModalInitialRoom}
             setSelectedBooking={setSelectedBooking}
             jumpToToday={jumpToToday}
+            onLoadMorePast={loadMorePast}
+            onLoadMoreFuture={loadMoreFuture}
             lang={lang}
             tz={tz}
           />

@@ -1,6 +1,6 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { format, isSameDay, startOfToday } from 'date-fns';
-import { Minus, Plus, Sparkle, DotsThreeVertical, X } from 'phosphor-react';
+import { Minus, Plus, Sparkle, DotsThreeVertical, X, ArrowUp, ArrowDown, CircleNotch } from 'phosphor-react';
 import { cn } from '../utils/cn';
 import { t, type Language } from '../lib/i18n';
 import { formatTz } from '../utils/formatTz';
@@ -41,6 +41,8 @@ interface CalendarViewProps {
   setAddModalInitialRoom: (r: string) => void;
   setSelectedBooking: (b: any) => void;
   jumpToToday: () => void;
+  onLoadMorePast: () => Promise<void>;
+  onLoadMoreFuture: () => Promise<void>;
   lang: Language;
   tz: string;
 }
@@ -57,6 +59,8 @@ export default function CalendarView({
   setAddModalInitialRoom,
   setSelectedBooking,
   jumpToToday,
+  onLoadMorePast,
+  onLoadMoreFuture,
   lang,
   tz,
 }: CalendarViewProps) {
@@ -66,6 +70,22 @@ export default function CalendarView({
     return n >= 1 && n <= 3 ? n : 1;
   });
   const [showToolbar, setShowToolbar] = useState(false);
+  const [loadingPast, setLoadingPast] = useState(false);
+  const [loadingFuture, setLoadingFuture] = useState(false);
+
+  const handleLoadPast = useCallback(async () => {
+    if (loadingPast) return;
+    setLoadingPast(true);
+    await onLoadMorePast();
+    setLoadingPast(false);
+  }, [loadingPast, onLoadMorePast]);
+
+  const handleLoadFuture = useCallback(async () => {
+    if (loadingFuture) return;
+    setLoadingFuture(true);
+    await onLoadMoreFuture();
+    setLoadingFuture(false);
+  }, [loadingFuture, onLoadMoreFuture]);
 
   const setZoomAndSave = (fn: (z: number) => number) => {
     setZoom(prev => {
@@ -108,6 +128,18 @@ export default function CalendarView({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200">
+              <tr>
+                <td colSpan={rooms.length + 1} className="p-0">
+                  <button
+                    onClick={handleLoadPast}
+                    disabled={loadingPast}
+                    className="w-full py-2 sm:py-3 flex items-center justify-center gap-2 text-[10px] sm:text-xs font-black uppercase tracking-widest text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors disabled:opacity-50"
+                  >
+                    {loadingPast ? <CircleNotch size={14} weight="bold" className="animate-spin" /> : <ArrowUp size={14} weight="bold" />}
+                    {loadingPast ? '...' : t(lang, 'calendar.loadPast')}
+                  </button>
+                </td>
+              </tr>
               {calendarDays.map((date: Date) => {
                 const dStr = format(date, 'yyyy-MM-dd');
                 const isToday = isSameDay(date, new Date());
@@ -200,6 +232,18 @@ export default function CalendarView({
                   </React.Fragment>
                 );
               })}
+              <tr>
+                <td colSpan={rooms.length + 1} className="p-0">
+                  <button
+                    onClick={handleLoadFuture}
+                    disabled={loadingFuture}
+                    className="w-full py-2 sm:py-3 flex items-center justify-center gap-2 text-[10px] sm:text-xs font-black uppercase tracking-widest text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors disabled:opacity-50"
+                  >
+                    {loadingFuture ? <CircleNotch size={14} weight="bold" className="animate-spin" /> : <ArrowDown size={14} weight="bold" />}
+                    {loadingFuture ? '...' : t(lang, 'calendar.loadFuture')}
+                  </button>
+                </td>
+              </tr>
             </tbody>
           </table>
         </div>
