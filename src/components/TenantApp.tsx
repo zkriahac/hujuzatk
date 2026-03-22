@@ -377,8 +377,8 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
         </div>
       </nav>
 
-      <main className="container mx-auto p-2 pt-2">
-        {currentView === 'calendar' && (
+      {currentView === 'calendar' && (
+        <div className="p-1 sm:p-2">
           <CalendarView
             rooms={rooms}
             bookings={bookings}
@@ -394,7 +394,9 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
             lang={lang}
             tz={tz}
           />
-        )}
+        </div>
+      )}
+      <main className={cn('container mx-auto p-2 pt-2', currentView === 'calendar' && 'hidden')}>
         {currentView === 'list' && (
           <ListView
             bookings={visibleBookings}

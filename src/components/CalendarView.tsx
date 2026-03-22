@@ -75,10 +75,11 @@ export default function CalendarView({
     });
   };
 
-  // Zoom only controls column width (how many rooms fit on screen)
-  const colW = [48, 90, 160][zoom - 1];
-  const rowH = 28;
-  const bookingText = 'text-[10px]';
+  // Zoom controls column width — smaller on mobile, larger on desktop
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
+  const colW = isMobile ? [48, 80, 130][zoom - 1] : [100, 160, 240][zoom - 1];
+  const rowH = isMobile ? 28 : 36;
+  const bookingText = isMobile ? 'text-[10px]' : 'text-xs';
   const roomPaletteMap = useMemo(() => buildRoomPaletteMap(rooms), [rooms]);
   const isRtl = lang === 'ar';
 
@@ -86,13 +87,13 @@ export default function CalendarView({
     <div className="relative space-y-0">
       <div className={cn(
         'bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden flex flex-col',
-        'h-[calc(100dvh-4rem)] sm:h-[75vh]',
+        'h-[calc(100dvh-3.5rem)] sm:h-[calc(100dvh-4.5rem)]',
       )}>
         <div className="overflow-auto flex-1 scrollbar-hide" ref={calendarContainerRef}>
           <table className="border-separate border-spacing-0">
             <thead className="sticky top-0 z-40 bg-slate-50">
               <tr>
-                <th className={cn('w-10 sm:w-20 p-1 sm:p-3 border-b border-slate-200 sticky z-50 bg-slate-50 text-[7px] sm:text-[10px] font-black uppercase tracking-widest text-slate-400', isRtl ? 'right-0 border-l' : 'left-0 border-r')}>
+                <th className={cn('w-10 sm:w-24 p-1 sm:p-3 border-b border-slate-200 sticky z-50 bg-slate-50 text-[7px] sm:text-[11px] font-black uppercase tracking-widest text-slate-400', isRtl ? 'right-0 border-l' : 'left-0 border-r')}>
                   {t(lang, 'calendar.date')}
                 </th>
                 {rooms.map((r: any) => (
@@ -100,7 +101,7 @@ export default function CalendarView({
                     key={r.id}
                     style={{ width: colW, minWidth: colW }}
                     className={cn(
-                      'p-1 sm:p-3 border-b border-r border-slate-200 text-[7px] sm:text-[11px] font-black uppercase tracking-widest text-center whitespace-nowrap',
+                      'p-1 sm:p-3 border-b border-r border-slate-200 text-[7px] sm:text-xs font-black uppercase tracking-widest text-center whitespace-nowrap',
                       ROOM_GROUP_PALETTES[roomPaletteMap[r.id] ?? 0].header,
                     )}
                   >
@@ -122,7 +123,7 @@ export default function CalendarView({
                       <tr>
                         <td
                           colSpan={rooms.length + 1}
-                          className={cn('bg-slate-900 text-white text-[7px] sm:text-[10px] font-black uppercase tracking-[0.3em] px-2 sm:px-4 py-1 sm:py-2 sticky z-30', isRtl ? 'right-0' : 'left-0')}
+                          className={cn('bg-slate-900 text-white text-[7px] sm:text-xs font-black uppercase tracking-[0.3em] px-2 sm:px-4 py-1 sm:py-2 sticky z-30', isRtl ? 'right-0' : 'left-0')}
                         >
                           {formatTz(date, 'MMMM yyyy', tz, lang).toUpperCase()}
                         </td>
@@ -132,7 +133,7 @@ export default function CalendarView({
                       <td
                         onClick={() => setSelectedDateStr(dStr)}
                         className={cn(
-                          'w-10 sm:w-20 border-slate-200 text-center text-[7px] sm:text-[11px] font-black cursor-pointer sticky z-30 transition-colors p-0 sm:p-2 whitespace-nowrap',
+                          'w-10 sm:w-24 border-slate-200 text-center text-[7px] sm:text-[12px] font-black cursor-pointer sticky z-30 transition-colors p-0 sm:p-2 whitespace-nowrap',
                           isRtl ? 'right-0 border-l' : 'left-0 border-r',
                           isToday
                             ? 'bg-emerald-600 text-white shadow-xl scale-105 z-40'
