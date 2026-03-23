@@ -303,7 +303,7 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
         }
       }
       const occupancyRate = daysInReport > 0 ? (occupiedDays / daysInReport) * 100 : 0;
-      return { roomId: room.id, totalNights, totalRevenue, occupancyRate };
+      return { roomId: room.id, roomName: room.name, totalNights, totalRevenue, occupancyRate };
     });
 
     const totalRevenue = filtered.reduce((sum: number, b: Booking) => sum + b.totalPrice, 0);
@@ -451,6 +451,7 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
             setShowAddModal={setShowAddModal}
             setSelectedBooking={setSelectedBooking}
             listContainerRef={listContainerRef}
+            rooms={rooms}
             currency={currency}
             lang={lang}
             tz={tz}

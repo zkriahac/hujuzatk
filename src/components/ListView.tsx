@@ -18,6 +18,7 @@ interface ListViewProps {
   setShowAddModal: (v: boolean) => void;
   setSelectedBooking: (b: any) => void;
   listContainerRef: React.RefObject<HTMLDivElement | null>;
+  rooms: any[];
   currency: string;
   lang: Language;
   tz: string;
@@ -36,10 +37,12 @@ export default function ListView({
   setShowAddModal,
   setSelectedBooking,
   listContainerRef,
+  rooms,
   currency,
   lang,
   tz,
 }: ListViewProps) {
+  const roomNameMap = Object.fromEntries(rooms.map((r: any) => [r.id, r.name]));
   return (
     <div className="space-y-6">
       <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col lg:flex-row gap-6 items-center justify-between">
@@ -141,7 +144,7 @@ export default function ListView({
                       <div className="font-black text-slate-900 text-sm leading-tight">{b.guestName}</div>
                       <div className="text-xs font-bold text-slate-400 mt-0.5 tracking-tight uppercase">{b.guestPhone}</div>
                     </td>
-                    <td className="px-4 py-3 font-black text-slate-900 text-sm">{b.room}</td>
+                    <td className="px-4 py-3 font-black text-slate-900 text-sm">{roomNameMap[b.room] || b.room}</td>
                     <td className="px-4 py-3">
                       <div className="font-black text-slate-700 text-xs uppercase tracking-tighter">{formatTz(b.checkIn, 'dd MMM yyyy', tz, lang)}</div>
                       <div className="text-[11px] font-black text-slate-500 uppercase tracking-tighter">

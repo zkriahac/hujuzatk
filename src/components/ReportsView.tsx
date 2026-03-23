@@ -127,7 +127,7 @@ export default function ReportsView({
               <tbody className="divide-y divide-slate-50">
                 {reportData.roomStats.map((s: any) => (
                   <tr key={s.roomId} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-8 py-5 font-black text-slate-900 text-lg">{s.roomId}</td>
+                    <td className="px-8 py-5 font-black text-slate-900 text-lg">{s.roomName || s.roomId}</td>
                     <td className="px-8 py-5 text-right text-emerald-600 font-black">
                       {currency} {s.totalRevenue.toLocaleString()}
                     </td>
