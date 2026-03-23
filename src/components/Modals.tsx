@@ -281,6 +281,7 @@ export function BookingDetailsModal({
     guestName: booking.guestName || '',
     city: booking.city || '',
     phone: booking.guestPhone || '',
+    source: (booking as any).source || '',
     room: booking.room || '',
     checkIn: booking.checkIn ? booking.checkIn.split('T')[0] : '',
     nights: nightsFromBooking,
@@ -299,6 +300,7 @@ export function BookingDetailsModal({
       guestName: f.guestName,
       city: f.city,
       guestPhone: f.phone,
+      source: f.source || undefined,
       room: f.room,
       checkIn: f.checkIn,
       checkOut,
@@ -336,6 +338,21 @@ export function BookingDetailsModal({
                 onChange={(e) => setF({ ...f, phone: e.target.value })}
               />
             </div>
+            <input
+              className="w-full bg-slate-50 border-slate-100 rounded-2xl px-4 py-2.5 text-sm font-bold focus:ring-2 focus:ring-emerald-500 transition-all"
+              placeholder={t(lang, 'booking.source')}
+              value={f.source}
+              onChange={(e) => setF({ ...f, source: e.target.value })}
+              list="source-suggestions-edit"
+            />
+            <datalist id="source-suggestions-edit">
+              <option value="Booking.com" />
+              <option value="Airbnb" />
+              <option value="WhatsApp" />
+              <option value="Phone" />
+              <option value="Walk-in" />
+              <option value="Website" />
+            </datalist>
             <div className="flex gap-3">
               <div className="w-1/2">
                 <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1 block px-2">{t(lang, 'booking.checkIn')}</label>

@@ -141,7 +141,10 @@ export default function ListView({
                     className={cn('group hover:bg-slate-50 transition-colors', b.status === 'CANCELED' && 'opacity-60')}
                   >
                     <td className="px-4 py-3">
-                      <div className="font-black text-slate-900 text-sm leading-tight">{b.guestName}</div>
+                      <div className="font-black text-slate-900 text-sm leading-tight flex items-center gap-1.5">
+                        {b.guestName}
+                        {b.source && <span className="px-1.5 py-0.5 bg-violet-50 text-violet-500 rounded text-[9px] font-black uppercase tracking-tight shrink-0">{b.source}</span>}
+                      </div>
                       <div className="text-xs font-bold text-slate-400 mt-0.5 tracking-tight uppercase">{b.guestPhone}</div>
                     </td>
                     <td className="px-4 py-3 font-black text-slate-900 text-sm">{roomNameMap[b.room] || b.room}</td>
