@@ -64,6 +64,7 @@ function DefaultsView({ lang }: { lang: Language }) {
               className="w-full bg-slate-800 text-white rounded-2xl px-4 py-3 font-black focus:ring-2 focus:ring-emerald-500 outline-none">
               <option value="en">English</option>
               <option value="ar">العربية</option>
+              <option value="tr">Türkçe</option>
             </select>
           </div>
           <div>
@@ -265,6 +266,7 @@ function AdminTenantRow({ tObj, onReload, lang, tz }: { tObj: Tenant; onReload: 
                   className="w-full bg-slate-700 text-white rounded-xl px-3 py-2 text-sm font-bold focus:ring-2 focus:ring-emerald-500 outline-none">
                   <option value="en">English</option>
                   <option value="ar">العربية</option>
+                  <option value="tr">Türkçe</option>
                 </select>
               </div>
               <div>

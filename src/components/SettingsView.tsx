@@ -87,6 +87,7 @@ export default function SettingsView({ session, onSessionChange, lang }: Setting
             >
               <option value="en">English</option>
               <option value="ar">العربية</option>
+              <option value="tr">Türkçe</option>
             </select>
           </div>
           <div className="space-y-2">

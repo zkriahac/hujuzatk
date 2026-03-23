@@ -9,7 +9,7 @@ import { authService } from '../lib/authService';
 import { trackCTA, trackWorkspaceSearch } from '../lib/analytics';
 import { cn } from '../utils/cn';
 
-type Lang = 'en' | 'ar';
+type Lang = 'en' | 'ar' | 'tr';
 
 const content = {
   en: {
@@ -188,6 +188,94 @@ const content = {
       },
     },
   },
+  tr: {
+    dir: 'ltr' as const,
+    nav: { features: 'Özellikler', pricing: 'Fiyatlar', login: 'Giriş Yap', startTrial: 'Ücretsiz Dene' },
+    hero: {
+      badge: 'Yeni Nesil PMS Burada',
+      headline: 'Rezervasyon Yönetimi',
+      italic: 'Basitleştirildi.',
+      sub: 'Otel, apart veya kiralık tatil mülklerinizi ultra hızlı 5 yıllık takvim, otomatik faturalama ve finansal analizlerle büyütün.',
+      placeholder: 'Otel veya çalışma alanı adınızı girin...',
+      cta: 'Başla',
+      pills: ['14 Gün Ücretsiz', 'Kredi Kartı Gerekmez', 'Anında Kurulum'],
+    },
+    features: {
+      heading: 'Hız için inşa edildi. Büyüme için tasarlandı.',
+      sub: 'Her şey tek bir amaca odaklanıyor: mülk yönetiminizi olabildiğince görünmez kılmak, böylece misafirlerinize odaklanabilirsiniz.',
+      items: [
+        { title: 'Sonsuz 5 Yıllık Takvim', desc: 'Özel sanallaştırılmış ızgaramız, 5 yıllık rezervasyonları takılmadan kaydırmanızı sağlar. Yoğun sezonları yıllar öncesinden planlayın.' },
+        { title: 'Akıllı Faturalama', desc: 'Gece, indirim ve depozito otomatik hesaplanır. İngilizce veya Türkçe temiz, yazdırılabilir PDF faturalar anında oluşturun.' },
+        { title: 'Çoklu Dil Desteği', desc: 'İngilizce, Arapça ve Türkçe tam destek. RTL düzenleri ve bölgesel tarih formatları dahil.' },
+        { title: 'Finansal Zeka', desc: 'Konaklama ve oluşturma tarihine göre gelişmiş raporlama. Doluluk oranları, oda başına gelir ve en kârlı kanalları görselleştirin.' },
+        { title: 'Yerel PWA Deneyimi', desc: "Hujuzatk'ı doğrudan cihazınıza yükleyin. Yerel uygulama gibi hızlı yükleme ve bildirim desteği." },
+        { title: 'Kurumsal Ölçeklendirme', desc: 'Yerel yüksek hızlı Dexie DB ile başlayın, saniyeler içinde PostgreSQL\'e geçin. Verileriniz, kontrolünüz.' },
+      ],
+    },
+    trust: {
+      badge: 'Banka Düzeyinde Güvenlik',
+      heading: 'Verileriniz güvende, gizli ve her zaman sizin.',
+      sub: 'Hujuzatk çok kiracılı izolasyon kullanır. Her otelin verileri matematiksel olarak diğerlerinden ayrılır. Sızıntı yok, performans çakışması yok, sadece güvenilirlik.',
+      uptime: 'Çalışma Süresi SLA', latency: 'Yerel Gecikme',
+      testimonialsHeading: 'Gerçek mülk yöneticileri tarafından güveniliyor',
+      testimonials: [
+        {
+          quote: 'Hujuzatk mülk yönetimimizi tamamen dönüştürdü. 5 yıllık takvim ve Arapça RTL desteği ekibimiz için mükemmel oldu. İlk ayda rezervasyon hatalarını %80 azalttık.',
+          author: 'Vista Company',
+          role: 'Mülk Yönetimi — Suudi Arabistan',
+          phone: '+966 54 615 2888',
+          initials: 'V',
+        },
+        {
+          quote: 'Birden fazla mülkü yöneten bir rezervasyon müdürü olarak, hızıma ayak uyduran bir araca ihtiyacım vardı. Hujuzatk\'ın hızı ve akıllı faturalaması bana her hafta saatler kazandırıyor.',
+          author: 'Muhammad Orfan',
+          role: 'Rezervasyon Müdürü — Suudi Arabistan',
+          phone: '+966 54 763 3923',
+          initials: 'M',
+        },
+        {
+          quote: 'Mekke\'de otel yönetmek yüksek trafik ve sıfır hata payı demektir. Hujuzatk yoğun sezonlarımızı kusursuz yönetiyor. Otomatik faturalama tek başına geçişe değerdi.',
+          author: 'Sada Makka Hotel',
+          role: 'Otel Yönetimi — Mekke, Suudi Arabistan',
+          phone: '+966 56 527 3054',
+          initials: 'S',
+        },
+      ],
+    },
+    pricing: {
+      heading: 'Basit, dürüst fiyatlandırma.',
+      sub: 'Tek plan, tüm özellikler, sınırsız imkan. Gizli ücret veya kullanıcı başına ücret yok.',
+      plan: 'Profesyonel Plan',
+      perYear: '/Yıl',
+      items: ['Sınırsız Rezervasyon', '50\'ye Kadar Oda', 'Tam Raporlama', 'Çoklu Dil (AR/EN/TR)', 'Masaüstü PWA', 'Gelişmiş 5 Yıllık Takvim'],
+      cta: '14 Günlük Ücretsiz Denemenizi Başlatın',
+      note: 'İstediğiniz zaman iptal edin. Sözleşme yok.',
+    },
+    footer: {
+      tagline: 'Modern ev sahipleri ve profesyonel mülk yöneticileri için dünyanın en sezgisel Rezervasyon Yönetim Sistemi.',
+      legal: 'Yasal', support: 'Destek', privacy: 'Gizlilik', terms: 'Şartlar',
+      whatsapp: 'WhatsApp Destek',
+      rights: `© ${new Date().getFullYear()} Hujuzatk PMS. Tüm hakları saklıdır.`,
+      location: 'İstanbul | Türkiye | Uluslararası',
+    },
+    screenshots: {
+      heading: 'İhtiyacınız olan her araç. Tek ekran uzağınızda.',
+      sub: 'Takvimden faturaya 3 tıklamada — hız, netlik ve tam kontrol için tasarlandı.',
+      stats: { occ: 'Doluluk', rev: 'Gelir', bk: 'Rezervasyon' },
+      labels: {
+        calendar: 'Rezervasyon Takvimi',
+        settings: 'Ayarlar',
+        reports: 'Finansal Raporlar',
+        list: 'Rezervasyon Listesi',
+      },
+      captions: {
+        calendar: '5 yıllık ızgara — saniyeler içinde yılları kaydırın',
+        settings: 'Oda ve yerel ayarları yapılandırın',
+        reports: 'Gelir, doluluk ve doluluk oranı bir bakışta',
+        list: 'Akıllı filtreler · arama · durum rozetleri',
+      },
+    },
+  },
 };
 
 const FEATURE_ICONS = [Calendar, FileText, Globe, ChartPie, DeviceMobile, Database];
@@ -330,8 +418,10 @@ function applySEO(lang: Lang) {
 
 function detectLang(): Lang {
   const stored = localStorage.getItem('landing-lang');
-  if (stored === 'en' || stored === 'ar') return stored;
-  return navigator.language?.startsWith('ar') ? 'ar' : 'en';
+  if (stored === 'en' || stored === 'ar' || stored === 'tr') return stored;
+  if (navigator.language?.startsWith('ar')) return 'ar';
+  if (navigator.language?.startsWith('tr')) return 'tr';
+  return 'en';
 }
 
 export function LandingPage() {
@@ -351,8 +441,9 @@ export function LandingPage() {
     });
   }, []);
 
-  const toggleLang = () => {
-    const next = lang === 'en' ? 'ar' : 'en';
+  const cycleLang = () => {
+    const order: Lang[] = ['en', 'ar', 'tr'];
+    const next = order[(order.indexOf(lang) + 1) % order.length];
     setLang(next);
     localStorage.setItem('landing-lang', next);
   };
@@ -402,11 +493,11 @@ export function LandingPage() {
           {/* Desktop right actions */}
           <div className="hidden md:flex items-center gap-3">
             <button
-              onClick={toggleLang}
+              onClick={cycleLang}
               className="flex items-center gap-1 px-3 py-1.5 rounded-full border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 transition-colors"
             >
               <Globe size={14} />
-              {lang === 'en' ? 'العربية' : 'English'}
+              {{ en: 'العربية', ar: 'Türkçe', tr: 'English' }[lang]}
             </button>
             {loggedInUser ? (
               <div className="relative">
@@ -433,7 +524,7 @@ export function LandingPage() {
                         className="w-full px-4 py-2.5 text-sm font-bold text-emerald-600 hover:bg-emerald-50 transition-colors text-left flex items-center gap-2"
                       >
                         <Sparkle size={16} weight="fill" />
-                        {lang === 'ar' ? 'لوحة التحكم' : 'Go to Dashboard'}
+                        {{ ar: 'لوحة التحكم', tr: 'Panele Git', en: 'Go to Dashboard' }[lang]}
                       </button>
                       <button
                         onClick={async () => {
@@ -443,7 +534,7 @@ export function LandingPage() {
                         }}
                         className="w-full px-4 py-2.5 text-sm font-bold text-red-500 hover:bg-red-50 transition-colors text-left"
                       >
-                        {lang === 'ar' ? 'تسجيل الخروج' : 'Logout'}
+                        {{ ar: 'تسجيل الخروج', tr: 'Çıkış', en: 'Logout' }[lang]}
                       </button>
                     </div>
                   </>
@@ -509,13 +600,13 @@ export function LandingPage() {
                   className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold text-emerald-600 hover:bg-emerald-50 transition-colors text-start w-full"
                 >
                   <Sparkle size={16} weight="fill" />
-                  {lang === 'ar' ? 'لوحة التحكم' : 'Go to Dashboard'}
+                  {{ ar: 'لوحة التحكم', tr: 'Panele Git', en: 'Go to Dashboard' }[lang]}
                 </button>
                 <button
                   onClick={async () => { await authService.logout(); setLoggedInUser(null); setMenuOpen(false); }}
                   className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold text-red-500 hover:bg-red-50 transition-colors text-start w-full"
                 >
-                  {lang === 'ar' ? 'تسجيل الخروج' : 'Logout'}
+                  {{ ar: 'تسجيل الخروج', tr: 'Çıkış', en: 'Logout' }[lang]}
                 </button>
               </>
             ) : (
@@ -544,11 +635,11 @@ export function LandingPage() {
             </Link>
             <div className="my-1 border-t border-slate-100" />
             <button
-              onClick={() => { toggleLang(); setMenuOpen(false); }}
+              onClick={() => { cycleLang(); setMenuOpen(false); }}
               className="flex items-center gap-2 px-4 py-3 rounded-2xl text-sm font-bold text-slate-500 hover:bg-slate-50 transition-colors"
             >
               <Globe size={16} />
-              {lang === 'en' ? 'العربية' : 'English'}
+              {{ en: 'العربية', ar: 'Türkçe', tr: 'English' }[lang]}
             </button>
             {!loggedInUser && (
               <button
@@ -824,8 +915,9 @@ export function PrivacyPolicy() {
   const [lang, setLang] = useState<Lang>(detectLang);
   const isAr = lang === 'ar';
 
-  const toggleLang = () => {
-    const next = lang === 'en' ? 'ar' : 'en';
+  const cycleLang = () => {
+    const order: Lang[] = ['en', 'ar', 'tr'];
+    const next = order[(order.indexOf(lang) + 1) % order.length];
     setLang(next);
     localStorage.setItem('landing-lang', next);
   };
@@ -835,8 +927,8 @@ export function PrivacyPolicy() {
       <div className="max-w-3xl mx-auto bg-white p-8 rounded-2xl shadow-sm border border-slate-200 text-slate-900">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-black tracking-tight">{isAr ? 'سياسة الخصوصية' : 'Privacy Policy'}</h1>
-          <button onClick={toggleLang} className="flex items-center gap-1 px-3 py-1.5 rounded-full border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50">
-            <Globe size={14} /> {isAr ? 'English' : 'العربية'}
+          <button onClick={cycleLang} className="flex items-center gap-1 px-3 py-1.5 rounded-full border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50">
+            <Globe size={14} /> {{ en: 'العربية', ar: 'Türkçe', tr: 'English' }[lang]}
           </button>
         </div>
         <p className="mb-4 text-slate-500 font-bold uppercase text-[10px] tracking-widest">{isAr ? `آخر تحديث: ${new Date().toLocaleDateString('ar')}` : `Last updated: ${new Date().toLocaleDateString()}`}</p>
@@ -889,8 +981,9 @@ export function TermsOfService() {
   const [lang, setLang] = useState<Lang>(detectLang);
   const isAr = lang === 'ar';
 
-  const toggleLang = () => {
-    const next = lang === 'en' ? 'ar' : 'en';
+  const cycleLang = () => {
+    const order: Lang[] = ['en', 'ar', 'tr'];
+    const next = order[(order.indexOf(lang) + 1) % order.length];
     setLang(next);
     localStorage.setItem('landing-lang', next);
   };
@@ -900,8 +993,8 @@ export function TermsOfService() {
       <div className="max-w-3xl mx-auto bg-white p-8 rounded-2xl shadow-sm border border-slate-200 text-slate-900">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-black tracking-tight">{isAr ? 'شروط الخدمة' : 'Terms of Service'}</h1>
-          <button onClick={toggleLang} className="flex items-center gap-1 px-3 py-1.5 rounded-full border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50">
-            <Globe size={14} /> {isAr ? 'English' : 'العربية'}
+          <button onClick={cycleLang} className="flex items-center gap-1 px-3 py-1.5 rounded-full border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50">
+            <Globe size={14} /> {{ en: 'العربية', ar: 'Türkçe', tr: 'English' }[lang]}
           </button>
         </div>
         <p className="mb-4 text-slate-500 font-bold uppercase text-[10px] tracking-widest">{isAr ? `آخر تحديث: ${new Date().toLocaleDateString('ar')}` : `Last updated: ${new Date().toLocaleDateString()}`}</p>

@@ -1,4 +1,4 @@
-export type Language = 'en' | 'ar';
+export type Language = 'en' | 'ar' | 'tr';
 
 export const translations: Record<Language, Record<string, string>> = {
   en: {
@@ -9,7 +9,7 @@ export const translations: Record<Language, Record<string, string>> = {
     'nav.reports': 'Reports',
     'nav.settings': 'Settings',
     'nav.admin': 'Admin',
-    
+
     // Auth
     'auth.login': 'Login',
     'auth.register': 'Register',
@@ -21,14 +21,14 @@ export const translations: Record<Language, Record<string, string>> = {
     'auth.createAccount': 'Create Account',
     'auth.freeTrial': 'You get 14 days free. Afterwards the admin will activate your subscription once offline payment is received.',
     'auth.loading': 'Loading workspace…',
-    
+
     // Calendar
     'calendar.jumpToday': 'Jump to Today',
     'calendar.newBooking': '+ New Booking',
     'calendar.date': 'Date',
     'calendar.loadPast': 'Load Earlier Months',
     'calendar.loadFuture': 'Load More Months',
-    
+
     // List View
     'list.upcoming': 'Upcoming',
     'list.active': 'Active',
@@ -46,7 +46,7 @@ export const translations: Record<Language, Record<string, string>> = {
     'list.view': 'View',
     'list.checkInToday': 'CHECK-IN TODAY',
     'list.nights': 'nights',
-    
+
     // Reports
     'reports.type': 'Report Type',
     'reports.stayDate': 'Based on Stay Date',
@@ -67,7 +67,7 @@ export const translations: Record<Language, Record<string, string>> = {
     'reports.occupancy': 'Occupancy',
     'reports.month': 'Month',
     'reports.fillRate': 'Fill Rate',
-    
+
     // Settings
     'settings.title': 'Workspace Settings',
     'settings.language': 'Language',
@@ -80,7 +80,7 @@ export const translations: Record<Language, Record<string, string>> = {
     'settings.defaults': 'Default Settings',
     'settings.save': 'Save Settings',
     'settings.saving': 'Saving…',
-    
+
     // Booking Modal
     'booking.addTitle': 'Add Booking',
     'booking.guestName': 'Guest Name',
@@ -96,7 +96,7 @@ export const translations: Record<Language, Record<string, string>> = {
     'booking.remaining': 'Remaining',
     'booking.cancel': 'Cancel',
     'booking.save': 'Save Booking',
-    
+
     // Booking Details
     'booking.detailsTitle': 'Booking Details',
     'booking.printInvoice': 'Print Invoice',
@@ -130,7 +130,7 @@ export const translations: Record<Language, Record<string, string>> = {
     'invoice.close': 'Close',
     'invoice.print': 'Print Invoice',
     'invoice.canceled': 'CANCELED',
-    
+
     // Status
     'status.confirmed': 'Confirmed',
     'status.canceled': 'Canceled',
@@ -138,7 +138,7 @@ export const translations: Record<Language, Record<string, string>> = {
     'status.active': 'Active',
     'status.pending': 'Pending',
     'status.expired': 'Expired',
-    
+
     // Admin
     'admin.title': 'Admin – Tenants',
     'admin.refresh': 'Refresh',
@@ -153,7 +153,7 @@ export const translations: Record<Language, Record<string, string>> = {
     'admin.expire': 'Expire',
     'admin.loading': 'Loading tenants…',
     'admin.noTenants': 'No tenants registered yet.',
-    
+
     // Misc
     'misc.logout': 'Logout',
     'misc.localDB': 'Local Dexie DB',
@@ -169,7 +169,7 @@ export const translations: Record<Language, Record<string, string>> = {
     'nav.reports': 'التقارير',
     'nav.settings': 'الإعدادات',
     'nav.admin': 'الإدارة',
-    
+
     // Auth
     'auth.login': 'تسجيل الدخول',
     'auth.register': 'تسجيل جديد',
@@ -181,7 +181,7 @@ export const translations: Record<Language, Record<string, string>> = {
     'auth.createAccount': 'إنشاء حساب',
     'auth.freeTrial': 'تحصل على 14 يوم مجاني. بعد ذلك سيقوم المدير بتفعيل اشتراكك عند استلام الدفع offline.',
     'auth.loading': 'جاري تحميل مساحة العمل…',
-    
+
     // Calendar
     'calendar.jumpToday': 'الانتقال إلى اليوم',
     'calendar.newBooking': '+ حجز جديد',
@@ -206,7 +206,7 @@ export const translations: Record<Language, Record<string, string>> = {
     'list.view': 'عرض',
     'list.checkInToday': 'وصول اليوم',
     'list.nights': 'ليالي',
-    
+
     // Reports
     'reports.type': 'نوع التقرير',
     'reports.stayDate': 'حسب تاريخ الإقامة',
@@ -227,7 +227,7 @@ export const translations: Record<Language, Record<string, string>> = {
     'reports.occupancy': 'الإشغال',
     'reports.month': 'الشهر',
     'reports.fillRate': 'معدل الإشغال',
-    
+
     // Settings
     'settings.title': 'إعدادات مساحة العمل',
     'settings.language': 'اللغة',
@@ -240,7 +240,7 @@ export const translations: Record<Language, Record<string, string>> = {
     'settings.defaults': 'الإعدادات الافتراضية',
     'settings.save': 'حفظ الإعدادات',
     'settings.saving': 'جاري الحفظ…',
-    
+
     // Booking Modal
     'booking.addTitle': 'إضافة حجز',
     'booking.guestName': 'اسم الضيف',
@@ -256,7 +256,7 @@ export const translations: Record<Language, Record<string, string>> = {
     'booking.remaining': 'المتبقي',
     'booking.cancel': 'إلغاء',
     'booking.save': 'حفظ الحجز',
-    
+
     // Booking Details
     'booking.detailsTitle': 'تفاصيل الحجز',
     'booking.printInvoice': 'طباعة الفاتورة',
@@ -272,7 +272,7 @@ export const translations: Record<Language, Record<string, string>> = {
     'booking.confirmDelete': 'حذف نهائي؟',
     'booking.yes': 'نعم',
     'booking.no': 'لا',
-    
+
     // Invoice
     'invoice.title': 'فاتورة',
     'invoice.bookingId': 'رقم الحجز',
@@ -290,7 +290,7 @@ export const translations: Record<Language, Record<string, string>> = {
     'invoice.close': 'إغلاق',
     'invoice.print': 'طباعة الفاتورة',
     'invoice.canceled': 'ملغي',
-    
+
     // Status
     'status.confirmed': 'مؤكد',
     'status.canceled': 'ملغي',
@@ -298,7 +298,7 @@ export const translations: Record<Language, Record<string, string>> = {
     'status.active': 'نشط',
     'status.pending': 'قيد الانتظار',
     'status.expired': 'منتهي',
-    
+
     // Admin
     'admin.title': 'الإدارة – العملاء',
     'admin.refresh': 'تحديث',
@@ -313,13 +313,173 @@ export const translations: Record<Language, Record<string, string>> = {
     'admin.expire': 'إنهاء',
     'admin.loading': 'جاري تحميل العملاء…',
     'admin.noTenants': 'لا يوجد عملاء مسجلين بعد.',
-    
+
     // Misc
     'misc.logout': 'خروج',
     'misc.localDB': 'قاعدة بيانات محلية',
     'misc.cloudDB': 'PostgreSQL (سحابي)',
     'misc.noBookings': 'لا توجد حجوزات',
     'misc.scrollMore': 'مرر أو عدل الفلتر لرؤية المزيد',
+  },
+  tr: {
+    'misc.projectname': 'HUJUZATK',
+    // Navigation
+    'nav.calendar': 'Takvim',
+    'nav.list': 'Rezervasyonlar',
+    'nav.reports': 'Raporlar',
+    'nav.settings': 'Ayarlar',
+    'nav.admin': 'Yönetim',
+
+    // Auth
+    'auth.login': 'Giriş Yap',
+    'auth.register': 'Kayıt Ol',
+    'auth.registerFree': 'Kayıt Ol (14 gün ücretsiz)',
+    'auth.email': 'E-posta',
+    'auth.password': 'Şifre',
+    'auth.companyName': 'Şirket / Mülk Adı',
+    'auth.loginBtn': 'Giriş Yap',
+    'auth.createAccount': 'Hesap Oluştur',
+    'auth.freeTrial': '14 gün ücretsiz deneme hakkınız var. Sonrasında ödeme alındığında yönetici aboneliğinizi aktifleştirecektir.',
+    'auth.loading': 'Çalışma alanı yükleniyor…',
+
+    // Calendar
+    'calendar.jumpToday': 'Bugüne Git',
+    'calendar.newBooking': '+ Yeni Rezervasyon',
+    'calendar.date': 'Tarih',
+    'calendar.loadPast': 'Önceki Ayları Yükle',
+    'calendar.loadFuture': 'Sonraki Ayları Yükle',
+
+    // List View
+    'list.upcoming': 'Yaklaşan',
+    'list.active': 'Aktif',
+    'list.past': 'Geçmiş',
+    'list.canceled': 'İptal',
+    'list.all': 'Tümü',
+    'list.search': 'Misafir ara...',
+    'list.new': '+ Yeni',
+    'list.guest': 'Misafir',
+    'list.room': 'Oda',
+    'list.dates': 'Tarihler',
+    'list.amount': 'Tutar',
+    'list.balance': 'Bakiye',
+    'list.status': 'Durum',
+    'list.view': 'Görüntüle',
+    'list.checkInToday': 'BUGÜN GİRİŞ',
+    'list.nights': 'gece',
+
+    // Reports
+    'reports.type': 'Rapor Türü',
+    'reports.stayDate': 'Konaklama Tarihine Göre',
+    'reports.createdDate': 'Oluşturma Tarihine Göre',
+    'reports.fromDate': 'Başlangıç',
+    'reports.toDate': 'Bitiş',
+    'reports.roomFilter': 'Oda Filtresi',
+    'reports.allRooms': 'Tüm Odalar',
+    'reports.print': 'Raporu Yazdır',
+    'reports.totalRevenue': 'Toplam Gelir',
+    'reports.totalNights': 'Toplam Gece',
+    'reports.totalBookings': 'Toplam Rezervasyon',
+    'reports.avgFillRate': 'Ort. Doluluk',
+    'reports.roomPerformance': 'Oda Performansı',
+    'reports.monthlyFillRate': 'Aylık Doluluk Oranı',
+    'reports.room': 'Oda',
+    'reports.revenue': 'Gelir',
+    'reports.occupancy': 'Doluluk',
+    'reports.month': 'Ay',
+    'reports.fillRate': 'Doluluk Oranı',
+
+    // Settings
+    'settings.title': 'Çalışma Alanı Ayarları',
+    'settings.language': 'Dil',
+    'settings.currency': 'Para Birimi',
+    'settings.timezone': 'Saat Dilimi',
+    'settings.rooms': 'Oda Yapılandırması',
+    'settings.addRoom': '+ Oda Ekle',
+    'settings.defaultNightPrice': 'Varsayılan Gecelik Fiyat',
+    'settings.defaultTax': 'Varsayılan Vergi %',
+    'settings.defaults': 'Varsayılan Ayarlar',
+    'settings.save': 'Ayarları Kaydet',
+    'settings.saving': 'Kaydediliyor…',
+
+    // Booking Modal
+    'booking.addTitle': 'Rezervasyon Ekle',
+    'booking.guestName': 'Misafir Adı',
+    'booking.city': 'Şehir',
+    'booking.phone': 'Telefon',
+    'booking.checkIn': 'Giriş Tarihi',
+    'booking.nights': 'Gece Sayısı',
+    'booking.room': 'Oda',
+    'booking.priceNight': 'Gecelik Fiyat',
+    'booking.checkOut': 'Çıkış Tarihi (otomatik)',
+    'booking.total': 'Toplam',
+    'booking.deposit': 'Depozito',
+    'booking.remaining': 'Kalan',
+    'booking.cancel': 'İptal',
+    'booking.save': 'Rezervasyonu Kaydet',
+
+    // Booking Details
+    'booking.detailsTitle': 'Rezervasyon Detayları',
+    'booking.printInvoice': 'Fatura Yazdır',
+    'booking.editBooking': 'Rezervasyonu Düzenle',
+    'booking.editTitle': 'Rezervasyonu Düzenle',
+    'booking.cancelBooking': 'İptal Et',
+    'booking.reactivate': 'Yeniden Etkinleştir',
+    'booking.delete': 'Sil',
+    'booking.close': 'Pencereyi Kapat',
+    'booking.totalBill': 'Toplam Fatura',
+    'booking.confirmCancel': 'Bu rezervasyonu iptal etmek istediğinizden emin misiniz?',
+    'booking.confirmReactivate': 'Rezervasyon yeniden etkinleştirilsin mi?',
+    'booking.confirmDelete': 'Kalıcı olarak silinsin mi?',
+    'booking.yes': 'Evet',
+    'booking.no': 'Hayır',
+
+    // Invoice
+    'invoice.title': 'FATURA',
+    'invoice.bookingId': 'Rezervasyon No',
+    'invoice.created': 'Oluşturulma',
+    'invoice.guestInfo': 'Misafir Bilgileri',
+    'invoice.roomDetails': 'Oda Detayları',
+    'invoice.night': 'Gece',
+    'invoice.description': 'Açıklama',
+    'invoice.priceNight': 'Gecelik Fiyat',
+    'invoice.amount': 'Tutar',
+    'invoice.roomFees': 'Oda Konaklama Ücreti',
+    'invoice.total': 'Toplam',
+    'invoice.deposit': 'Depozito',
+    'invoice.remainingBalance': 'Kalan Bakiye',
+    'invoice.close': 'Kapat',
+    'invoice.print': 'Fatura Yazdır',
+    'invoice.canceled': 'İPTAL EDİLDİ',
+
+    // Status
+    'status.confirmed': 'Onaylandı',
+    'status.canceled': 'İptal',
+    'status.trial': 'Deneme',
+    'status.active': 'Aktif',
+    'status.pending': 'Beklemede',
+    'status.expired': 'Süresi Doldu',
+
+    // Admin
+    'admin.title': 'Yönetim – Müşteriler',
+    'admin.refresh': 'Yenile',
+    'admin.name': 'Ad',
+    'admin.email': 'E-posta',
+    'admin.config': 'Dil / Para / Saat',
+    'admin.rooms': 'Odalar',
+    'admin.subscription': 'Abonelik',
+    'admin.validUntil': 'Geçerlilik',
+    'admin.activate': 'Etkinleştir',
+    'admin.trial': 'Deneme',
+    'admin.expire': 'Sonlandır',
+    'admin.loading': 'Müşteriler yükleniyor…',
+    'admin.noTenants': 'Henüz kayıtlı müşteri yok.',
+
+    // Misc
+    'misc.logout': 'Çıkış',
+    'misc.localDB': 'Yerel Veritabanı',
+    'misc.cloudDB': 'PostgreSQL (Supabase)',
+    'misc.noBookings': 'Rezervasyon bulunamadı',
+    'misc.scrollMore': 'Daha fazla görmek için kaydırın veya filtreleri değiştirin',
   },
 };
 

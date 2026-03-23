@@ -11,9 +11,11 @@ import TenantApp from '../components/TenantApp';
 function detectLang(): Language {
   try {
     const stored = localStorage.getItem('landing-lang');
-    if (stored === 'en' || stored === 'ar') return stored;
+    if (stored === 'en' || stored === 'ar' || stored === 'tr') return stored;
   } catch {}
-  return navigator.language?.startsWith('ar') ? 'ar' : 'en';
+  if (navigator.language?.startsWith('ar')) return 'ar';
+  if (navigator.language?.startsWith('tr')) return 'tr';
+  return 'en';
 }
 
 // ---------- AUTH SCREEN ----------
@@ -85,7 +87,7 @@ export function AuthScreen({ mode, onModeChange, onLoggedIn, error, setError, wo
         <div>
           <div className="font-bold text-lg">Hujuzatk PMS</div>
           <div className="text-xs text-gray-500">
-            {workspaceLabel ? `Workspace: ${workspaceLabel}` : (lang === 'ar' ? 'إدارة الحجوزات الاحترافية' : 'Professional Property Management')}
+            {workspaceLabel ? `Workspace: ${workspaceLabel}` : ({ ar: 'إدارة الحجوزات الاحترافية', tr: 'Profesyonel Mülk Yönetimi', en: 'Professional Property Management' }[lang])}
           </div>
         </div>
       </div>
@@ -118,12 +120,12 @@ export function AuthScreen({ mode, onModeChange, onLoggedIn, error, setError, wo
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 className="w-full border rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500/60 bg-slate-50 border-slate-200"
-                placeholder={lang === 'ar' ? 'مثال: شقق النور' : 'e.g. Al Noor Apartments'}
+                placeholder={{ ar: 'مثال: شقق النور', tr: 'ör. Noor Apartmanları', en: 'e.g. Al Noor Apartments' }[lang]}
                 required
               />
             </div>
             <div>
-              <label className="block text-xs font-bold text-slate-600 mb-1">{lang === 'ar' ? 'رقم الهاتف' : 'Phone Number'}</label>
+              <label className="block text-xs font-bold text-slate-600 mb-1">{{ ar: 'رقم الهاتف', tr: 'Telefon Numarası', en: 'Phone Number' }[lang]}</label>
               <input
                 type="tel"
                 value={phone}
@@ -166,7 +168,7 @@ export function AuthScreen({ mode, onModeChange, onLoggedIn, error, setError, wo
           disabled={loading}
           className="w-full mt-4 bg-emerald-600 hover:bg-emerald-700 text-white font-black py-4 rounded-xl shadow-lg shadow-emerald-100 transition-all active:scale-[0.98] disabled:opacity-60"
         >
-          {loading ? (lang === 'ar' ? 'جاري المعالجة...' : 'Processing...') : mode === 'login' ? t(lang, 'auth.loginBtn') : t(lang, 'auth.createAccount')}
+          {loading ? ({ ar: 'جاري المعالجة...', tr: 'İşleniyor...', en: 'Processing...' }[lang]) : mode === 'login' ? t(lang, 'auth.loginBtn') : t(lang, 'auth.createAccount')}
         </button>
       </form>
     </div>
@@ -212,7 +214,7 @@ export function UserAuthShell() {
             </div>
             <div>
               <div className="font-bold text-lg">Hujuzatk PMS</div>
-              <div className="text-xs text-gray-500">{lang === 'ar' ? 'أنت مسجّل دخول حالياً' : 'Currently signed in'}</div>
+              <div className="text-xs text-gray-500">{{ ar: 'أنت مسجّل دخول حالياً', tr: 'Oturum açık', en: 'Currently signed in' }[lang]}</div>
             </div>
           </div>
           <div className="flex items-center gap-3 bg-emerald-50 rounded-2xl p-4 mb-6 border border-emerald-100">
@@ -230,9 +232,7 @@ export function UserAuthShell() {
               className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-4 rounded-xl shadow-lg shadow-emerald-100 transition-all active:scale-[0.98] flex items-center justify-center gap-2"
             >
               <Sparkle size={18} weight="fill" />
-              {lang === 'ar'
-                ? `متابعة بوصفك ${currentSession.tenant.name || currentSession.tenant.email}`
-                : `Continue as ${currentSession.tenant.name || currentSession.tenant.email}`}
+              {{ ar: `متابعة بوصفك ${currentSession.tenant.name || currentSession.tenant.email}`, tr: `${currentSession.tenant.name || currentSession.tenant.email} olarak devam et`, en: `Continue as ${currentSession.tenant.name || currentSession.tenant.email}` }[lang]}
             </button>
             <button
               onClick={async () => {
@@ -241,7 +241,7 @@ export function UserAuthShell() {
               }}
               className="w-full border-2 border-slate-200 text-slate-500 font-black py-3 rounded-xl hover:border-red-200 hover:bg-red-50 hover:text-red-500 transition-all text-sm"
             >
-              {lang === 'ar' ? 'تبديل الحساب' : 'Switch Account'}
+              {{ ar: 'تبديل الحساب', tr: 'Hesap Değiştir', en: 'Switch Account' }[lang]}
             </button>
           </div>
         </div>
