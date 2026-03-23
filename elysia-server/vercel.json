@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "regions": ["sin1"],
+  "regions": ["bom1"],
   "builds": [
     {
       "src": "api/graphql.ts",
@@ -14,5 +14,8 @@
   "routes": [
     { "src": "/graphql", "methods": ["GET", "POST", "OPTIONS"], "dest": "/api/graphql.ts" },
     { "src": "/health", "dest": "/api/health.ts" }
+  ],
+  "crons": [
+    { "path": "/health", "schedule": "0 6 * * *" }
   ]
 }
