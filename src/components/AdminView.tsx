@@ -29,6 +29,44 @@ const ADMIN_LOGIN_AS = gql`
   }
 `;
 
+const GET_GLOBAL_SETTINGS = gql`
+  query GetGlobalSettings {
+    getGlobalSettings {
+      defaultLanguage
+      defaultCurrency
+      defaultTimezone
+      defaultRooms { id name }
+      defaultTrialDays
+    }
+  }
+`;
+
+const UPDATE_GLOBAL_SETTINGS = gql`
+  mutation UpdateGlobalSettings($input: UpdateGlobalSettingsInput!) {
+    updateGlobalSettings(input: $input) {
+      defaultLanguage
+      defaultCurrency
+      defaultTimezone
+      defaultRooms { id name }
+      defaultTrialDays
+    }
+  }
+`;
+
+const ADMIN_CREATE_SUBSCRIPTION = gql`
+  mutation CreateAdminSubscription($tenantId: ID!, $days: Int!) {
+    createAdminSubscription(tenantId: $tenantId, days: $days) {
+      id subscriptionStatus validUntil
+    }
+  }
+`;
+
+const ADMIN_CANCEL_SUBSCRIPTION = gql`
+  mutation CancelSubscription($tenantId: ID!) {
+    cancelSubscription(tenantId: $tenantId)
+  }
+`;
+
 const ADMIN_DEACTIVATE_TENANT = gql`
   mutation AdminDeactivateTenant($tenantId: ID!) {
     adminDeactivateTenant(tenantId: $tenantId)
@@ -45,31 +83,44 @@ const TIMEZONES = [
   'Asia/Muscat','Asia/Riyadh','Asia/Dubai','Asia/Kuwait','Asia/Qatar','Asia/Amman',
   'Africa/Cairo','Europe/Istanbul','Europe/London','America/New_York','UTC',
 ];
-const ADMIN_DEFAULTS_KEY = 'admin-defaults';
 
 function DefaultsView({ lang }: { lang: Language }) {
-  const getDefaults = () => {
-    try { return JSON.parse(localStorage.getItem(ADMIN_DEFAULTS_KEY) || '{}'); } catch { return {}; }
-  };
-  const [f, setF] = useState<any>(() => ({ language: 'en', currency: 'USD', timezone: 'UTC', rooms: [], ...getDefaults() }));
+  const [f, setF] = useState<any>({ language: 'en', currency: 'OMR', timezone: 'Asia/Muscat', rooms: [], trialDays: 14 });
   const [saved, setSaved] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    apolloClient.query({ query: GET_GLOBAL_SETTINGS, fetchPolicy: 'network-only' })
+      .then(({ data }) => {
+        const s = (data as any).getGlobalSettings;
+        setF({ language: s.defaultLanguage, currency: s.defaultCurrency, timezone: s.defaultTimezone, rooms: (s.defaultRooms || []).map((r: any) => ({ id: r.id, name: r.name })), trialDays: s.defaultTrialDays });
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
 
   const handleRoomChange = (i: number, name: string) => {
     const rooms = [...f.rooms]; rooms[i] = { ...rooms[i], name }; setF({ ...f, rooms });
   };
-  const handleAddRoom = () => setF({ ...f, rooms: [...f.rooms, { id: `R${Date.now()}`, name: `Room ${f.rooms.length + 1}` }] });
+  const handleAddRoom = () => setF({ ...f, rooms: [...f.rooms, { id: `r${Date.now()}`, name: `Room ${f.rooms.length + 1}` }] });
   const handleRemoveRoom = (i: number) => setF({ ...f, rooms: f.rooms.filter((_: any, idx: number) => idx !== i) });
-  const handleSave = () => {
-    localStorage.setItem(ADMIN_DEFAULTS_KEY, JSON.stringify(f));
-    setSaved(true); setTimeout(() => setSaved(false), 2000);
+  const handleSave = async () => {
+    try {
+      await apolloClient.mutate({ mutation: UPDATE_GLOBAL_SETTINGS, variables: { input: { defaultLanguage: f.language, defaultCurrency: f.currency, defaultTimezone: f.timezone, defaultRooms: f.rooms.map((r: any) => ({ id: r.id, name: r.name })), defaultTrialDays: f.trialDays } } });
+      setSaved(true); setTimeout(() => setSaved(false), 2000);
+    } catch (err: any) {
+      alert('Failed to save: ' + (err.message || 'Unknown error'));
+    }
   };
+
+  if (loading) return <div className="text-center text-slate-500 py-20 font-black uppercase text-xs tracking-widest">Loading defaults...</div>;
 
   return (
     <div className="max-w-2xl mx-auto space-y-8 pb-20">
       <div className="bg-slate-900 rounded-[2.5rem] border border-slate-800 p-10">
         <h2 className="text-xl font-black text-emerald-400 mb-1">New Tenant Defaults</h2>
         <p className="text-xs text-slate-500 mb-8">Applied automatically when a new workspace registers.</p>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <div>
             <label className="text-[9px] font-black uppercase tracking-widest text-slate-500 block mb-2">{t(lang, 'settings.language')}</label>
             <select value={f.language} onChange={e => setF({ ...f, language: e.target.value })}
@@ -90,6 +141,11 @@ function DefaultsView({ lang }: { lang: Language }) {
               className="w-full bg-slate-800 text-white rounded-2xl px-4 py-3 font-black focus:ring-2 focus:ring-emerald-500 outline-none">
               {TIMEZONES.map(tz => <option key={tz} value={tz}>{tz}</option>)}
             </select>
+          </div>
+          <div>
+            <label className="text-[9px] font-black uppercase tracking-widest text-slate-500 block mb-2">Trial Days</label>
+            <input type="number" value={f.trialDays} onChange={e => setF({ ...f, trialDays: parseInt(e.target.value) || 14 })}
+              className="w-full bg-slate-800 text-white rounded-2xl px-4 py-3 font-black focus:ring-2 focus:ring-emerald-500 outline-none" min={1} />
           </div>
         </div>
         <div className="mb-8">
@@ -140,8 +196,12 @@ function AdminTenantRow({ tObj, onReload, lang, tz }: { tObj: Tenant; onReload: 
   };
 
   const handleActivate = async () => {
-    await authService.adminSetSubscriptionStatus(tObj.uuid, 'ACTIVE', tObj.validUntil || new Date().toISOString().slice(0, 10));
-    onReload();
+    try {
+      await apolloClient.mutate({ mutation: ADMIN_CREATE_SUBSCRIPTION, variables: { tenantId: tObj.uuid || (tObj as any).id, days: 30 } });
+      onReload();
+    } catch (err: any) {
+      alert('Activate failed: ' + (err.message || 'Unknown error'));
+    }
   };
 
   const handleLoginAs = async () => {
@@ -224,7 +284,7 @@ function AdminTenantRow({ tObj, onReload, lang, tz }: { tObj: Tenant; onReload: 
             tObj.subscriptionStatus === 'TRIAL'  ? 'bg-blue-500/10 text-blue-400' :
             'bg-red-500/10 text-red-400'
           )}>
-            {t(lang, `status.${tObj.subscriptionStatus}`)}
+            {t(lang, `status.${(tObj.subscriptionStatus || '').toLowerCase()}`)}
           </span>
           <div className="text-[10px] text-slate-500 font-bold mt-1">
             {(tObj as any).bookingsCount ?? 0} bookings

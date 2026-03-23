@@ -137,6 +137,14 @@ export const typeDefs = `
     cancellationRate: Float!
   }
 
+  type GlobalSettings {
+    defaultLanguage: String!
+    defaultCurrency: String!
+    defaultTimezone: String!
+    defaultRooms: [Room!]!
+    defaultTrialDays: Int!
+  }
+
   type AuthPayload {
     token: String!
     refreshToken: String!
@@ -155,6 +163,7 @@ export const typeDefs = `
     getRevenueReport(year: Int!, month: Int): RevenueReport!
     getGuestStatistics: GuestStatistics!
     getAuditLogs(limit: Int, offset: Int, action: AuditAction): [AuditLog!]!
+    getGlobalSettings: GlobalSettings!
     health: String!
   }
 
@@ -178,6 +187,7 @@ export const typeDefs = `
     adminLoginAs(tenantId: ID!): AuthPayload!
     adminDeactivateTenant(tenantId: ID!): Boolean!
     adminDeleteTenant(tenantId: ID!): Boolean!
+    updateGlobalSettings(input: UpdateGlobalSettingsInput!): GlobalSettings!
   }
 
   input RegisterInput {
@@ -238,6 +248,14 @@ export const typeDefs = `
     source: String
     notes: String
     status: BookingStatus
+  }
+
+  input UpdateGlobalSettingsInput {
+    defaultLanguage: String
+    defaultCurrency: String
+    defaultTimezone: String
+    defaultRooms: [RoomInput!]
+    defaultTrialDays: Int
   }
 
   input BookingFilter {

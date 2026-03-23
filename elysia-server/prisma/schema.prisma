@@ -168,6 +168,9 @@ model GlobalSettings {
   id                Int       @id @default(1)
   defaultTrialDays  Int       @default(14)
   defaultCurrency   String    @default("OMR")
+  defaultLanguage   String    @default("en")
+  defaultTimezone   String    @default("Asia/Muscat")
+  defaultRooms      Json      @default("[]")
   appVersion        String    @default("1.0.0")
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt

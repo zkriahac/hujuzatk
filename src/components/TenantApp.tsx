@@ -349,7 +349,7 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
   const subscriptionBadge = (() => {
     const status = session.tenant.subscriptionStatus;
     const validUntil = session.tenant.validUntil;
-    const label = t(lang, `status.${status}`);
+    const label = t(lang, `status.${status.toLowerCase()}`);
     const color =
       status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-700' :
       status === 'TRIAL'  ? 'bg-blue-100 text-blue-700' :

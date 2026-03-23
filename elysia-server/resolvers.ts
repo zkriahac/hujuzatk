@@ -169,6 +169,16 @@ export const resolvers = {
 			const logs = await prisma.auditLog.findMany({ where, take: Math.min(limit, 500), skip: offset, orderBy: { createdAt: 'desc' } });
 			return logs;
 		},
+		async getGlobalSettings(_: any, __: any, context: any) {
+			await requireSuperAdmin(context);
+			let settings = await prisma.globalSettings.findUnique({ where: { id: 1 } });
+			if (!settings) {
+				settings = await prisma.globalSettings.create({ data: { id: 1 } });
+			}
+			let rooms = settings.defaultRooms || [];
+			if (typeof rooms === 'string') { try { rooms = JSON.parse(rooms); } catch { rooms = []; } }
+			return { ...settings, defaultRooms: Array.isArray(rooms) ? rooms : [] };
+		},
 		async health() { return 'ok'; },
 	},
 	Mutation: {
@@ -180,7 +190,13 @@ export const resolvers = {
 			if (existing) throw new GraphQLError('Email already registered', { extensions: { code: 'BAD_USER_INPUT', http: { status: 400 } } });
 			if (input.password.length < 8) throw new GraphQLError('Password must be at least 8 characters', { extensions: { code: 'BAD_USER_INPUT', http: { status: 400 } } });
 			const passwordHash = await bcrypt.hash(input.password, 10);
-			const tenant = await prisma.tenant.create({ data: { name: input.name, email: input.email, phone: input.phone || null, passwordHash, currency: input.currency || 'OMR', timezone: input.timezone || 'Asia/Muscat', language: input.language || 'en', subscriptionStatus: 'TRIAL', validUntil: calculateValidUntil(TRIAL_DAYS), rooms: JSON.stringify([{ id: 'r1', name: 'Room 1' }, { id: 'r2', name: 'Room 2' }, { id: 'r3', name: 'Room 3' }, { id: 'r4', name: 'Room 4' }, { id: 'r5', name: 'Room 5' }]), isAdmin: false, isActive: true, settings: { create: { defaultNightPrice: 50, defaultTax: 0 } } }, include: { settings: true } });
+			// Load global defaults for new tenants
+			const globals = await prisma.globalSettings.findUnique({ where: { id: 1 } }) as any;
+			const defaultRooms = globals?.defaultRooms && Array.isArray(globals.defaultRooms) && globals.defaultRooms.length > 0
+				? globals.defaultRooms
+				: [{ id: 'r1', name: 'Room 1' }, { id: 'r2', name: 'Room 2' }, { id: 'r3', name: 'Room 3' }, { id: 'r4', name: 'Room 4' }, { id: 'r5', name: 'Room 5' }];
+			const trialDays = globals?.defaultTrialDays || TRIAL_DAYS;
+			const tenant = await prisma.tenant.create({ data: { name: input.name, email: input.email, phone: input.phone || null, passwordHash, currency: input.currency || globals?.defaultCurrency || 'OMR', timezone: input.timezone || globals?.defaultTimezone || 'Asia/Muscat', language: input.language || globals?.defaultLanguage || 'en', subscriptionStatus: 'TRIAL', validUntil: calculateValidUntil(trialDays), rooms: defaultRooms, isAdmin: false, isActive: true, settings: { create: { defaultNightPrice: 50, defaultTax: 0 } } }, include: { settings: true } });
 			const { token, refreshToken } = generateTokens(tenant.id, tenant.email);
 			await prisma.auditLog.create({ data: { tenantId: tenant.id, action: 'TENANT_UPDATED', entityType: 'Tenant', entityId: tenant.id, changes: { action: 'tenant_created' } } });
 			return { token, refreshToken, tenant: { ...normalizeTenant(tenant), bookingsCount: 0 } };
@@ -386,6 +402,19 @@ export const resolvers = {
 			const { token, refreshToken } = generateTokens(tenant.id, tenant.email);
 			const bookingsCount = await prisma.booking.count({ where: { tenantId: tenant.id } });
 			return { token, refreshToken, tenant: { ...normalizeTenant(tenant), bookingsCount } };
+		},
+		async updateGlobalSettings(_: any, { input }: any, context: any) {
+			await requireSuperAdmin(context);
+			const data: any = {};
+			if (input.defaultLanguage !== undefined) data.defaultLanguage = input.defaultLanguage;
+			if (input.defaultCurrency !== undefined) data.defaultCurrency = input.defaultCurrency;
+			if (input.defaultTimezone !== undefined) data.defaultTimezone = input.defaultTimezone;
+			if (input.defaultRooms !== undefined) data.defaultRooms = input.defaultRooms;
+			if (input.defaultTrialDays !== undefined) data.defaultTrialDays = input.defaultTrialDays;
+			const settings = await prisma.globalSettings.upsert({ where: { id: 1 }, create: { id: 1, ...data }, update: data });
+			let rooms = settings.defaultRooms as any || [];
+			if (typeof rooms === 'string') { try { rooms = JSON.parse(rooms); } catch { rooms = []; } }
+			return { ...settings, defaultRooms: Array.isArray(rooms) ? rooms : [] };
 		},
 		async adminDeactivateTenant(_: any, { tenantId }: any, context: any) {
 			await requireSuperAdmin(context);
