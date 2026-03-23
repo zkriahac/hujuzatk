@@ -48,6 +48,7 @@ const GET_ALL_TENANTS = gql`
       validUntil
       createdAt
       isAdmin
+      isActive
       bookingsCount
       settings { defaultNightPrice defaultTax }
     }

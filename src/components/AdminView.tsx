@@ -29,6 +29,18 @@ const ADMIN_LOGIN_AS = gql`
   }
 `;
 
+const ADMIN_DEACTIVATE_TENANT = gql`
+  mutation AdminDeactivateTenant($tenantId: ID!) {
+    adminDeactivateTenant(tenantId: $tenantId)
+  }
+`;
+
+const ADMIN_DELETE_TENANT = gql`
+  mutation AdminDeleteTenant($tenantId: ID!) {
+    adminDeleteTenant(tenantId: $tenantId)
+  }
+`;
+
 const TIMEZONES = [
   'Asia/Muscat','Asia/Riyadh','Asia/Dubai','Asia/Kuwait','Asia/Qatar','Asia/Amman',
   'Africa/Cairo','Europe/Istanbul','Europe/London','America/New_York','UTC',
@@ -152,20 +164,46 @@ function AdminTenantRow({ tObj, onReload, lang, tz }: { tObj: Tenant; onReload: 
     }
   };
 
+  const handleDeactivate = async () => {
+    const isActive = (tObj as any).isActive !== false;
+    if (isActive && !confirm(`Deactivate "${tObj.name}"? They will not be able to log in.`)) return;
+    try {
+      await apolloClient.mutate({ mutation: ADMIN_DEACTIVATE_TENANT, variables: { tenantId: tObj.uuid || (tObj as any).id } });
+      onReload();
+    } catch (err: any) {
+      alert('Failed: ' + (err.message || 'Unknown error'));
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!confirm(`DELETE "${tObj.name}" and ALL their data? This cannot be undone!`)) return;
+    if (!confirm(`Are you absolutely sure? This will permanently delete the account, all bookings, payments, and audit logs.`)) return;
+    try {
+      await apolloClient.mutate({ mutation: ADMIN_DELETE_TENANT, variables: { tenantId: tObj.uuid || (tObj as any).id } });
+      onReload();
+    } catch (err: any) {
+      alert('Failed: ' + (err.message || 'Unknown error'));
+    }
+  };
+
   const handleRoomChange = (i: number, name: string) => {
     const rooms = [...f.rooms]; rooms[i] = { ...rooms[i], name }; setF({ ...f, rooms });
   };
   const handleAddRoom = () => setF({ ...f, rooms: [...f.rooms, { id: `R${Date.now()}`, name: `Room ${f.rooms.length + 1}` }] });
   const handleRemoveRoom = (i: number) => setF({ ...f, rooms: f.rooms.filter((_: any, idx: number) => idx !== i) });
 
+  const isActive = (tObj as any).isActive !== false;
   const tRooms = tObj.rooms || [];
 
   return (
     <>
       <tr className="hover:bg-slate-800/50 transition-colors group cursor-pointer" onClick={() => setExpanded(e => !e)}>
         <td className="px-6 py-4">
-          <div className="font-black text-white">{tObj.name}</div>
-          <div className="text-[10px] text-slate-500 font-bold">{(tObj as any).phone || '—'}</div>
+          <div className={cn('font-black', isActive ? 'text-white' : 'text-slate-500 line-through')}>{tObj.name}</div>
+          <div className="text-[10px] text-slate-500 font-bold">
+            {!isActive && <span className="text-red-400 mr-1">DEACTIVATED</span>}
+            {(tObj as any).phone || '—'}
+          </div>
         </td>
         <td className="px-6 py-4 text-xs font-bold text-slate-400">{tObj.email}</td>
         <td className="px-6 py-4">
@@ -210,6 +248,19 @@ function AdminTenantRow({ tObj, onReload, lang, tz }: { tObj: Tenant; onReload: 
               <button onClick={handleActivate}
                 className="px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-[10px] font-black uppercase tracking-tighter hover:bg-emerald-500">
                 {t(lang, 'admin.activate')}
+              </button>
+            )}
+            {!(tObj as any).isAdmin && (
+              <button onClick={handleDeactivate}
+                className={cn('px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-tighter',
+                  isActive ? 'bg-orange-600 text-white hover:bg-orange-500' : 'bg-green-600 text-white hover:bg-green-500')}>
+                {isActive ? 'Deactivate' : 'Activate'}
+              </button>
+            )}
+            {!(tObj as any).isAdmin && (
+              <button onClick={handleDelete}
+                className="px-3 py-1.5 bg-red-600 text-white rounded-lg text-[10px] font-black uppercase tracking-tighter hover:bg-red-500">
+                Delete
               </button>
             )}
           </div>

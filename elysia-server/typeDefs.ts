@@ -176,6 +176,8 @@ export const typeDefs = `
     cancelSubscription(tenantId: ID!): Boolean!
     adminUpdateTenant(tenantId: ID!, input: UpdateTenantInput!): Tenant!
     adminLoginAs(tenantId: ID!): AuthPayload!
+    adminDeactivateTenant(tenantId: ID!): Boolean!
+    adminDeleteTenant(tenantId: ID!): Boolean!
   }
 
   input RegisterInput {

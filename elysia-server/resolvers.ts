@@ -191,6 +191,7 @@ export const resolvers = {
 			if (!tenant) throw new GraphQLError('Invalid credentials', { extensions: { code: 'UNAUTHENTICATED', http: { status: 401 } } });
 			const passwordMatch = await bcrypt.compare(password, tenant.passwordHash);
 			if (!passwordMatch) throw new GraphQLError('Invalid credentials', { extensions: { code: 'UNAUTHENTICATED', http: { status: 401 } } });
+			if (!tenant.isActive) throw new GraphQLError('Account has been deactivated. Please contact support.', { extensions: { code: 'FORBIDDEN', http: { status: 403 } } });
 			if (tenant.subscriptionStatus === 'EXPIRED' || tenant.subscriptionStatus === 'CANCELED') throw new GraphQLError('Subscription expired. Please renew to continue.', { extensions: { code: 'FORBIDDEN', http: { status: 403 } } });
 			const { token, refreshToken } = generateTokens(tenant.id, tenant.email);
 			const bookingsCount = await prisma.booking.count({ where: { tenantId: tenant.id } });
@@ -385,6 +386,29 @@ export const resolvers = {
 			const { token, refreshToken } = generateTokens(tenant.id, tenant.email);
 			const bookingsCount = await prisma.booking.count({ where: { tenantId: tenant.id } });
 			return { token, refreshToken, tenant: { ...normalizeTenant(tenant), bookingsCount } };
+		},
+		async adminDeactivateTenant(_: any, { tenantId }: any, context: any) {
+			await requireSuperAdmin(context);
+			const tenant = await prisma.tenant.findUnique({ where: { id: tenantId } });
+			if (!tenant) throw new GraphQLError('Tenant not found', { extensions: { code: 'NOT_FOUND', http: { status: 404 } } });
+			if (tenant.isAdmin) throw new GraphQLError('Cannot deactivate an admin account', { extensions: { code: 'FORBIDDEN', http: { status: 403 } } });
+			const newStatus = !tenant.isActive;
+			await prisma.tenant.update({ where: { id: tenantId }, data: { isActive: newStatus } });
+			await prisma.auditLog.create({ data: { tenantId, action: 'TENANT_UPDATED', entityType: 'Tenant', entityId: tenantId, changes: { action: newStatus ? 'account_activated' : 'account_deactivated' } } });
+			return true;
+		},
+		async adminDeleteTenant(_: any, { tenantId }: any, context: any) {
+			await requireSuperAdmin(context);
+			const tenant = await prisma.tenant.findUnique({ where: { id: tenantId } });
+			if (!tenant) throw new GraphQLError('Tenant not found', { extensions: { code: 'NOT_FOUND', http: { status: 404 } } });
+			if (tenant.isAdmin) throw new GraphQLError('Cannot delete an admin account', { extensions: { code: 'FORBIDDEN', http: { status: 403 } } });
+			// Delete all related data then the tenant
+			await prisma.auditLog.deleteMany({ where: { tenantId } });
+			await prisma.booking.deleteMany({ where: { tenantId } });
+			await prisma.payment.deleteMany({ where: { tenantId } });
+			await prisma.tenantSettings.deleteMany({ where: { tenantId } });
+			await prisma.tenant.delete({ where: { id: tenantId } });
+			return true;
 		},
 		async adminUpdateTenant(_: any, { tenantId, input }: any, context: any) {
 			await requireSuperAdmin(context);
