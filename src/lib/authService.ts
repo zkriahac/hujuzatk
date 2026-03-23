@@ -325,12 +325,18 @@ export const authService = {
               id
               name
               email
+              phone
               language
               currency
               timezone
               rooms { id name }
+              subscriptionStatus
+              validUntil
               isAdmin
+              isActive
               createdAt
+              bookingsCount
+              settings { defaultNightPrice defaultTax }
             }
           }`,
           variables: { input },
