@@ -113,10 +113,8 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
       const endDate = format(endOfMonth(date), 'yyyy-MM-dd');
       const monthBookings = await dataService.getBookingsByDateRange(startDate, endDate);
       setBookings(prev => {
-        const filtered = prev.filter(b => {
-          const bookingMonth = format(parseISO(b.checkIn), 'yyyy-MM');
-          return bookingMonth !== monthKey;
-        });
+        const newIds = new Set(monthBookings.map((b: any) => b.id));
+        const filtered = prev.filter(b => !newIds.has(b.id));
         return [...filtered, ...monthBookings];
       });
       setLoadedMonths(prev => new Set([...prev, monthKey]));
