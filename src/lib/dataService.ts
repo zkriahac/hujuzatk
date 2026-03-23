@@ -25,6 +25,7 @@ const CREATE_BOOKING = gql`
       deposit
       remaining
       status
+      source
       notes
       createdAt
       updatedAt
@@ -80,7 +81,7 @@ export const dataService = {
             updateBooking(id: $id, input: $input) {
               id tenantId guestName guestEmail guestPhone city room
               checkIn checkOut nights nightPrice totalPrice tax deposit remaining
-              status notes createdAt updatedAt
+              status source notes createdAt updatedAt
             }
           }
         `,
@@ -150,6 +151,7 @@ export const dataService = {
               deposit
               remaining
               status
+              source
               notes
               createdAt
               updatedAt

@@ -95,6 +95,7 @@ export const translations: Record<Language, Record<string, string>> = {
     'booking.deposit': 'Deposit',
     'booking.remaining': 'Remaining',
     'booking.cancel': 'Cancel',
+    'booking.source': 'Source (e.g. Booking.com, Airbnb)',
     'booking.save': 'Save Booking',
 
     // Booking Details
@@ -255,6 +256,7 @@ export const translations: Record<Language, Record<string, string>> = {
     'booking.deposit': 'الدفعة',
     'booking.remaining': 'المتبقي',
     'booking.cancel': 'إلغاء',
+    'booking.source': 'المصدر (مثلاً Booking.com, Airbnb)',
     'booking.save': 'حفظ الحجز',
 
     // Booking Details
@@ -415,6 +417,7 @@ export const translations: Record<Language, Record<string, string>> = {
     'booking.deposit': 'Depozito',
     'booking.remaining': 'Kalan',
     'booking.cancel': 'İptal',
+    'booking.source': 'Kaynak (ör. Booking.com, Airbnb)',
     'booking.save': 'Rezervasyonu Kaydet',
 
     // Booking Details

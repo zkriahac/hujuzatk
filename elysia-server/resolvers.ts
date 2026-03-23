@@ -230,7 +230,7 @@ export const resolvers = {
 			const totalPrice = nights * input.nightPrice;
 			const tax = totalPrice * ((tenant.settings?.defaultTax || 0) / 100);
 			const remaining = totalPrice + tax - input.deposit;
-			const booking = await prisma.booking.create({ data: { tenantId: context.user.tenantId, guestName: input.guestName, guestEmail: input.guestEmail, guestPhone: input.guestPhone, city: input.city, room: input.room, checkIn, checkOut, nightPrice: input.nightPrice, deposit: input.deposit, status: input.status?.toLowerCase() || 'upcoming', notes: input.notes, nights, totalPrice, tax, remaining } });
+			const booking = await prisma.booking.create({ data: { tenantId: context.user.tenantId, guestName: input.guestName, guestEmail: input.guestEmail, guestPhone: input.guestPhone, city: input.city, room: input.room, checkIn, checkOut, nightPrice: input.nightPrice, deposit: input.deposit, status: input.status?.toLowerCase() || 'upcoming', source: input.source || null, notes: input.notes, nights, totalPrice, tax, remaining } });
 			await prisma.auditLog.create({ data: { tenantId: context.user.tenantId, action: 'BOOKING_CREATED', entityType: 'Booking', entityId: booking.id, changes: { action: 'booking_created', booking } } });
 			return normalizeBooking(booking);
 		},
@@ -247,6 +247,7 @@ export const resolvers = {
 			if (input.city !== undefined) updateData.city = input.city;
 			if (input.room !== undefined) updateData.room = input.room;
 			if (input.notes !== undefined) updateData.notes = input.notes;
+			if (input.source !== undefined) updateData.source = input.source;
 			if (input.status) updateData.status = input.status.toLowerCase();
 			if (input.checkIn || input.checkOut || input.nightPrice !== undefined || input.deposit !== undefined) {
 				const checkIn = new Date(input.checkIn || booking.checkIn.toISOString());
@@ -286,7 +287,7 @@ export const resolvers = {
 				const totalPrice = nights * input.nightPrice;
 				const tax = totalPrice * ((tenant.settings?.defaultTax || 0) / 100);
 				const remaining = totalPrice + tax - input.deposit;
-				const booking = await prisma.booking.create({ data: { tenantId: context.user.tenantId, guestName: input.guestName, guestEmail: input.guestEmail, guestPhone: input.guestPhone, city: input.city, room: input.room, checkIn, checkOut, nightPrice: input.nightPrice, deposit: input.deposit, status: input.status?.toLowerCase() || 'upcoming', notes: input.notes, nights, totalPrice, tax, remaining } });
+				const booking = await prisma.booking.create({ data: { tenantId: context.user.tenantId, guestName: input.guestName, guestEmail: input.guestEmail, guestPhone: input.guestPhone, city: input.city, room: input.room, checkIn, checkOut, nightPrice: input.nightPrice, deposit: input.deposit, status: input.status?.toLowerCase() || 'upcoming', source: input.source || null, notes: input.notes, nights, totalPrice, tax, remaining } });
 				created.push(normalizeBooking(booking));
 			}
 			return created;

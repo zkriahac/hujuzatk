@@ -90,6 +90,7 @@ model Booking {
   
   // Status & metadata
   status            String    @default("upcoming") // 'upcoming', 'active', 'completed', 'canceled', 'no-show'
+  source            String?   // Booking source: 'Booking.com', 'Airbnb', 'WhatsApp', etc.
   notes             String?
   
   // Timestamps

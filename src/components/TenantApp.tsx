@@ -191,6 +191,7 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
       guestEmail: newBooking.guestEmail || undefined,
       guestPhone: newBooking.phone || newBooking.guestPhone || '',
       city: newBooking.city || undefined,
+      source: newBooking.source || undefined,
       room: newBooking.room,
       checkIn: newBooking.checkIn,
       checkOut: newBooking.checkOut,

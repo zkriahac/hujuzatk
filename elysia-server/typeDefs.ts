@@ -78,6 +78,7 @@ export const typeDefs = `
     deposit: Float!
     remaining: Float!
     status: BookingStatus!
+    source: String
     notes: String
     createdAt: DateTime!
     updatedAt: DateTime!
@@ -217,6 +218,7 @@ export const typeDefs = `
     checkOut: DateTime!
     nightPrice: Float!
     deposit: Float!
+    source: String
     notes: String
     status: BookingStatus
   }
@@ -231,6 +233,7 @@ export const typeDefs = `
     checkOut: DateTime
     nightPrice: Float
     deposit: Float
+    source: String
     notes: String
     status: BookingStatus
   }

@@ -62,6 +62,7 @@ export function AddBookingModal({ onClose, onAdd, initialDate, initialRoom, room
     guestName: '',
     city: '',
     phone: '',
+    source: '',
     checkIn: initialDate,
     nights: 1,
     room: initialRoom,
@@ -84,7 +85,7 @@ export function AddBookingModal({ onClose, onAdd, initialDate, initialRoom, room
       guestNameInputRef.current?.focus();
       return;
     }
-    onAdd({ guestName: f.guestName, city: f.city, phone: f.phone, room: f.room, checkIn: f.checkIn, checkOut, nightPrice: f.nightPrice, deposit: f.deposit });
+    onAdd({ guestName: f.guestName, city: f.city, phone: f.phone, source: f.source, room: f.room, checkIn: f.checkIn, checkOut, nightPrice: f.nightPrice, deposit: f.deposit });
   };
 
   return (
@@ -128,6 +129,21 @@ export function AddBookingModal({ onClose, onAdd, initialDate, initialRoom, room
               onChange={(e) => setF({ ...f, phone: e.target.value })}
             />
           </div>
+          <input
+            className="w-full bg-slate-50 border-slate-100 rounded-2xl px-4 py-2.5 text-sm font-bold focus:ring-2 focus:ring-emerald-500 transition-all"
+            placeholder={t(lang, 'booking.source')}
+            value={f.source}
+            onChange={(e) => setF({ ...f, source: e.target.value })}
+            list="source-suggestions"
+          />
+          <datalist id="source-suggestions">
+            <option value="Booking.com" />
+            <option value="Airbnb" />
+            <option value="WhatsApp" />
+            <option value="Phone" />
+            <option value="Walk-in" />
+            <option value="Website" />
+          </datalist>
           <div className="flex gap-3">
             <div className="w-1/2">
               <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1 block px-2">
