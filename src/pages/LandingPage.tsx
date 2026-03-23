@@ -447,6 +447,10 @@ export function LandingPage() {
     setLang(next);
     localStorage.setItem('landing-lang', next);
   };
+  const setLangTo = (l: Lang) => {
+    setLang(l);
+    localStorage.setItem('landing-lang', l);
+  };
 
   const c = content[lang];
 
@@ -492,13 +496,19 @@ export function LandingPage() {
 
           {/* Desktop right actions */}
           <div className="hidden md:flex items-center gap-3">
-            <button
-              onClick={cycleLang}
-              className="flex items-center gap-1 px-3 py-1.5 rounded-full border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 transition-colors"
-            >
-              <Globe size={14} />
-              {{ en: 'العربية', ar: 'Türkçe', tr: 'English' }[lang]}
-            </button>
+            <div className="relative flex items-center">
+              <Globe size={14} className="absolute left-2.5 text-slate-400 pointer-events-none" />
+              <select
+                value={lang}
+                onChange={(e) => setLangTo(e.target.value as Lang)}
+                className="appearance-none pl-8 pr-6 py-1.5 rounded-full border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 transition-colors bg-white cursor-pointer outline-none"
+              >
+                <option value="en">English</option>
+                <option value="ar">العربية</option>
+                <option value="tr">Türkçe</option>
+              </select>
+              <CaretDown size={10} weight="bold" className="absolute right-2 text-slate-400 pointer-events-none" />
+            </div>
             {loggedInUser ? (
               <div className="relative">
                 <button
@@ -634,13 +644,19 @@ export function LandingPage() {
               {c.footer.terms}
             </Link>
             <div className="my-1 border-t border-slate-100" />
-            <button
-              onClick={() => { cycleLang(); setMenuOpen(false); }}
-              className="flex items-center gap-2 px-4 py-3 rounded-2xl text-sm font-bold text-slate-500 hover:bg-slate-50 transition-colors"
-            >
-              <Globe size={16} />
-              {{ en: 'العربية', ar: 'Türkçe', tr: 'English' }[lang]}
-            </button>
+            <div className="relative flex items-center px-4 py-2">
+              <Globe size={16} className="absolute left-7 text-slate-400 pointer-events-none" />
+              <select
+                value={lang}
+                onChange={(e) => { setLangTo(e.target.value as Lang); setMenuOpen(false); }}
+                className="appearance-none pl-10 pr-8 py-2.5 rounded-2xl border border-slate-200 text-sm font-bold text-slate-600 bg-white w-full cursor-pointer outline-none"
+              >
+                <option value="en">English</option>
+                <option value="ar">العربية</option>
+                <option value="tr">Türkçe</option>
+              </select>
+              <CaretDown size={12} weight="bold" className="absolute right-7 text-slate-400 pointer-events-none" />
+            </div>
             {!loggedInUser && (
               <button
                 onClick={() => { trackCTA('start_trial', 'mobile_menu'); navigate('/user?tab=register'); setMenuOpen(false); }}
