@@ -32,6 +32,7 @@ interface AuthScreenProps {
 export function AuthScreen({ mode, onModeChange, onLoggedIn, error, setError, workspaceLabel, initialWorkspace, lang }: AuthScreenProps) {
   const [email, setEmail] = useState('');
   const [name, setName] = useState(initialWorkspace || '');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const dir = getDir(lang);
@@ -51,7 +52,7 @@ export function AuthScreen({ mode, onModeChange, onLoggedIn, error, setError, wo
         let defaults: any = {};
         try { defaults = JSON.parse(localStorage.getItem('admin-defaults') || '{}'); } catch {}
         const s = await authService.registerLocalTenant({
-          email, name: name || email, password,
+          email, name: name || email, password, phone,
           language: defaults.language,
           currency: defaults.currency,
           timezone: defaults.timezone,
@@ -110,16 +111,30 @@ export function AuthScreen({ mode, onModeChange, onLoggedIn, error, setError, wo
 
       <form onSubmit={handleSubmit} className="space-y-4 text-sm">
         {mode === 'register' && (
-          <div>
-            <label className="block text-xs font-bold text-slate-600 mb-1">{t(lang, 'auth.companyName')}</label>
-            <input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="w-full border rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500/60 bg-slate-50 border-slate-200"
-              placeholder={lang === 'ar' ? 'مثال: شقق النور' : 'e.g. Al Noor Apartments'}
-              required
-            />
-          </div>
+          <>
+            <div>
+              <label className="block text-xs font-bold text-slate-600 mb-1">{t(lang, 'auth.companyName')}</label>
+              <input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="w-full border rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500/60 bg-slate-50 border-slate-200"
+                placeholder={lang === 'ar' ? 'مثال: شقق النور' : 'e.g. Al Noor Apartments'}
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-600 mb-1">{lang === 'ar' ? 'رقم الهاتف' : 'Phone Number'}</label>
+              <input
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                className="w-full border rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500/60 bg-slate-50 border-slate-200"
+                placeholder={lang === 'ar' ? '+966 5X XXX XXXX' : '+966 5X XXX XXXX'}
+                required
+                dir="ltr"
+              />
+            </div>
+          </>
         )}
         <div>
           <label className="block text-xs font-bold text-slate-600 mb-1">{t(lang, 'auth.email')}</label>

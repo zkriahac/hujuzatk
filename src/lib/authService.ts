@@ -120,6 +120,7 @@ export const authService = {
     email: string;
     name: string;
     password: string;
+    phone?: string;
     language?: string;
     currency?: string;
     timezone?: string;
@@ -156,6 +157,7 @@ export const authService = {
               email: payload.email,
               name: payload.name,
               password: payload.password,
+              ...(payload.phone && { phone: payload.phone }),
               ...(payload.language && { language: payload.language }),
               ...(payload.currency && { currency: payload.currency }),
               ...(payload.timezone && { timezone: payload.timezone }),
@@ -397,7 +399,14 @@ export const authService = {
       const { dataService } = await import('./dataService');
       const tenants = await dataService.getAllTenants();
       if (tenants.length > 0) {
-        return tenants;
+        return tenants.map((t: any) => ({
+          ...t,
+          uuid: t.id, // GraphQL id = uuid
+          rooms: t.rooms || [],
+          defaultNightPrice: t.settings?.defaultNightPrice ?? 50,
+          defaultTax: t.settings?.defaultTax ?? 0,
+          bookingsCount: t.bookingsCount ?? 0,
+        }));
       }
     } catch (error) {
       console.warn('GraphQL fetch failed, falling back to local DB:', error);

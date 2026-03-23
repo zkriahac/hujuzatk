@@ -20,6 +20,7 @@ model Tenant {
   id                String    @id @default(uuid())
   name              String    @unique
   email             String    @unique
+  phone             String?   // Contact phone number
   passwordHash      String    // bcrypted
   language          String    @default("en") // 'en', 'ar', etc.
   currency          String    @default("OMR") // 'OMR', 'USD', 'AED', etc.

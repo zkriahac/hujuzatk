@@ -38,13 +38,17 @@ const GET_ALL_TENANTS = gql`
       id
       name
       email
+      phone
       language
       currency
       timezone
+      rooms { id name }
       subscriptionStatus
       validUntil
       createdAt
       isAdmin
+      bookingsCount
+      settings { defaultNightPrice defaultTax }
     }
   }
 `;

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { format, addMonths, differenceInCalendarDays, differenceInDays, eachMonthOfInterval, endOfMonth, parseISO, startOfMonth, startOfToday } from 'date-fns';
+import { format, addMonths, differenceInCalendarDays, differenceInDays, eachMonthOfInterval, endOfMonth, parseISO, startOfMonth } from 'date-fns';
 import { CaretDown, CalendarBlank, ListBullets, ChartPie, GearSix, ShieldCheck } from 'phosphor-react';
 import { authService, type SessionUser } from '../lib/authService';
 import { dataService } from '../lib/dataService';
@@ -8,7 +8,7 @@ import { getDir, type Language } from '../lib/i18n';
 import { t } from '../lib/i18n';
 import { cn } from '../utils/cn';
 import { formatTz } from '../utils/formatTz';
-import { DEFAULT_ROOMS, type View, type ListFilter, getMonthNumber } from '../utils/constants';
+import { DEFAULT_ROOMS, type View, type ListFilter, getMonthNumber, getEffectiveStatus } from '../utils/constants';
 import type { Booking } from '../db';
 import CalendarView from './CalendarView';
 import ListView from './ListView';
@@ -236,7 +236,6 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
   };
 
   const filteredBookings = useMemo(() => {
-    const today = startOfToday();
     let filtered = bookings.filter((b: Booking) => {
       const term = listSearchTerm.toLowerCase();
       return (
@@ -247,13 +246,12 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
     });
     if (listFilter !== 'all') {
       filtered = filtered.filter((b: Booking) => {
-        if (listFilter === 'canceled') return b.status === 'CANCELED';
-        if (b.status === 'CANCELED') return false;
-        const checkIn = parseISO(b.checkIn);
-        const checkOut = parseISO(b.checkOut);
-        if (listFilter === 'upcoming') return checkIn >= today;
-        if (listFilter === 'active') return checkIn < today && checkOut > today;
-        if (listFilter === 'past') return checkOut <= today;
+        const effective = getEffectiveStatus(b);
+        if (listFilter === 'canceled') return effective === 'CANCELED';
+        if (effective === 'CANCELED') return false;
+        if (listFilter === 'upcoming') return effective === 'UPCOMING';
+        if (listFilter === 'active') return effective === 'ACTIVE';
+        if (listFilter === 'past') return effective === 'COMPLETED' || effective === 'NO_SHOW';
         return true;
       });
     }

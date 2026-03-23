@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import {
   Calendar, FileText, Globe, ChartPie, DeviceMobile, Database,
   ArrowRight, Buildings, Check, Star, ShieldCheck, Sparkle,
-  List, X,
+  List, X, CaretDown,
 } from 'phosphor-react';
 import { authService } from '../lib/authService';
 import { trackCTA, trackWorkspaceSearch } from '../lib/analytics';
@@ -339,6 +339,17 @@ export function LandingPage() {
   const [workspaceName, setWorkspaceName] = useState('');
   const [lang, setLang] = useState<Lang>(detectLang);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [loggedInUser, setLoggedInUser] = useState<{ name: string; email: string; slug: string } | null>(null);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+
+  useEffect(() => {
+    authService.getCurrentUser().then((s) => {
+      if (s) {
+        const slug = encodeURIComponent((s.tenant.name || 'workspace').replace(/\s+/g, '-'));
+        setLoggedInUser({ name: s.tenant.name || s.tenant.email, email: s.tenant.email, slug });
+      }
+    });
+  }, []);
 
   const toggleLang = () => {
     const next = lang === 'en' ? 'ar' : 'en';
@@ -397,16 +408,61 @@ export function LandingPage() {
               <Globe size={14} />
               {lang === 'en' ? 'العربية' : 'English'}
             </button>
-            <button onClick={() => navigate('/user')} className="px-4 py-2 text-sm font-bold text-slate-700 hover:text-emerald-600 transition-colors">
-              {c.nav.login}
-            </button>
-            <button
-              onClick={() => { trackCTA('start_trial', 'nav'); navigate('/user?tab=register'); }}
-              className="group flex items-center gap-2 rounded-full bg-slate-900 px-6 py-2.5 text-sm font-bold text-white transition-all hover:bg-emerald-600 active:scale-95"
-            >
-              {c.nav.startTrial}
-              <ArrowRight size={16} className={cn('transition-transform group-hover:translate-x-1', lang === 'ar' && 'rotate-180')} />
-            </button>
+            {loggedInUser ? (
+              <div className="relative">
+                <button
+                  onClick={() => setUserMenuOpen(v => !v)}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-emerald-200 bg-emerald-50 text-sm font-bold text-emerald-700 hover:bg-emerald-100 transition-colors"
+                >
+                  <div className="w-6 h-6 rounded-full bg-emerald-600 flex items-center justify-center text-white text-xs font-black">
+                    {loggedInUser.name[0]?.toUpperCase() || 'U'}
+                  </div>
+                  {loggedInUser.name}
+                  <CaretDown size={12} weight="bold" className={cn('transition-transform', userMenuOpen && 'rotate-180')} />
+                </button>
+                {userMenuOpen && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setUserMenuOpen(false)} />
+                    <div className="absolute top-full mt-2 right-0 z-50 bg-white rounded-2xl border border-slate-200 shadow-2xl py-2 min-w-[200px]">
+                      <div className="px-4 py-2 border-b border-slate-100">
+                        <div className="font-bold text-sm text-slate-900">{loggedInUser.name}</div>
+                        <div className="text-xs text-slate-400">{loggedInUser.email}</div>
+                      </div>
+                      <button
+                        onClick={() => { navigate(`/${loggedInUser.slug}`); setUserMenuOpen(false); }}
+                        className="w-full px-4 py-2.5 text-sm font-bold text-emerald-600 hover:bg-emerald-50 transition-colors text-left flex items-center gap-2"
+                      >
+                        <Sparkle size={16} weight="fill" />
+                        {lang === 'ar' ? 'لوحة التحكم' : 'Go to Dashboard'}
+                      </button>
+                      <button
+                        onClick={async () => {
+                          await authService.logout();
+                          setLoggedInUser(null);
+                          setUserMenuOpen(false);
+                        }}
+                        className="w-full px-4 py-2.5 text-sm font-bold text-red-500 hover:bg-red-50 transition-colors text-left"
+                      >
+                        {lang === 'ar' ? 'تسجيل الخروج' : 'Logout'}
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            ) : (
+              <>
+                <button onClick={() => navigate('/user')} className="px-4 py-2 text-sm font-bold text-slate-700 hover:text-emerald-600 transition-colors">
+                  {c.nav.login}
+                </button>
+                <button
+                  onClick={() => { trackCTA('start_trial', 'nav'); navigate('/user?tab=register'); }}
+                  className="group flex items-center gap-2 rounded-full bg-slate-900 px-6 py-2.5 text-sm font-bold text-white transition-all hover:bg-emerald-600 active:scale-95"
+                >
+                  {c.nav.startTrial}
+                  <ArrowRight size={16} className={cn('transition-transform group-hover:translate-x-1', lang === 'ar' && 'rotate-180')} />
+                </button>
+              </>
+            )}
           </div>
 
           {/* Mobile: hamburger */}
@@ -437,12 +493,41 @@ export function LandingPage() {
               {c.nav.pricing}
             </a>
             <div className="my-1 border-t border-slate-100" />
-            <button
-              onClick={() => { navigate('/user'); setMenuOpen(false); }}
-              className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold text-slate-700 hover:bg-emerald-50 hover:text-emerald-600 transition-colors text-start"
-            >
-              {c.nav.login}
-            </button>
+            {loggedInUser ? (
+              <>
+                <div className="flex items-center gap-3 px-4 py-3">
+                  <div className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center text-white font-black text-xs">
+                    {loggedInUser.name[0]?.toUpperCase() || 'U'}
+                  </div>
+                  <div>
+                    <div className="font-bold text-sm text-slate-900">{loggedInUser.name}</div>
+                    <div className="text-xs text-slate-400">{loggedInUser.email}</div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => { navigate(`/${loggedInUser.slug}`); setMenuOpen(false); }}
+                  className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold text-emerald-600 hover:bg-emerald-50 transition-colors text-start w-full"
+                >
+                  <Sparkle size={16} weight="fill" />
+                  {lang === 'ar' ? 'لوحة التحكم' : 'Go to Dashboard'}
+                </button>
+                <button
+                  onClick={async () => { await authService.logout(); setLoggedInUser(null); setMenuOpen(false); }}
+                  className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold text-red-500 hover:bg-red-50 transition-colors text-start w-full"
+                >
+                  {lang === 'ar' ? 'تسجيل الخروج' : 'Logout'}
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={() => { navigate('/user'); setMenuOpen(false); }}
+                  className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold text-slate-700 hover:bg-emerald-50 hover:text-emerald-600 transition-colors text-start"
+                >
+                  {c.nav.login}
+                </button>
+              </>
+            )}
             <Link
               to="/privacy"
               onClick={() => setMenuOpen(false)}
@@ -465,13 +550,15 @@ export function LandingPage() {
               <Globe size={16} />
               {lang === 'en' ? 'العربية' : 'English'}
             </button>
-            <button
-              onClick={() => { trackCTA('start_trial', 'mobile_menu'); navigate('/user?tab=register'); setMenuOpen(false); }}
-              className="mt-2 w-full flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-6 py-3.5 text-sm font-black text-white transition-all hover:bg-emerald-700 active:scale-95"
-            >
-              {c.nav.startTrial}
-              <ArrowRight size={16} className={lang === 'ar' ? 'rotate-180' : ''} />
-            </button>
+            {!loggedInUser && (
+              <button
+                onClick={() => { trackCTA('start_trial', 'mobile_menu'); navigate('/user?tab=register'); setMenuOpen(false); }}
+                className="mt-2 w-full flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-6 py-3.5 text-sm font-black text-white transition-all hover:bg-emerald-700 active:scale-95"
+              >
+                {c.nav.startTrial}
+                <ArrowRight size={16} className={lang === 'ar' ? 'rotate-180' : ''} />
+              </button>
+            )}
           </div>
         )}
       </header>

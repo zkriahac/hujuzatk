@@ -180,7 +180,7 @@ export const resolvers = {
 			if (existing) throw new GraphQLError('Email already registered', { extensions: { code: 'BAD_USER_INPUT', http: { status: 400 } } });
 			if (input.password.length < 8) throw new GraphQLError('Password must be at least 8 characters', { extensions: { code: 'BAD_USER_INPUT', http: { status: 400 } } });
 			const passwordHash = await bcrypt.hash(input.password, 10);
-			const tenant = await prisma.tenant.create({ data: { name: input.name, email: input.email, passwordHash, currency: input.currency || 'OMR', timezone: input.timezone || 'Asia/Muscat', language: input.language || 'en', subscriptionStatus: 'TRIAL', validUntil: calculateValidUntil(TRIAL_DAYS), rooms: JSON.stringify([{ id: 'r1', name: 'Room 1' }, { id: 'r2', name: 'Room 2' }, { id: 'r3', name: 'Room 3' }, { id: 'r4', name: 'Room 4' }, { id: 'r5', name: 'Room 5' }]), isAdmin: false, isActive: true, settings: { create: { defaultNightPrice: 50, defaultTax: 0 } } }, include: { settings: true } });
+			const tenant = await prisma.tenant.create({ data: { name: input.name, email: input.email, phone: input.phone || null, passwordHash, currency: input.currency || 'OMR', timezone: input.timezone || 'Asia/Muscat', language: input.language || 'en', subscriptionStatus: 'TRIAL', validUntil: calculateValidUntil(TRIAL_DAYS), rooms: JSON.stringify([{ id: 'r1', name: 'Room 1' }, { id: 'r2', name: 'Room 2' }, { id: 'r3', name: 'Room 3' }, { id: 'r4', name: 'Room 4' }, { id: 'r5', name: 'Room 5' }]), isAdmin: false, isActive: true, settings: { create: { defaultNightPrice: 50, defaultTax: 0 } } }, include: { settings: true } });
 			const { token, refreshToken } = generateTokens(tenant.id, tenant.email);
 			await prisma.auditLog.create({ data: { tenantId: tenant.id, action: 'TENANT_UPDATED', entityType: 'Tenant', entityId: tenant.id, changes: { action: 'tenant_created' } } });
 			return { token, refreshToken, tenant: { ...normalizeTenant(tenant), bookingsCount: 0 } };
@@ -376,6 +376,14 @@ export const resolvers = {
 			await prisma.tenant.update({ where: { id: tenantId }, data: { subscriptionStatus: 'canceled' } });
 			await prisma.auditLog.create({ data: { tenantId, action: 'TENANT_UPDATED', entityType: 'Tenant', entityId: tenantId, changes: { action: 'subscription_canceled' } } });
 			return true;
+		},
+		async adminLoginAs(_: any, { tenantId }: any, context: any) {
+			await requireSuperAdmin(context);
+			const tenant = await prisma.tenant.findUnique({ where: { id: tenantId }, include: { settings: true } });
+			if (!tenant) throw new GraphQLError('Tenant not found', { extensions: { code: 'NOT_FOUND', http: { status: 404 } } });
+			const { token, refreshToken } = generateTokens(tenant.id, tenant.email);
+			const bookingsCount = await prisma.booking.count({ where: { tenantId: tenant.id } });
+			return { token, refreshToken, tenant: { ...normalizeTenant(tenant), bookingsCount } };
 		},
 		async adminUpdateTenant(_: any, { tenantId, input }: any, context: any) {
 			await requireSuperAdmin(context);

@@ -36,6 +36,7 @@ export const typeDefs = `
     id: ID!
     name: String!
     email: String!
+    phone: String
     language: String!
     currency: String!
     timezone: String!
@@ -173,12 +174,14 @@ export const typeDefs = `
     createAdminSubscription(tenantId: ID!, days: Int!): Tenant!
     cancelSubscription(tenantId: ID!): Boolean!
     adminUpdateTenant(tenantId: ID!, input: UpdateTenantInput!): Tenant!
+    adminLoginAs(tenantId: ID!): AuthPayload!
   }
 
   input RegisterInput {
     email: String!
     name: String!
     password: String!
+    phone: String
     currency: String
     timezone: String
     language: String

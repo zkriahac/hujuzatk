@@ -11,7 +11,20 @@ import type { Tenant } from '../db';
 const ADMIN_UPDATE_TENANT = gql`
   mutation AdminUpdateTenant($tenantId: ID!, $input: UpdateTenantInput!) {
     adminUpdateTenant(tenantId: $tenantId, input: $input) {
-      id name email language currency timezone subscriptionStatus validUntil isAdmin
+      id name email phone language currency timezone rooms { id name } subscriptionStatus validUntil isAdmin bookingsCount
+    }
+  }
+`;
+
+const ADMIN_LOGIN_AS = gql`
+  mutation AdminLoginAs($tenantId: ID!) {
+    adminLoginAs(tenantId: $tenantId) {
+      token
+      refreshToken
+      tenant {
+        id name email phone language currency timezone rooms { id name }
+        subscriptionStatus validUntil isAdmin createdAt
+      }
     }
   }
 `;
@@ -93,6 +106,7 @@ function DefaultsView({ lang }: { lang: Language }) {
 function AdminTenantRow({ tObj, onReload, lang, tz }: { tObj: Tenant; onReload: () => void; lang: Language; tz: string }) {
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const [f, setF] = useState({
     name: tObj.name || '',
     language: tObj.language || 'en',
@@ -104,7 +118,7 @@ function AdminTenantRow({ tObj, onReload, lang, tz }: { tObj: Tenant; onReload: 
   const handleSave = async () => {
     setSaving(true);
     try {
-      await apolloClient.mutate({ mutation: ADMIN_UPDATE_TENANT, variables: { tenantId: tObj.id, input: f } });
+      await apolloClient.mutate({ mutation: ADMIN_UPDATE_TENANT, variables: { tenantId: tObj.uuid || (tObj as any).id, input: f } });
       setEditing(false);
       onReload();
     } finally {
@@ -117,20 +131,53 @@ function AdminTenantRow({ tObj, onReload, lang, tz }: { tObj: Tenant; onReload: 
     onReload();
   };
 
+  const handleLoginAs = async () => {
+    try {
+      const { data } = await apolloClient.mutate({ mutation: ADMIN_LOGIN_AS, variables: { tenantId: tObj.uuid || (tObj as any).id } });
+      const { token, refreshToken } = (data as any).adminLoginAs;
+      // Store admin token to restore later
+      const adminToken = localStorage.getItem('authToken');
+      const adminRefresh = localStorage.getItem('refreshToken');
+      localStorage.setItem('adminToken_backup', adminToken || '');
+      localStorage.setItem('adminRefresh_backup', adminRefresh || '');
+      // Switch to customer token
+      localStorage.setItem('authToken', token);
+      localStorage.setItem('refreshToken', refreshToken);
+      // Navigate to their workspace
+      const slug = encodeURIComponent((tObj.name || 'workspace').replace(/\s+/g, '-'));
+      window.location.href = `/${slug}`;
+    } catch (err: any) {
+      alert('Login as failed: ' + (err.message || 'Unknown error'));
+    }
+  };
+
   const handleRoomChange = (i: number, name: string) => {
     const rooms = [...f.rooms]; rooms[i] = { ...rooms[i], name }; setF({ ...f, rooms });
   };
   const handleAddRoom = () => setF({ ...f, rooms: [...f.rooms, { id: `R${Date.now()}`, name: `Room ${f.rooms.length + 1}` }] });
   const handleRemoveRoom = (i: number) => setF({ ...f, rooms: f.rooms.filter((_: any, idx: number) => idx !== i) });
 
+  const tRooms = tObj.rooms || [];
+
   return (
     <>
-      <tr className="hover:bg-slate-800/50 transition-colors group">
-        <td className="px-6 py-4 font-black text-white">{tObj.name}</td>
+      <tr className="hover:bg-slate-800/50 transition-colors group cursor-pointer" onClick={() => setExpanded(e => !e)}>
+        <td className="px-6 py-4">
+          <div className="font-black text-white">{tObj.name}</div>
+          <div className="text-[10px] text-slate-500 font-bold">{(tObj as any).phone || '—'}</div>
+        </td>
         <td className="px-6 py-4 text-xs font-bold text-slate-400">{tObj.email}</td>
-        <td className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-tighter">
-          {tObj.language?.toUpperCase()} · {tObj.currency} · {tObj.timezone}
-          {tObj.rooms?.length ? ` · ${tObj.rooms.length} rooms` : ''}
+        <td className="px-6 py-4">
+          <div className="text-[10px] font-black text-slate-500 uppercase tracking-tighter">
+            {tObj.language?.toUpperCase()} · {tObj.currency} · {tObj.timezone}
+          </div>
+          <div className="flex flex-wrap gap-1 mt-1">
+            {tRooms.slice(0, 6).map((r: any) => (
+              <span key={r.id} className="px-1.5 py-0.5 bg-slate-700 text-slate-300 rounded text-[9px] font-black">{r.name}</span>
+            ))}
+            {tRooms.length > 6 && <span className="px-1.5 py-0.5 text-slate-500 text-[9px] font-black">+{tRooms.length - 6}</span>}
+            {tRooms.length === 0 && <span className="text-[9px] text-slate-600 font-black">No rooms</span>}
+          </div>
         </td>
         <td className="px-6 py-4">
           <span className={cn('px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest',
@@ -140,12 +187,20 @@ function AdminTenantRow({ tObj, onReload, lang, tz }: { tObj: Tenant; onReload: 
           )}>
             {t(lang, `status.${tObj.subscriptionStatus}`)}
           </span>
+          <div className="text-[10px] text-slate-500 font-bold mt-1">
+            {(tObj as any).bookingsCount ?? 0} bookings
+          </div>
         </td>
         <td className="px-6 py-4 text-xs font-black text-slate-400">
           {tObj.validUntil ? formatTz(tObj.validUntil, 'yyyy-MM-dd', tz, lang) : '—'}
         </td>
-        <td className="px-6 py-4 text-right whitespace-nowrap">
-          <div className="flex gap-2 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+        <td className="px-6 py-4 text-right whitespace-nowrap" onClick={e => e.stopPropagation()}>
+          <div className="flex gap-2 justify-end">
+            <button onClick={handleLoginAs}
+              className="px-3 py-1.5 bg-purple-600 text-white rounded-lg text-[10px] font-black uppercase tracking-tighter hover:bg-purple-500"
+              title="Login as this customer">
+              Login As
+            </button>
             <button onClick={() => setEditing(e => !e)}
               className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-[10px] font-black uppercase tracking-tighter hover:bg-blue-500">
               {editing ? 'Close' : 'Edit'}
@@ -159,6 +214,42 @@ function AdminTenantRow({ tObj, onReload, lang, tz }: { tObj: Tenant; onReload: 
           </div>
         </td>
       </tr>
+      {/* Expanded detail row */}
+      {expanded && !editing && (
+        <tr className="bg-slate-800/40">
+          <td colSpan={6} className="px-6 py-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
+              <div>
+                <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest block mb-1">Phone</span>
+                <span className="text-slate-300 font-bold">{(tObj as any).phone || 'Not set'}</span>
+              </div>
+              <div>
+                <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest block mb-1">Night Price</span>
+                <span className="text-slate-300 font-bold">{tObj.defaultNightPrice ?? 50} {tObj.currency}</span>
+              </div>
+              <div>
+                <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest block mb-1">Tax</span>
+                <span className="text-slate-300 font-bold">{tObj.defaultTax ?? 0}%</span>
+              </div>
+              <div>
+                <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest block mb-1">Created</span>
+                <span className="text-slate-300 font-bold">{tObj.createdAt ? formatTz(tObj.createdAt, 'yyyy-MM-dd', tz, lang) : '—'}</span>
+              </div>
+            </div>
+            <div className="mt-3">
+              <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest block mb-1">Rooms ({tRooms.length})</span>
+              <div className="flex flex-wrap gap-1.5">
+                {tRooms.map((r: any) => (
+                  <span key={r.id} className="px-2 py-1 bg-slate-700 text-slate-200 rounded-lg text-[10px] font-black">
+                    {r.id}: {r.name}
+                  </span>
+                ))}
+                {tRooms.length === 0 && <span className="text-[10px] text-slate-600 font-black">No rooms configured</span>}
+              </div>
+            </div>
+          </td>
+        </tr>
+      )}
       {editing && (
         <tr className="bg-slate-800/60">
           <td colSpan={6} className="px-6 py-5">
@@ -300,7 +391,7 @@ export default function AdminView({ lang, tz }: AdminViewProps) {
                   ) : tenants.length === 0 ? (
                     <tr><td colSpan={6} className="px-6 py-20 text-center text-slate-500 font-black uppercase text-xs tracking-widest">{t(lang, 'admin.noTenants')}</td></tr>
                   ) : tenants.map((tObj) => (
-                    <AdminTenantRow key={tObj.uuid} tObj={tObj} onReload={loadTenants} lang={lang} tz={tz} />
+                    <AdminTenantRow key={tObj.uuid || (tObj as any).id} tObj={tObj} onReload={loadTenants} lang={lang} tz={tz} />
                   ))}
                 </tbody>
               </table>

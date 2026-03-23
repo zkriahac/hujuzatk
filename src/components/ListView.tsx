@@ -3,7 +3,7 @@ import { MagnifyingGlass, Users, Eye } from 'phosphor-react';
 import { cn } from '../utils/cn';
 import { t, type Language } from '../lib/i18n';
 import { formatTz } from '../utils/formatTz';
-import type { ListFilter } from '../utils/constants';
+import { type ListFilter, getEffectiveStatus } from '../utils/constants';
 
 interface ListViewProps {
   bookings: any[];
@@ -110,23 +110,26 @@ export default function ListView({
             ) : (
               bookings.map((b: any) => {
                 const checkIn = parseISO(b.checkIn);
-                const checkOut = parseISO(b.checkOut);
                 const today = startOfToday();
+                const effective = getEffectiveStatus(b);
                 let statusColor = 'bg-slate-100 text-slate-500';
                 let statusText = t(lang, 'list.upcoming');
 
-                if (b.status === 'CANCELED') {
+                if (effective === 'CANCELED') {
                   statusColor = 'bg-red-50 text-red-500 line-through';
                   statusText = t(lang, 'list.canceled');
-                } else if (isSameDay(checkIn, today)) {
+                } else if (effective === 'ACTIVE' && isSameDay(checkIn, today)) {
                   statusColor = 'bg-red-500 text-white font-black animate-pulse';
                   statusText = t(lang, 'list.checkInToday');
-                } else if (checkIn < today && checkOut > today) {
+                } else if (effective === 'ACTIVE') {
                   statusColor = 'bg-emerald-600 text-white font-black';
                   statusText = t(lang, 'list.active');
-                } else if (checkOut <= today) {
+                } else if (effective === 'COMPLETED' || effective === 'NO_SHOW') {
                   statusColor = 'bg-slate-200 text-slate-400';
-                  statusText = t(lang, 'list.past');
+                  statusText = effective === 'NO_SHOW' ? 'No Show' : t(lang, 'list.past');
+                } else if (effective === 'UPCOMING') {
+                  statusColor = 'bg-blue-100 text-blue-600';
+                  statusText = t(lang, 'list.upcoming');
                 }
 
                 return (

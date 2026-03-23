@@ -10,6 +10,19 @@ export type View = 'calendar' | 'list' | 'reports' | 'settings' | 'admin';
 export type ListFilter = 'upcoming' | 'active' | 'past' | 'canceled' | 'all';
 export type AuthMode = 'login' | 'register';
 
+/** Compute effective booking status from DB status + real dates */
+export function getEffectiveStatus(b: { status: string; checkIn: string; checkOut: string }): string {
+  const status = (b.status || '').toUpperCase();
+  if (status === 'CANCELED' || status === 'COMPLETED' || status === 'NO_SHOW') return status;
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()); // midnight local
+  const checkIn = new Date(b.checkIn);
+  const checkOut = new Date(b.checkOut);
+  if (checkOut <= today) return 'COMPLETED';
+  if (checkIn <= today && checkOut > today) return 'ACTIVE';
+  return 'UPCOMING';
+}
+
 export function getMonthNumber(monthName: string): string {
   const months: Record<string, string> = {
     JANUARY: '01', FEBRUARY: '02', MARCH: '03', APRIL: '04',
