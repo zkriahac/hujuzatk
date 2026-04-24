@@ -40,6 +40,8 @@ interface CalendarViewProps {
   setAddModalInitialDate: (d: string) => void;
   setAddModalInitialRoom: (r: string) => void;
   setSelectedBooking: (b: any) => void;
+  setModalAnchor?: (a: { x: number; y: number } | null) => void;
+  selectedBookingId?: string | null;
   jumpToToday: () => void;
   onLoadMorePast: () => Promise<void>;
   onLoadMoreFuture: () => Promise<void>;
@@ -58,6 +60,8 @@ export default function CalendarView({
   setAddModalInitialDate,
   setAddModalInitialRoom,
   setSelectedBooking,
+  setModalAnchor,
+  selectedBookingId,
   jumpToToday,
   onLoadMorePast,
   onLoadMoreFuture,
@@ -187,7 +191,8 @@ export default function CalendarView({
                           <td
                             key={r.id}
                             style={{ width: colW, minWidth: colW }}
-                            onClick={() => {
+                            onClick={(e) => {
+                              setModalAnchor?.({ x: e.clientX, y: e.clientY });
                               setSelectedDateStr(dStr);
                               setAddModalInitialDate(dStr);
                               setAddModalInitialRoom(r.id);
@@ -205,23 +210,44 @@ export default function CalendarView({
                             )}
                             {cellBookings.map((b: any) => {
                               const palette = ROOM_GROUP_PALETTES[roomPaletteMap[b.room] ?? 0].booking;
+                              const checkInStr = b.checkIn.split('T')[0];
+                              const checkOutStr = b.checkOut.split('T')[0];
+                              const isFirst = dStr === checkInStr;
+                              // Last night = day right before checkout
+                              const prevDay = new Date(dStr + 'T12:00:00');
+                              prevDay.setDate(prevDay.getDate() + 1);
+                              const nextDStr = format(prevDay, 'yyyy-MM-dd');
+                              const isLast = nextDStr === checkOutStr;
+                              const isSingle = isFirst && isLast;
+                              const isSelected = selectedBookingId === b.id;
                               return (
                                 <div
                                   key={b.id}
                                   onClick={(e) => {
                                     e.stopPropagation();
+                                    setModalAnchor?.({ x: e.clientX, y: e.clientY });
                                     setSelectedBooking(b);
                                   }}
                                   className={cn(
-                                    'absolute inset-0.5 font-black rounded-md text-center leading-tight flex items-center justify-center shadow-sm cursor-pointer hover:shadow-lg transition-all hover:scale-[1.02] px-0.5 border truncate',
+                                    'absolute left-0.5 right-0.5 font-black text-center leading-tight flex items-center justify-center shadow-sm cursor-pointer hover:shadow-lg transition-all hover:scale-[1.02] px-0.5 border truncate',
                                     bookingText,
                                     palette.bg,
                                     palette.border,
                                     palette.text,
+                                    // Merge visual: round only outer edges, strip interior borders so slices look continuous
+                                    isSingle
+                                      ? 'inset-y-0.5 rounded-md'
+                                      : isFirst
+                                      ? 'top-0.5 -bottom-px rounded-t-md rounded-b-none border-b-0'
+                                      : isLast
+                                      ? '-top-px bottom-0.5 rounded-b-md rounded-t-none border-t-0'
+                                      : '-top-px -bottom-px rounded-none border-y-0',
+                                    isSelected && 'ring-2 ring-emerald-500 ring-inset z-10 shadow-lg scale-[1.02]',
                                   )}
                                   title={b.guestName}
                                 >
-                                  <span className="truncate">{b.guestName}</span>
+                                  {/* Show guest name only on first day/single night — middle/last slices stay as a continuous bar */}
+                                  <span className="truncate">{isFirst ? b.guestName : ''}</span>
                                 </div>
                               );
                             })}

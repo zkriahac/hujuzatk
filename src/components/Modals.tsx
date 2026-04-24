@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { format, addDays, parseISO } from 'date-fns';
 import {
   X, Sparkle, Users, Minus, Plus, CreditCard, FileText,
@@ -7,6 +7,35 @@ import {
 import { cn } from '../utils/cn';
 import { t, type Language } from '../lib/i18n';
 import { formatTz } from '../utils/formatTz';
+
+// ---------- ANCHORED-POSITION HOOK ----------
+// Returns a ref to attach to the modal card and a {top, left} style to apply when an anchor
+// (viewport click coords) is provided. Falls back to null (centered layout) on small screens or
+// when no anchor is passed.
+export type ModalAnchor = { x: number; y: number } | null | undefined;
+export function useAnchoredPosition(anchor: ModalAnchor) {
+  const ref = useRef<HTMLElement | null>(null);
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+  useLayoutEffect(() => {
+    if (!anchor) { setPos(null); return; }
+    if (typeof window === 'undefined' || window.innerWidth < 640) { setPos(null); return; }
+    const node = ref.current;
+    const rect = node?.getBoundingClientRect();
+    const w = rect?.width || 480;
+    const h = rect?.height || 520;
+    const M = 16;
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    let left = anchor.x + M;
+    let top = anchor.y + M;
+    if (left + w > vw - M) left = anchor.x - w - M;
+    if (top + h > vh - M) top = anchor.y - h - M;
+    left = Math.max(M, Math.min(left, vw - w - M));
+    top = Math.max(M, Math.min(top, vh - h - M));
+    setPos({ top, left });
+  }, [anchor]);
+  return { ref, pos };
+}
 
 // ---------- CONFIRM MODAL ----------
 
@@ -52,11 +81,13 @@ interface AddBookingModalProps {
   rooms: any[];
   currency: string;
   lang: Language;
+  anchor?: ModalAnchor;
 }
 
-export function AddBookingModal({ onClose, onAdd, initialDate, initialRoom, rooms, currency, lang }: AddBookingModalProps) {
+export function AddBookingModal({ onClose, onAdd, initialDate, initialRoom, rooms, currency, lang, anchor }: AddBookingModalProps) {
   const guestNameInputRef = useRef<HTMLInputElement>(null);
   const [nameError, setNameError] = useState(false);
+  const { ref: anchorRef, pos: anchorPos } = useAnchoredPosition(anchor);
 
   const [f, setF] = useState({
     guestName: '',
@@ -89,8 +120,24 @@ export function AddBookingModal({ onClose, onAdd, initialDate, initialRoom, room
   };
 
   return (
-    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-[200] p-4">
-      <form onSubmit={handleSubmit} dir={lang === 'ar' ? 'rtl' : 'ltr'} className="relative bg-white rounded-[2.5rem] max-w-lg w-full p-6 sm:p-10 shadow-3xl max-h-[95vh] overflow-y-auto">
+    <div
+      className={cn(
+        'fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[200]',
+        !anchorPos && 'flex items-center justify-center p-4',
+      )}
+      onClick={onClose}
+    >
+      <form
+        ref={anchorRef as any}
+        onSubmit={handleSubmit}
+        onClick={(e) => e.stopPropagation()}
+        dir={lang === 'ar' ? 'rtl' : 'ltr'}
+        style={anchorPos ? { position: 'absolute', top: anchorPos.top, left: anchorPos.left } : undefined}
+        className={cn(
+          'relative bg-white rounded-[2.5rem] max-w-lg w-full p-6 sm:p-10 shadow-3xl max-h-[95vh] overflow-y-auto',
+          anchorPos && 'max-w-[min(32rem,calc(100vw-2rem))]',
+        )}
+      >
         <button type="button" onClick={onClose} className="absolute top-4 end-4 p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all">
           <X size={20} weight="bold" />
         </button>
@@ -264,14 +311,16 @@ interface BookingDetailsModalProps {
   lang: Language;
   tz: string;
   rooms: any[];
+  anchor?: ModalAnchor;
 }
 
 export function BookingDetailsModal({
   booking, onClose, onDelete, onPrintInvoice, onUpdateStatus, onUpdate,
-  currency, lang, tz, rooms,
+  currency, lang, tz, rooms, anchor,
 }: BookingDetailsModalProps) {
   const [editMode, setEditMode] = useState(false);
   const [confirmAction, setConfirmAction] = useState<{ message: string; action: () => void; color?: string } | null>(null);
+  const { ref: anchorRef, pos: anchorPos } = useAnchoredPosition(anchor);
 
   const nightsFromBooking = Math.round(
     (new Date(booking.checkOut).getTime() - new Date(booking.checkIn).getTime()) / 86400000
@@ -311,8 +360,18 @@ export function BookingDetailsModal({
 
   if (editMode) {
     return (
-      <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-[200] p-4">
-        <form onSubmit={handleSave} dir={lang === 'ar' ? 'rtl' : 'ltr'} className="relative bg-white rounded-[2.5rem] max-w-lg w-full p-6 sm:p-10 shadow-3xl max-h-[95vh] overflow-y-auto">
+      <div
+        className={cn('fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[200]', !anchorPos && 'flex items-center justify-center p-4')}
+        onClick={() => setEditMode(false)}
+      >
+        <form
+          ref={anchorRef as any}
+          onSubmit={handleSave}
+          onClick={(e) => e.stopPropagation()}
+          dir={lang === 'ar' ? 'rtl' : 'ltr'}
+          style={anchorPos ? { position: 'absolute', top: anchorPos.top, left: anchorPos.left } : undefined}
+          className={cn('relative bg-white rounded-[2.5rem] max-w-lg w-full p-6 sm:p-10 shadow-3xl max-h-[95vh] overflow-y-auto', anchorPos && 'max-w-[min(32rem,calc(100vw-2rem))]')}
+        >
           <button type="button" onClick={() => setEditMode(false)} className="absolute top-4 end-4 p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all">
             <X size={20} weight="bold" />
           </button>
@@ -445,8 +504,17 @@ export function BookingDetailsModal({
   }
 
   return (
-    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-[200] p-4">
-      <div dir={lang === 'ar' ? 'rtl' : 'ltr'} className="relative bg-white rounded-[2.5rem] max-w-sm w-full p-10 shadow-3xl">
+    <div
+      className={cn('fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[200]', !anchorPos && 'flex items-center justify-center p-4')}
+      onClick={onClose}
+    >
+      <div
+        ref={anchorRef as any}
+        onClick={(e) => e.stopPropagation()}
+        dir={lang === 'ar' ? 'rtl' : 'ltr'}
+        style={anchorPos ? { position: 'absolute', top: anchorPos.top, left: anchorPos.left } : undefined}
+        className={cn('relative bg-white rounded-[2.5rem] max-w-sm w-full p-10 shadow-3xl', anchorPos && 'max-w-[min(24rem,calc(100vw-2rem))]')}
+      >
         <button type="button" onClick={onClose} className="absolute top-5 end-5 p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all">
           <X size={20} weight="bold" />
         </button>

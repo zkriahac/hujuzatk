@@ -102,6 +102,9 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
   );
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
+  // Modal anchor — viewport x/y of the calendar cell the user clicked. Modals open near it
+  // instead of centered, so users keep spatial context for what they just touched.
+  const [modalAnchor, setModalAnchor] = useState<{ x: number; y: number } | null>(null);
 
   const [reportStartDate, setReportStartDate] = useState(format(startOfMonth(new Date()), 'yyyy-MM-dd'));
   const [reportEndDate, setReportEndDate] = useState(format(endOfMonth(new Date()), 'yyyy-MM-dd'));
@@ -495,6 +498,8 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
             setAddModalInitialDate={setAddModalInitialDate}
             setAddModalInitialRoom={setAddModalInitialRoom}
             setSelectedBooking={setSelectedBooking}
+            setModalAnchor={setModalAnchor}
+            selectedBookingId={selectedBooking?.id ?? null}
             jumpToToday={jumpToToday}
             onLoadMorePast={loadMorePast}
             onLoadMoreFuture={loadMoreFuture}
@@ -557,20 +562,21 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
 
       {showAddModal && (
         <AddBookingModal
-          onClose={() => setShowAddModal(false)}
+          onClose={() => { setShowAddModal(false); setModalAnchor(null); }}
           onAdd={handleAddBooking}
           initialDate={addModalInitialDate}
           initialRoom={addModalInitialRoom}
           rooms={rooms}
           currency={currency}
           lang={lang}
+          anchor={modalAnchor}
         />
       )}
 
       {selectedBooking && !showInvoiceModal && (
         <BookingDetailsModal
           booking={selectedBooking}
-          onClose={() => setSelectedBooking(null)}
+          onClose={() => { setSelectedBooking(null); setModalAnchor(null); }}
           onDelete={handleDeleteBooking}
           onUpdateStatus={handleUpdateBookingStatus}
           onUpdate={handleUpdateBooking}
@@ -579,6 +585,7 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
           lang={lang}
           tz={tz}
           rooms={rooms}
+          anchor={modalAnchor}
         />
       )}
 
