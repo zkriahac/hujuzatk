@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { LandingPage, PrivacyPolicy, TermsOfService } from './pages/LandingPage';
 import { UserAuthShell, WorkspaceShell } from './pages/AuthShell';
 import { SuperAdminShell } from './pages/SuperAdminShell';
+import { StoryPage } from './pages/StoryPage';
 import { NotFound } from './pages/NotFound';
 import { trackPageView } from './lib/analytics';
 import { authService, type SessionUser } from './lib/authService';
@@ -44,6 +45,7 @@ export function App() {
   }, [path]);
 
   if (path === '/') return <RootRedirect />;
+  if (path === '/story') return <StoryPage />;
   if (path === '/privacy') return <PrivacyPolicy />;
   if (path === '/terms') return <TermsOfService />;
   if (path === '/404') return <NotFound />;
