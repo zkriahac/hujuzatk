@@ -36,6 +36,10 @@ function convertGraphQLTenantToLocal(graphqlTenant: any): Tenant {
     isAdmin: graphqlTenant.isAdmin || false,
     defaultNightPrice: graphqlTenant.settings?.defaultNightPrice ?? 50,
     defaultTax: graphqlTenant.settings?.defaultTax ?? 0,
+    // Default integrationsEnabled = true for rollout safety: if a pre-deploy client reads a
+    // response that lacks the field, assume enabled rather than silently hiding the tab.
+    integrationsEnabled: graphqlTenant.integrationsEnabled !== false,
+    onboardedAt: graphqlTenant.onboardedAt ?? null,
   };
 }
 
@@ -66,6 +70,8 @@ export const authService = {
                 subscriptionStatus
                 validUntil
                 isAdmin
+                integrationsEnabled
+                onboardedAt
                 createdAt
               }
             }`,
@@ -148,6 +154,8 @@ export const authService = {
                 subscriptionStatus
                 validUntil
                 isAdmin
+                integrationsEnabled
+                onboardedAt
                 createdAt
               }
             }
@@ -249,6 +257,8 @@ export const authService = {
                 subscriptionStatus
                 validUntil
                 isAdmin
+                integrationsEnabled
+                onboardedAt
                 createdAt
               }
             }
@@ -334,6 +344,8 @@ export const authService = {
               validUntil
               isAdmin
               isActive
+              integrationsEnabled
+              onboardedAt
               createdAt
               bookingsCount
               settings { defaultNightPrice defaultTax }

@@ -62,6 +62,15 @@ function normalizeChannelIntegration(ci: any) {
 	return { ...ci, icalUrlMasked: maskUrl(ci.icalUrl) };
 }
 
+async function assertIntegrationsAllowed(tenantId: string) {
+	const tenant = await prisma.tenant.findUnique({ where: { id: tenantId } });
+	if (!tenant) throw new GraphQLError('Tenant not found', { extensions: { code: 'NOT_FOUND', http: { status: 404 } } });
+	if (!tenant.integrationsEnabled) {
+		throw new GraphQLError('Integrations disabled by admin. Please contact support.', { extensions: { code: 'FORBIDDEN', http: { status: 403 } } });
+	}
+	return tenant;
+}
+
 export const resolvers = {
 	Query: {
 		async me(_: any, __: any, context: any) {
@@ -462,14 +471,31 @@ export const resolvers = {
 		// Channel integrations
 		async saveChannelIntegration(_: any, { input }: any, context: any) {
 			requireAuth(context);
+			const tenant = await assertIntegrationsAllowed(context.user.tenantId);
 			const channel = input.channelName.toLowerCase();
 			if (!VALID_CHANNELS.includes(channel)) throw new GraphQLError('Invalid channel name', { extensions: { code: 'BAD_USER_INPUT' } });
 			if (!input.icalUrl?.startsWith('http')) throw new GraphQLError('Invalid iCal URL', { extensions: { code: 'BAD_USER_INPUT' } });
 
-			const tenant = await prisma.tenant.findUnique({ where: { id: context.user.tenantId } });
-			if (!tenant) throw new GraphQLError('Tenant not found', { extensions: { code: 'NOT_FOUND' } });
 			const rooms = Array.isArray(tenant.rooms) ? tenant.rooms : JSON.parse(tenant.rooms as any);
 			if (!rooms.find((r: any) => r.id === input.roomId)) throw new GraphQLError('Invalid room', { extensions: { code: 'BAD_USER_INPUT' } });
+
+			// Friendly duplicate check — DB has @@unique([tenantId, channelName, roomId]) but we
+			// want to surface a clearer error than a raw P2002 from Prisma.
+			const conflict = await prisma.channelIntegration.findFirst({
+				where: {
+					tenantId: context.user.tenantId,
+					channelName: channel,
+					roomId: input.roomId,
+					...(input.id && { NOT: { id: input.id } }),
+				},
+			});
+			if (conflict) {
+				throw new GraphQLError(`This room is already connected to ${channel}. Edit or delete the existing integration instead.`, {
+					extensions: { code: 'DUPLICATE_MAPPING', http: { status: 409 } },
+				});
+			}
+
+			const label = typeof input.label === 'string' ? input.label.trim() || null : undefined;
 
 			let result;
 			if (input.id) {
@@ -477,11 +503,24 @@ export const resolvers = {
 				if (!existing) throw new GraphQLError('Integration not found', { extensions: { code: 'NOT_FOUND' } });
 				result = await prisma.channelIntegration.update({
 					where: { id: input.id },
-					data: { channelName: channel, roomId: input.roomId, icalUrl: input.icalUrl, ...(input.isActive !== undefined && { isActive: input.isActive }) },
+					data: {
+						channelName: channel,
+						roomId: input.roomId,
+						icalUrl: input.icalUrl,
+						...(label !== undefined && { label }),
+						...(input.isActive !== undefined && { isActive: input.isActive }),
+					},
 				});
 			} else {
 				result = await prisma.channelIntegration.create({
-					data: { tenantId: context.user.tenantId, channelName: channel, roomId: input.roomId, icalUrl: input.icalUrl, isActive: input.isActive !== undefined ? input.isActive : true },
+					data: {
+						tenantId: context.user.tenantId,
+						channelName: channel,
+						roomId: input.roomId,
+						icalUrl: input.icalUrl,
+						label: label ?? null,
+						isActive: input.isActive !== undefined ? input.isActive : true,
+					},
 				});
 			}
 			return normalizeChannelIntegration(result);
@@ -495,18 +534,50 @@ export const resolvers = {
 		},
 		async syncChannel(_: any, { id }: any, context: any) {
 			requireAuth(context);
+			await assertIntegrationsAllowed(context.user.tenantId);
 			const integration = await prisma.channelIntegration.findFirst({ where: { id, tenantId: context.user.tenantId } });
 			if (!integration) throw new GraphQLError('Integration not found', { extensions: { code: 'NOT_FOUND' } });
 			return performSync(integration, context.user.tenantId);
 		},
 		async syncAllChannels(_: any, __: any, context: any) {
 			requireAuth(context);
+			await assertIntegrationsAllowed(context.user.tenantId);
 			const integrations = await prisma.channelIntegration.findMany({ where: { tenantId: context.user.tenantId, isActive: true } });
 			const results = [];
 			for (const integration of integrations) {
 				results.push(await performSync(integration, context.user.tenantId));
 			}
 			return results;
+		},
+
+		async adminSetIntegrationsEnabled(_: any, { tenantId, enabled }: { tenantId: string; enabled: boolean }, context: any) {
+			await requireSuperAdmin(context);
+			const tenant = await prisma.tenant.findUnique({ where: { id: tenantId } });
+			if (!tenant) throw new GraphQLError('Tenant not found', { extensions: { code: 'NOT_FOUND', http: { status: 404 } } });
+			const updated = await prisma.tenant.update({
+				where: { id: tenantId },
+				data: { integrationsEnabled: enabled },
+				include: { settings: true, _count: { select: { bookings: true } } },
+			});
+			await prisma.auditLog.create({
+				data: {
+					tenantId,
+					action: 'TENANT_INTEGRATIONS_TOGGLED',
+					entityType: 'Tenant',
+					entityId: tenantId,
+					changes: { enabled, actorId: context.user.tenantId },
+				},
+			});
+			return { ...normalizeTenant(updated), bookingsCount: updated._count?.bookings || 0 };
+		},
+		async completeOnboarding(_: any, __: any, context: any) {
+			requireAuth(context);
+			const updated = await prisma.tenant.update({
+				where: { id: context.user.tenantId },
+				data: { onboardedAt: new Date() },
+				include: { settings: true, _count: { select: { bookings: true } } },
+			});
+			return { ...normalizeTenant(updated), bookingsCount: updated._count?.bookings || 0 };
 		},
 
 		async adminUpdateTenant(_: any, { tenantId, input }: any, context: any) {

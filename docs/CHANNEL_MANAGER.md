@@ -67,7 +67,7 @@ Migration SQL at [`add_channel_integration.sql`](../elysia-server/prisma/migrati
 | [`channelSync.ts`](../elysia-server/channelSync.ts) | `performSync`, `syncAllTenantsForChannel`, shared by resolvers + cron |
 | [`resolvers.ts`](../elysia-server/resolvers.ts) | 5 new GraphQL ops for the UI |
 | [`api/cron-sync.ts`](../elysia-server/api/cron-sync.ts) | Vercel serverless handler |
-| [`index.ts`](../elysia-server/index.ts) | Same cron route wired into Elysia (for Fly.io) |
+| [`index.ts`](../elysia-server/index.ts) | Same cron route wired into Elysia (for local dev with `bun run index.ts`) |
 
 ### Frontend
 
@@ -103,7 +103,7 @@ syncAllChannels: [SyncResult!]!
 
 ### Nightly cron (per platform, staggered)
 
-Defined in [`vercel.json`](../vercel.json):
+Defined in [`elysia-server/vercel.json`](../elysia-server/vercel.json) — crons live in the **backend** Vercel project (`hujuzatk-project`, aliased to `api.hujuzatk.com`), not the frontend:
 
 | Platform | Schedule (UTC) |
 |----------|----------------|
@@ -119,15 +119,22 @@ Each cron hits `/api/cron-sync?channel=<name>` which calls `syncAllTenantsForCha
 
 Endpoint accepts either:
 - `x-vercel-cron: 1` header (automatic on Vercel cron triggers)
-- `Authorization: Bearer ${CRON_SECRET}` (manual testing, Fly.io)
+- `Authorization: Bearer ${CRON_SECRET}` (manual testing via curl)
 
 ---
 
 ## Deployment checklist
 
-1. **Apply DB migration** — paste [`add_channel_integration.sql`](../elysia-server/prisma/migrations/add_channel_integration.sql) into Supabase SQL Editor and run. (Direct Prisma connection is blocked from local.)
-2. **Set env var** — `CRON_SECRET` in Vercel project settings (any random string). Only needed if triggering externally.
-3. **Deploy** — `vercel --prod` from project root.
+Both frontend and backend deploy to Vercel as **two separate projects** (same monorepo):
+- `hujuzatk-fe` (root dir) → `hujuzatk.com`
+- `hujuzatk-project` (root dir = `elysia-server/`) → `api.hujuzatk.com`
+
+Steps:
+
+1. **Apply DB migration** — paste [`add_channel_integration.sql`](../elysia-server/prisma/migrations/add_channel_integration.sql) into Supabase SQL Editor and run. Direct Prisma connection is firewalled from local dev.
+2. **Set env var** — `CRON_SECRET` in the backend Vercel project settings (`hujuzatk-project` → Settings → Environment Variables). Only needed if triggering externally; Vercel crons authenticate automatically via `x-vercel-cron` header.
+3. **Deploy frontend** — `vercel --prod` from project root.
+4. **Deploy backend** — `cd elysia-server && vercel --prod`. The backend's `vercel.json` declares the three nightly crons.
 
 ---
 

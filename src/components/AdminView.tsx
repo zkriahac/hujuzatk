@@ -7,11 +7,12 @@ import { formatTz } from '../utils/formatTz';
 import { cn } from '../utils/cn';
 import { Users, X } from 'phosphor-react';
 import type { Tenant } from '../db';
+import { ADMIN_SET_INTEGRATIONS_ENABLED_MUTATION } from '../lib/graphql';
 
 const ADMIN_UPDATE_TENANT = gql`
   mutation AdminUpdateTenant($tenantId: ID!, $input: UpdateTenantInput!) {
     adminUpdateTenant(tenantId: $tenantId, input: $input) {
-      id name email phone language currency timezone rooms { id name } subscriptionStatus validUntil isAdmin bookingsCount
+      id name email phone language currency timezone rooms { id name } subscriptionStatus validUntil isAdmin integrationsEnabled onboardedAt bookingsCount
     }
   }
 `;
@@ -23,7 +24,7 @@ const ADMIN_LOGIN_AS = gql`
       refreshToken
       tenant {
         id name email phone language currency timezone rooms { id name }
-        subscriptionStatus validUntil isAdmin createdAt
+        subscriptionStatus validUntil isAdmin integrationsEnabled onboardedAt createdAt
       }
     }
   }
@@ -246,6 +247,19 @@ function AdminTenantRow({ tObj, onReload, lang, tz }: { tObj: Tenant; onReload: 
     }
   };
 
+  const handleToggleIntegrations = async () => {
+    const current = (tObj as any).integrationsEnabled !== false;
+    try {
+      await apolloClient.mutate({
+        mutation: ADMIN_SET_INTEGRATIONS_ENABLED_MUTATION,
+        variables: { tenantId: tObj.uuid || (tObj as any).id, enabled: !current },
+      });
+      onReload();
+    } catch (err: any) {
+      alert('Failed to toggle integrations: ' + (err.message || 'Unknown error'));
+    }
+  };
+
   const handleRoomChange = (i: number, name: string) => {
     const rooms = [...f.rooms]; rooms[i] = { ...rooms[i], name }; setF({ ...f, rooms });
   };
@@ -304,6 +318,20 @@ function AdminTenantRow({ tObj, onReload, lang, tz }: { tObj: Tenant; onReload: 
               className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-[10px] font-black uppercase tracking-tighter hover:bg-blue-500">
               {editing ? 'Close' : 'Edit'}
             </button>
+            {!(tObj as any).isAdmin && (
+              <button
+                onClick={handleToggleIntegrations}
+                title={t(lang, 'admin.integrations_tip')}
+                className={cn(
+                  'px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-tighter text-white',
+                  (tObj as any).integrationsEnabled !== false ? 'bg-sky-600 hover:bg-sky-500' : 'bg-slate-500 hover:bg-slate-400'
+                )}
+              >
+                {(tObj as any).integrationsEnabled !== false
+                  ? t(lang, 'admin.integrations_on')
+                  : t(lang, 'admin.integrations_off')}
+              </button>
+            )}
             {tObj.subscriptionStatus !== 'ACTIVE' && (
               <button onClick={handleActivate}
                 className="px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-[10px] font-black uppercase tracking-tighter hover:bg-emerald-500">

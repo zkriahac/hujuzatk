@@ -33,6 +33,10 @@ model Tenant {
   isAdmin           Boolean   @default(false) // Super admin flag
   isActive          Boolean   @default(true)
 
+  // Feature flags
+  integrationsEnabled Boolean  @default(true)  // Admin-gated channel manager access
+  onboardedAt       DateTime?                  // Set when guided tour is completed/skipped
+
   // Relations
   bookings             Booking[]
   auditLogs            AuditLog[]
@@ -178,6 +182,7 @@ model ChannelIntegration {
   channelName     String    // 'airbnb' | 'gathern' | 'booking.com'
   roomId          String    // References Tenant.rooms[].id
   icalUrl         String
+  label           String?   // Optional user-facing name, e.g. "Airbnb Villa 1"
 
   isActive        Boolean   @default(true)
 

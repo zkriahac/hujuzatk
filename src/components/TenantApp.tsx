@@ -16,7 +16,12 @@ import ReportsView from './ReportsView';
 import SettingsView from './SettingsView';
 import AdminView from './AdminView';
 import IntegrationsView from './IntegrationsView';
+import OnboardingTour, { type OnboardingStep } from './OnboardingTour';
+import { apolloClient } from '../lib/apolloClient';
+import { COMPLETE_ONBOARDING_MUTATION } from '../lib/graphql';
 import { AddBookingModal, BookingDetailsModal, InvoiceModal } from './Modals';
+
+const ONBOARDING_LOCAL_KEY = 'hujuzatk_onboarded_local';
 
 interface TenantAppProps {
   session: SessionUser;
@@ -32,6 +37,61 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
 
   const [currentView, setCurrentView] = useState<View>(session.isAdmin ? 'admin' : 'calendar');
   const [showViewMenu, setShowViewMenu] = useState(false);
+
+  // If admin disables integrations while tenant is on that view, bounce them to Calendar.
+  useEffect(() => {
+    if (currentView === 'integrations' && session.tenant.integrationsEnabled === false) {
+      setCurrentView('calendar');
+    }
+  }, [session.tenant.integrationsEnabled, currentView]);
+
+  // Onboarding tour — fires once for a new tenant that has not completed it.
+  const [showTour, setShowTour] = useState(false);
+  useEffect(() => {
+    if (session.isAdmin) return;
+    if (session.tenant.onboardedAt) return;
+    try {
+      if (localStorage.getItem(ONBOARDING_LOCAL_KEY) === '1') return;
+    } catch {}
+    // Small delay so nav/calendar finish mounting and data-tour targets exist
+    const timer = setTimeout(() => setShowTour(true), 700);
+    return () => clearTimeout(timer);
+  }, [session.isAdmin, session.tenant.onboardedAt]);
+
+  const tourSteps: OnboardingStep[] = useMemo(() => {
+    const steps: OnboardingStep[] = [
+      { targetSelector: '[data-tour="view-switcher"]', titleKey: 'onboarding.step1_title', bodyKey: 'onboarding.step1_desc' },
+      { targetSelector: '[data-tour="nav-settings"]', titleKey: 'onboarding.step2_title', bodyKey: 'onboarding.step2_desc' },
+    ];
+    if (session.tenant.integrationsEnabled !== false) {
+      steps.push({ targetSelector: '[data-tour="nav-integrations"]', titleKey: 'onboarding.step3_title', bodyKey: 'onboarding.step3_desc' });
+    }
+    steps.push({ targetSelector: '[data-tour="new-booking"]', titleKey: 'onboarding.step4_title', bodyKey: 'onboarding.step4_desc' });
+    steps.push({ targetSelector: null, titleKey: 'onboarding.final_title', bodyKey: 'onboarding.final_desc' });
+    return steps;
+  }, [session.tenant.integrationsEnabled]);
+
+  const finishTour = async () => {
+    setShowTour(false);
+    try { localStorage.setItem(ONBOARDING_LOCAL_KEY, '1'); } catch {}
+    // Optimistic session update
+    onSessionChange({ ...session, tenant: { ...session.tenant, onboardedAt: new Date().toISOString() } });
+    // Persist to backend (best-effort; localStorage is the safety net)
+    try { await apolloClient.mutate({ mutation: COMPLETE_ONBOARDING_MUTATION }); } catch {}
+    // Restore normal nav state
+    setShowViewMenu(false);
+  };
+
+  const handleTourStepChange = (_idx: number, step: OnboardingStep) => {
+    // Steps targeting items inside the view-switcher dropdown need it open.
+    const needsMenu = step.targetSelector === '[data-tour="nav-settings"]'
+      || step.targetSelector === '[data-tour="nav-integrations"]';
+    setShowViewMenu(needsMenu);
+    // Step 4 requires Calendar view so the "+ New Booking" button exists
+    if (step.targetSelector === '[data-tour="new-booking"]') {
+      setCurrentView('calendar');
+    }
+  };
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loadedMonths, setLoadedMonths] = useState<Set<string>>(new Set());
   const [selectedDateStr, setSelectedDateStr] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
@@ -377,6 +437,7 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
             <div className="relative">
               <button
                 onClick={() => setShowViewMenu(v => !v)}
+                data-tour="view-switcher"
                 className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 text-[10px] sm:text-[11px] font-black uppercase tracking-widest hover:bg-emerald-100 transition-colors"
               >
                 {(() => { const I = { calendar: CalendarBlank, list: ListBullets, reports: ChartPie, integrations: ArrowsClockwise, settings: GearSix, admin: ShieldCheck }[currentView]; return <I size={14} weight="fill" />; })()}
@@ -387,11 +448,15 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
                 <>
                   <div className="fixed inset-0 z-99" onClick={() => setShowViewMenu(false)} />
                   <div className={cn('absolute top-full mt-1 z-100 bg-white rounded-2xl border border-slate-200 shadow-2xl py-1 min-w-[130px]', isRtl ? 'left-0' : 'right-0')}>
-                    {(session.isAdmin ? ['admin'] as View[] : ['calendar', 'list', 'reports', 'integrations', 'settings'] as View[]).map((v) => {
+                    {(session.isAdmin
+                      ? ['admin'] as View[]
+                      : (['calendar', 'list', 'reports', (session.tenant.integrationsEnabled !== false ? 'integrations' : null), 'settings'].filter(Boolean) as View[])
+                    ).map((v) => {
                       const Icon = { calendar: CalendarBlank, list: ListBullets, reports: ChartPie, integrations: ArrowsClockwise, settings: GearSix, admin: ShieldCheck }[v];
                       return (
                         <button
                           key={v}
+                          data-tour={`nav-${v}`}
                           onClick={() => { setCurrentView(v); trackViewChange(v); setShowViewMenu(false); }}
                           className={cn(
                             'w-full px-4 py-2.5 text-[11px] font-black uppercase tracking-widest transition-colors text-start flex items-center gap-2.5',
@@ -475,7 +540,7 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
             lang={lang}
           />
         )}
-        {currentView === 'integrations' && (
+        {currentView === 'integrations' && session.tenant.integrationsEnabled !== false && (
           <IntegrationsView session={session} lang={lang} />
         )}
         {currentView === 'settings' && (
@@ -522,6 +587,16 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
           tz={tz}
           dir={dir}
           onClose={() => setShowInvoiceModal(false)}
+        />
+      )}
+
+      {showTour && (
+        <OnboardingTour
+          steps={tourSteps}
+          lang={lang}
+          onComplete={finishTour}
+          onSkip={finishTour}
+          onStepChange={handleTourStepChange}
         />
       )}
     </div>

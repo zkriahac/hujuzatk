@@ -39,6 +39,7 @@ interface ChannelIntegration {
   channelName: string;
   roomId: string;
   icalUrlMasked: string;
+  label: string | null;
   isActive: boolean;
   lastSyncedAt: string | null;
   lastSyncStatus: string | null;
@@ -50,9 +51,23 @@ interface AddFormState {
   channelName: string;
   roomId: string;
   icalUrl: string;
+  label: string;
 }
 
 export default function IntegrationsView({ session, lang }: IntegrationsViewProps) {
+  // Feature gate — admin can disable integrations per tenant
+  if (session.tenant.integrationsEnabled === false) {
+    return (
+      <div className="max-w-2xl mx-auto py-16 text-center" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
+        <div className="bg-white rounded-[2rem] border border-slate-200 shadow-xl p-10 space-y-4">
+          <WarningCircle size={40} weight="duotone" className="text-amber-500 mx-auto" />
+          <h2 className="text-xl font-black text-slate-800">{t(lang, 'integrations.disabledTitle')}</h2>
+          <p className="text-sm text-slate-500 leading-relaxed">{t(lang, 'integrations.disabledBody')}</p>
+        </div>
+      </div>
+    );
+  }
+
   const rooms: { id: string; name: string }[] = session.tenant.rooms || [];
   const isRtl = lang === 'ar';
 
@@ -63,6 +78,7 @@ export default function IntegrationsView({ session, lang }: IntegrationsViewProp
     channelName: 'airbnb',
     roomId: rooms[0]?.id || '',
     icalUrl: '',
+    label: '',
   });
   const [saving, setSaving] = useState(false);
   const [syncingIds, setSyncingIds] = useState<Set<string>>(new Set());
@@ -100,10 +116,10 @@ export default function IntegrationsView({ session, lang }: IntegrationsViewProp
     try {
       await apolloClient.mutate({
         mutation: SAVE_CHANNEL_INTEGRATION_MUTATION,
-        variables: { input: { channelName: form.channelName, roomId: form.roomId, icalUrl: form.icalUrl.trim() } },
+        variables: { input: { channelName: form.channelName, roomId: form.roomId, icalUrl: form.icalUrl.trim(), label: form.label.trim() || null } },
       });
       setShowAddForm(false);
-      setForm({ channelName: 'airbnb', roomId: rooms[0]?.id || '', icalUrl: '' });
+      setForm({ channelName: 'airbnb', roomId: rooms[0]?.id || '', icalUrl: '', label: '' });
       await loadIntegrations();
     } catch (err: any) {
       setFormError(err.graphQLErrors?.[0]?.message || err.message || 'Failed to save');
@@ -166,6 +182,7 @@ export default function IntegrationsView({ session, lang }: IntegrationsViewProp
 
   const inputClass =
     'w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm font-black text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500';
+  const selectClass = `${inputClass} pe-10`;
   const labelClass = 'text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1 block';
 
   return (
@@ -213,7 +230,7 @@ export default function IntegrationsView({ session, lang }: IntegrationsViewProp
             <select
               value={form.channelName}
               onChange={e => setForm(f => ({ ...f, channelName: e.target.value }))}
-              className={inputClass}
+              className={selectClass}
             >
               {Object.entries(CHANNEL_CONFIG).map(([key, cfg]) => (
                 <option key={key} value={key}>{cfg.label}</option>
@@ -226,7 +243,7 @@ export default function IntegrationsView({ session, lang }: IntegrationsViewProp
             <select
               value={form.roomId}
               onChange={e => setForm(f => ({ ...f, roomId: e.target.value }))}
-              className={inputClass}
+              className={selectClass}
             >
               {rooms.map(r => (
                 <option key={r.id} value={r.id}>{r.name}</option>
@@ -246,6 +263,21 @@ export default function IntegrationsView({ session, lang }: IntegrationsViewProp
             />
             <p className="text-[11px] text-slate-400 mt-1.5 leading-relaxed">
               {CHANNEL_CONFIG[form.channelName]?.hint}
+            </p>
+          </div>
+
+          <div>
+            <label className={labelClass}>{t(lang, 'integrations.label')}</label>
+            <input
+              type="text"
+              value={form.label}
+              onChange={e => setForm(f => ({ ...f, label: e.target.value }))}
+              placeholder={t(lang, 'integrations.labelPlaceholder')}
+              className={inputClass}
+              maxLength={60}
+            />
+            <p className="text-[11px] text-slate-400 mt-1.5 leading-relaxed">
+              {t(lang, 'integrations.labelHint')}
             </p>
           </div>
 
@@ -306,9 +338,20 @@ export default function IntegrationsView({ session, lang }: IntegrationsViewProp
                   {cfg.label}
                 </span>
                 <span className="text-sm font-black text-slate-700">{getRoomName(integration.roomId)}</span>
+                {integration.label && (
+                  <span className="text-xs font-semibold text-slate-500 italic">
+                    {integration.label}
+                  </span>
+                )}
                 <span className={`text-[10px] px-2 py-0.5 rounded-full font-black ${integration.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
                   {integration.isActive ? t(lang, 'integrations.active') : t(lang, 'integrations.inactive')}
                 </span>
+                {integration.lastSyncStatus === 'suspicious' && (
+                  <span className="flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-black bg-amber-100 text-amber-700">
+                    <WarningCircle size={10} weight="fill" />
+                    {t(lang, 'integrations.suspiciousBadge')}
+                  </span>
+                )}
               </div>
               <button
                 onClick={() => handleDelete(integration.id)}
@@ -338,11 +381,11 @@ export default function IntegrationsView({ session, lang }: IntegrationsViewProp
                 {integration.lastSyncStatus && (
                   <span className={`inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-full ${
                     integration.lastSyncStatus === 'success' ? 'bg-emerald-100 text-emerald-700'
-                    : integration.lastSyncStatus === 'partial' ? 'bg-amber-100 text-amber-700'
+                    : integration.lastSyncStatus === 'partial' || integration.lastSyncStatus === 'suspicious' ? 'bg-amber-100 text-amber-700'
                     : 'bg-red-100 text-red-600'
                   }`}>
                     {integration.lastSyncStatus === 'success' && <CheckCircle size={10} />}
-                    {integration.lastSyncStatus === 'error' && <WarningCircle size={10} />}
+                    {(integration.lastSyncStatus === 'error' || integration.lastSyncStatus === 'partial' || integration.lastSyncStatus === 'suspicious') && <WarningCircle size={10} />}
                     {integration.lastSyncMessage}
                   </span>
                 )}

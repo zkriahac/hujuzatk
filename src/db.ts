@@ -23,6 +23,9 @@ export interface Tenant {
   isAdmin?: boolean;
   defaultNightPrice?: number;
   defaultTax?: number;
+  // Feature flags (from backend Tenant model)
+  integrationsEnabled?: boolean; // default true; admin can disable per-tenant
+  onboardedAt?: string | null; // ISO timestamp when guided tour is completed
   // Local-only password hash for Dexie mode (Supabase Auth is used in cloud mode)
   passwordHash?: string;
 }

@@ -1,21 +1,14 @@
 {
-  "version": 2,
-  "regions": ["bom1"],
-  "builds": [
-    {
-      "src": "api/graphql.ts",
-      "use": "@vercel/node",
-      "config": {
-        "includeFiles": ["node_modules/.prisma/**", "prisma/schema.prisma"]
-      }
-    },
-    { "src": "api/health.ts", "use": "@vercel/node" }
-  ],
-  "routes": [
-    { "src": "/graphql", "methods": ["GET", "POST", "OPTIONS"], "dest": "/api/graphql.ts" },
-    { "src": "/health", "dest": "/api/health.ts" }
+  "framework": null,
+  "buildCommand": "npx prisma generate",
+  "outputDirectory": ".",
+  "rewrites": [
+    { "source": "/graphql", "destination": "/api/graphql" },
+    { "source": "/health", "destination": "/api/health" }
   ],
   "crons": [
-    { "path": "/health", "schedule": "0 6 * * *" }
+    { "path": "/api/cron-sync?channel=airbnb",      "schedule": "0 1 * * *" },
+    { "path": "/api/cron-sync?channel=gathern",     "schedule": "0 2 * * *" },
+    { "path": "/api/cron-sync?channel=booking.com", "schedule": "0 3 * * *" }
   ]
 }

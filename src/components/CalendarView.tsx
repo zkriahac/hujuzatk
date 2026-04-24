@@ -291,6 +291,7 @@ export default function CalendarView({
             </button>
           </div>
           <button
+            data-tour="new-booking"
             onClick={() => {
               setAddModalInitialDate(selectedDateStr);
               setShowAddModal(true);

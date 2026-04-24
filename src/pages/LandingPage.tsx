@@ -3,11 +3,16 @@ import { Link, useNavigate } from 'react-router-dom';
 import {
   Calendar, FileText, Globe, ChartPie, DeviceMobile, Database,
   ArrowRight, Buildings, Check, Star, ShieldCheck, Sparkle,
-  List, X, CaretDown,
+  List, X, CaretDown, ArrowsClockwise,
 } from 'phosphor-react';
 import { authService } from '../lib/authService';
 import { trackCTA, trackWorkspaceSearch } from '../lib/analytics';
 import { cn } from '../utils/cn';
+import PromoPopup from '../components/PromoPopup';
+import {
+  isPromoActive, PROMO_DISMISS_KEY, PROMO_DISMISS_COOLDOWN_DAYS,
+  PLAN_BASIC, PLAN_PRO, CURRENCY_SYMBOL,
+} from '../lib/promoConfig';
 
 type Lang = 'en' | 'ar' | 'tr';
 
@@ -32,7 +37,8 @@ const content = {
         { title: 'Smart Invoicing', desc: 'Automated calculation of nights, discounts, and deposits. Generate clean, printable PDF invoices in English or Arabic instantly.' },
         { title: 'Native Arabic & RTL', desc: 'Not just a translation, but a complete localized experience. Perfect RTL layouts with OMR and regional date formats built-in.' },
         { title: 'Financial Intelligence', desc: 'Advanced reporting on Stay Date vs Creation Date. Visualize fill rates, revenue per room, and identify your most profitable channels.' },
-        { title: 'Native PWA Experience', desc: 'Install Hujuzatk directly on your device. It feels and acts like a native app with fast loading and push-notification readiness.' },
+        { title: 'Installable Mobile App', desc: 'Install Hujuzatk to your phone\'s home screen in one tap — works offline, sends push notifications, no App Store or Play Store download needed.' },
+        { title: 'Auto-Sync External Bookings', desc: 'Nightly + on-demand iCal sync from Airbnb, Gathern, and Booking.com. New reservations appear in your calendar automatically — no copy-paste.' },
         { title: 'Enterprise Scaling', desc: 'Start locally with high-speed Dexie DB and upgrade to PostgreSQL (Supabase) in seconds. Your data, your control.' },
       ],
     },
@@ -68,12 +74,36 @@ const content = {
     },
     pricing: {
       heading: 'Simple, honest pricing.',
-      sub: 'One plan, all features, infinite possibilities. No hidden fees or per-user charges.',
-      plan: 'Professional Plan',
+      sub: 'Choose the plan that fits — both include a 14-day free trial.',
       perYear: '/Year',
-      items: ['Unlimited Bookings', 'Up to 50 Rooms', 'Full Reporting Suite', 'Multi-Language (AR/EN)', 'Desktop PWA Install', 'Advanced 5-Year Calendar'],
-      cta: 'Start Your 14-Day Free Trial',
+      recommended: 'RECOMMENDED',
+      save: 'SAVE 15%',
+      was: 'Was',
       note: 'Cancel anytime. No lock-in contracts.',
+      plans: [
+        {
+          id: 'basic',
+          name: 'Basic',
+          tagline: 'Perfect for small properties',
+          features: ['Unlimited Bookings', 'Up to 50 Rooms', 'Full Reporting Suite', 'Multi-Language (AR/EN/TR)', 'Installable App', '5-Year Calendar'],
+          cta: 'Start Free Trial',
+          recommended: false,
+        },
+        {
+          id: 'pro',
+          name: 'Pro',
+          tagline: 'Basic + automatic channel sync',
+          features: ['Everything in Basic', 'Auto-Sync Airbnb', 'Auto-Sync Gathern', 'Auto-Sync Booking.com', 'Nightly automated sync', 'Priority WhatsApp support'],
+          cta: 'Start Free Trial',
+          recommended: true,
+        },
+      ],
+      promo: {
+        title: 'Year-End Promo',
+        subtitle: 'Both plans discounted until end of 2026 — start now and lock in your rate.',
+        placeholder: 'Enter your workspace name…',
+        cta: 'Start my workspace',
+      },
     },
     footer: {
       tagline: 'The world\'s most intuitive Booking Management System for modern hosts and professional property managers.',
@@ -120,7 +150,8 @@ const content = {
         { title: 'فوترة ذكية', desc: 'حساب تلقائي للليالي والخصومات والعربون. أنشئ فواتير نظيفة وقابلة للطباعة باللغة العربية أو الإنجليزية فوراً.' },
         { title: 'دعم كامل للعربية وRTL', desc: 'ليس مجرد ترجمة، بل تجربة محلية كاملة. تخطيطات RTL مثالية مع تنسيقات تواريخ إقليمية وOMR مدمجة.' },
         { title: 'ذكاء مالي', desc: 'تقارير متقدمة حسب تاريخ الإقامة أو تاريخ الإنشاء. تصور معدلات الإشغال والإيرادات لكل غرفة.' },
-        { title: 'تجربة PWA أصلية', desc: 'ثبّت حجوزاتك مباشرة على جهازك. يعمل مثل التطبيق الأصلي مع تحميل سريع وجاهزية للإشعارات.' },
+        { title: 'تطبيق جوال قابل للتثبيت', desc: 'ثبّت حجوزاتك على شاشتك الرئيسية بنقرة واحدة — يعمل بدون إنترنت، ويرسل إشعارات، بدون الحاجة لتحميل من App Store أو Play Store.' },
+        { title: 'مزامنة تلقائية للحجوزات الخارجية', desc: 'مزامنة ليلية وعند الطلب لتقويم Airbnb وجاذبين وBooking.com. الحجوزات الجديدة تظهر تلقائياً في تقويمك — دون أي نسخ ولصق.' },
         { title: 'قابلية توسع المؤسسات', desc: 'ابدأ محلياً مع Dexie DB عالية السرعة وانتقل إلى PostgreSQL في ثوانٍ. بياناتك، تحكمك.' },
       ],
     },
@@ -156,12 +187,36 @@ const content = {
     },
     pricing: {
       heading: 'أسعار بسيطة وصريحة.',
-      sub: 'خطة واحدة، جميع المميزات، إمكانيات لا نهائية. لا رسوم خفية أو رسوم لكل مستخدم.',
-      plan: 'الخطة المهنية',
+      sub: 'اختر الخطة المناسبة — كلاهما يشمل تجربة مجانية لمدة 14 يوم.',
       perYear: '/سنة',
-      items: ['حجوزات غير محدودة', 'حتى 50 غرفة', 'مجموعة تقارير كاملة', 'متعدد اللغات (AR/EN)', 'تثبيت PWA للكمبيوتر', 'تقويم 5 سنوات متقدم'],
-      cta: 'ابدأ تجربتك المجانية لـ 14 يوم',
+      recommended: 'موصى به',
+      save: 'خصم 15%',
+      was: 'كان',
       note: 'إلغاء في أي وقت. لا عقود ملزمة.',
+      plans: [
+        {
+          id: 'basic',
+          name: 'أساسي',
+          tagline: 'مثالي للعقارات الصغيرة',
+          features: ['حجوزات غير محدودة', 'حتى 50 غرفة', 'مجموعة تقارير كاملة', 'متعدد اللغات (AR/EN/TR)', 'تطبيق قابل للتثبيت', 'تقويم 5 سنوات'],
+          cta: 'ابدأ التجربة المجانية',
+          recommended: false,
+        },
+        {
+          id: 'pro',
+          name: 'المحترف',
+          tagline: 'الأساسي + مزامنة القنوات التلقائية',
+          features: ['كل ما في الأساسي', 'مزامنة Airbnb تلقائية', 'مزامنة جاذبين تلقائية', 'مزامنة Booking.com تلقائية', 'مزامنة ليلية مجدولة', 'دعم واتساب أولوية'],
+          cta: 'ابدأ التجربة المجانية',
+          recommended: true,
+        },
+      ],
+      promo: {
+        title: 'عرض نهاية العام',
+        subtitle: 'الخطتان مخفضتان حتى نهاية 2026 — اشترك الآن واحجز سعرك.',
+        placeholder: 'أدخل اسم مساحة العمل…',
+        cta: 'ابدأ مساحة عملي',
+      },
     },
     footer: {
       tagline: 'نظام إدارة الحجوزات الأكثر سهولة في العالم للمضيفين المعاصرين ومديري الحجوزات المحترفين.',
@@ -208,7 +263,8 @@ const content = {
         { title: 'Akıllı Faturalama', desc: 'Gece, indirim ve depozito otomatik hesaplanır. İngilizce veya Türkçe temiz, yazdırılabilir PDF faturalar anında oluşturun.' },
         { title: 'Çoklu Dil Desteği', desc: 'İngilizce, Arapça ve Türkçe tam destek. RTL düzenleri ve bölgesel tarih formatları dahil.' },
         { title: 'Finansal Zeka', desc: 'Konaklama ve oluşturma tarihine göre gelişmiş raporlama. Doluluk oranları, oda başına gelir ve en kârlı kanalları görselleştirin.' },
-        { title: 'Yerel PWA Deneyimi', desc: "Hujuzatk'ı doğrudan cihazınıza yükleyin. Yerel uygulama gibi hızlı yükleme ve bildirim desteği." },
+        { title: 'Telefona Kurulabilir', desc: "Hujuzatk'ı tek dokunuşla ana ekrana ekleyin — çevrimdışı çalışır, bildirim gönderir, App Store veya Play Store indirmeye gerek yok." },
+        { title: 'Harici Rezervasyonları Otomatik Senkronize Et', desc: "Airbnb, Gathern ve Booking.com'dan gecelik ve talep üzerine iCal senkronizasyonu. Yeni rezervasyonlar otomatik olarak takviminizde belirir — kopyala-yapıştır yok." },
         { title: 'Kurumsal Ölçeklendirme', desc: 'Yerel yüksek hızlı Dexie DB ile başlayın, saniyeler içinde PostgreSQL\'e geçin. Verileriniz, kontrolünüz.' },
       ],
     },
@@ -244,12 +300,36 @@ const content = {
     },
     pricing: {
       heading: 'Basit, dürüst fiyatlandırma.',
-      sub: 'Tek plan, tüm özellikler, sınırsız imkan. Gizli ücret veya kullanıcı başına ücret yok.',
-      plan: 'Profesyonel Plan',
+      sub: 'Size uygun planı seçin — her ikisi de 14 günlük ücretsiz deneme içerir.',
       perYear: '/Yıl',
-      items: ['Sınırsız Rezervasyon', '50\'ye Kadar Oda', 'Tam Raporlama', 'Çoklu Dil (AR/EN/TR)', 'Masaüstü PWA', 'Gelişmiş 5 Yıllık Takvim'],
-      cta: '14 Günlük Ücretsiz Denemenizi Başlatın',
+      recommended: 'ÖNERİLEN',
+      save: '%15 İNDİRİM',
+      was: 'Eski',
       note: 'İstediğiniz zaman iptal edin. Sözleşme yok.',
+      plans: [
+        {
+          id: 'basic',
+          name: 'Temel',
+          tagline: 'Küçük mülkler için ideal',
+          features: ['Sınırsız Rezervasyon', '50\'ye Kadar Oda', 'Tam Raporlama', 'Çoklu Dil (AR/EN/TR)', 'Kurulabilir Uygulama', '5 Yıllık Takvim'],
+          cta: 'Ücretsiz Denemeye Başla',
+          recommended: false,
+        },
+        {
+          id: 'pro',
+          name: 'Pro',
+          tagline: 'Temel + otomatik kanal senkronu',
+          features: ['Temel\'deki her şey', 'Airbnb Otomatik Senkron', 'Gathern Otomatik Senkron', 'Booking.com Otomatik Senkron', 'Gecelik otomatik senkron', 'Öncelikli WhatsApp desteği'],
+          cta: 'Ücretsiz Denemeye Başla',
+          recommended: true,
+        },
+      ],
+      promo: {
+        title: 'Yıl Sonu Kampanyası',
+        subtitle: '2026 yılı sonuna kadar her iki plan da indirimli — hemen başlayın, fiyatınızı kilitleyin.',
+        placeholder: 'Çalışma alanı adını girin…',
+        cta: 'Çalışma alanımı başlat',
+      },
     },
     footer: {
       tagline: 'Modern ev sahipleri ve profesyonel mülk yöneticileri için dünyanın en sezgisel Rezervasyon Yönetim Sistemi.',
@@ -278,7 +358,8 @@ const content = {
   },
 };
 
-const FEATURE_ICONS = [Calendar, FileText, Globe, ChartPie, DeviceMobile, Database];
+// Order matches features.items array: Calendar, Invoicing, Arabic+RTL, Financial, Installable, AutoSync, Enterprise
+const FEATURE_ICONS = [Calendar, FileText, Globe, ChartPie, DeviceMobile, ArrowsClockwise, Database];
 
 // -------- SEO helpers --------
 
@@ -363,17 +444,20 @@ function applySEO(lang: Lang) {
     operatingSystem: 'Web, Android, iOS (PWA)',
     inLanguage: ['en', 'ar'],
     offers: {
-      '@type': 'Offer',
-      price: '45',
-      priceCurrency: 'OMR',
+      '@type': 'AggregateOffer',
+      lowPrice: '35',
+      highPrice: '65',
+      priceCurrency: 'USD',
+      offerCount: '2',
+      priceValidUntil: '2026-12-31',
       availability: 'https://schema.org/InStock',
       description: isAr
-        ? 'الخطة المهنية – حجوزات غير محدودة، حتى 50 غرفة، تقارير كاملة، دعم AR/EN، تقويم 5 سنوات'
-        : 'Professional Plan – Unlimited bookings, up to 50 rooms, full reporting, AR/EN support, 5-year calendar',
+        ? 'الخطة الأساسية 35$/سنة، الخطة المحترفة 65$/سنة مع مزامنة Airbnb وجاذبين وBooking.com. تجربة مجانية 14 يوم.'
+        : 'Basic $35/year, Pro $65/year with Airbnb + Gathern + Booking.com channel sync. 14-day free trial included.',
     },
     featureList: isAr
-      ? ['تقويم حجوزات 5 سنوات', 'فوترة PDF تلقائية', 'دعم العربية RTL', 'تحليلات مالية', 'تطبيق PWA', 'إدارة متعددة المستأجرين', 'دعم متعدد العملات', 'إدارة الضيوف', 'تتبع الإشغال']
-      : ['5-Year Booking Calendar', 'Automated PDF Invoicing', 'Arabic RTL Support', 'Financial Analytics', 'Progressive Web App (PWA)', 'Multi-tenant Architecture', 'Multi-currency Support', 'Guest Management', 'Occupancy Tracking'],
+      ? ['تقويم حجوزات 5 سنوات', 'فوترة PDF تلقائية', 'دعم العربية RTL', 'تحليلات مالية', 'تطبيق جوال قابل للتثبيت', 'تكامل قنوات (Airbnb / جاذبين / Booking.com)', 'إدارة متعددة المستأجرين', 'دعم متعدد العملات', 'إدارة الضيوف', 'تتبع الإشغال']
+      : ['5-Year Booking Calendar', 'Automated PDF Invoicing', 'Arabic RTL Support', 'Financial Analytics', 'Installable Mobile Web App', 'Channel Integrations (Airbnb / Gathern / Booking.com)', 'Multi-tenant Architecture', 'Multi-currency Support', 'Guest Management', 'Occupancy Tracking'],
     screenshot: 'https://hujuzatk.com/og-image.png',
     aggregateRating: {
       '@type': 'AggregateRating',
@@ -400,15 +484,15 @@ function applySEO(lang: Lang) {
       ? [
           { '@type': 'Question', name: 'ما هو نظام حجوزاتك PMS؟', acceptedAnswer: { '@type': 'Answer', text: 'حجوزاتك هو نظام إدارة الحجوزات والفنادق المبني على السحابة، مصمم للفنادق والشقق والإيجارات السياحية. يتميز بتقويم حجوزات لـ5 سنوات، وفوترة تلقائية، وتحليلات مالية، ودعم كامل للغة العربية والإنجليزية.' } },
           { '@type': 'Question', name: 'هل حجوزاتك يدعم اللغة العربية؟', acceptedAnswer: { '@type': 'Answer', text: 'نعم، يدعم حجوزاتك اللغة العربية بشكل كامل مع تخطيط RTL أصيل، وتنسيقات التواريخ العربية، وعملة OMR، وواجهة كاملة من اليمين إلى اليسار.' } },
-          { '@type': 'Question', name: 'كم تكلفة حجوزاتك؟', acceptedAnswer: { '@type': 'Answer', text: 'تبلغ تكلفة الخطة المهنية 45 ريال عُماني شهرياً، وتشمل حجوزات غير محدودة وحتى 50 غرفة وتقارير كاملة ودعم متعدد اللغات وتقويم 5 سنوات. تتوفر تجربة مجانية لمدة 14 يوماً بدون بطاقة ائتمان.' } },
-          { '@type': 'Question', name: 'هل حجوزاتك متاح كتطبيق جوال؟', acceptedAnswer: { '@type': 'Answer', text: 'حجوزاتك هو تطبيق ويب تقدمي (PWA) يمكن تثبيته على أي جهاز – آيفون أو أندرويد أو سطح المكتب – مباشرة من المتصفح دون الحاجة لتنزيل من متجر التطبيقات.' } },
+          { '@type': 'Question', name: 'كم تكلفة حجوزاتك؟', acceptedAnswer: { '@type': 'Answer', text: 'نقدم خطتين: الأساسية 35$/سنة (عرض نهاية 2026، بدلاً من 40$)، والمحترفة 65$/سنة مع مزامنة تلقائية لـ Airbnb وجاذبين وBooking.com (عرض 58$ حتى نهاية 2026). تتوفر تجربة مجانية لمدة 14 يوماً بدون بطاقة ائتمان.' } },
+          { '@type': 'Question', name: 'هل حجوزاتك متاح كتطبيق جوال؟', acceptedAnswer: { '@type': 'Answer', text: 'نعم. يتم تثبيت حجوزاتك على الشاشة الرئيسية لهاتفك بنقرة واحدة من المتصفح، ويعمل دون إنترنت، ويرسل إشعارات — دون الحاجة للتحميل من App Store أو Play Store.' } },
           { '@type': 'Question', name: 'ما الفرق بين نظام PMS السحابي والمحلي في حجوزاتك؟', acceptedAnswer: { '@type': 'Answer', text: 'حجوزاتك يدعم كلا الخيارين: التخزين المحلي عالي السرعة باستخدام Dexie DB للعمل دون إنترنت، والترقية إلى PostgreSQL السحابي عبر Supabase لمزامنة البيانات عبر الأجهزة.' } },
         ]
       : [
           { '@type': 'Question', name: 'What is Hujuzatk PMS?', acceptedAnswer: { '@type': 'Answer', text: 'Hujuzatk is a cloud-based Hotel and Property Management System (PMS) for hotels, apartments, and vacation rentals. It features a 5-year booking calendar, automated PDF invoicing, financial analytics, and native Arabic and English support.' } },
           { '@type': 'Question', name: 'Does Hujuzatk support Arabic?', acceptedAnswer: { '@type': 'Answer', text: 'Yes. Hujuzatk has native Arabic RTL support including Arabic date formats, OMR currency, and a complete right-to-left layout throughout the entire application.' } },
-          { '@type': 'Question', name: 'How much does Hujuzatk cost?', acceptedAnswer: { '@type': 'Answer', text: 'Hujuzatk offers a Professional Plan at OMR 45/month, which includes unlimited bookings, up to 50 rooms, full reporting, multi-language support, and a 5-year calendar. A free 14-day trial is available with no credit card required.' } },
-          { '@type': 'Question', name: 'Is Hujuzatk available as a mobile app?', acceptedAnswer: { '@type': 'Answer', text: 'Hujuzatk is a Progressive Web App (PWA) that can be installed on any device — iPhone, Android, or desktop — directly from the browser, with no app store download required.' } },
+          { '@type': 'Question', name: 'How much does Hujuzatk cost?', acceptedAnswer: { '@type': 'Answer', text: 'Two plans: Basic at $35/year (year-end 2026 promo, normally $40) and Pro at $58/year with automatic Airbnb, Gathern, and Booking.com channel sync (year-end 2026 promo, normally $65). A 14-day free trial is included — no credit card required.' } },
+          { '@type': 'Question', name: 'Is Hujuzatk available as a mobile app?', acceptedAnswer: { '@type': 'Answer', text: 'Yes. Hujuzatk installs to your phone\'s home screen from the browser in one tap — works offline, sends push notifications, no App Store or Play Store download needed.' } },
           { '@type': 'Question', name: 'What is the difference between local and cloud PMS in Hujuzatk?', acceptedAnswer: { '@type': 'Answer', text: 'Hujuzatk supports both: a high-speed local Dexie DB for offline-first operation, and a PostgreSQL cloud upgrade via Supabase for cross-device data sync.' } },
         ],
   });
@@ -431,6 +515,8 @@ export function LandingPage() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [loggedInUser, setLoggedInUser] = useState<{ name: string; email: string; slug: string } | null>(null);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [sessionResolved, setSessionResolved] = useState(false);
+  const [showPromo, setShowPromo] = useState(false);
 
   useEffect(() => {
     authService.getCurrentUser().then((s) => {
@@ -438,8 +524,38 @@ export function LandingPage() {
         const slug = encodeURIComponent((s.tenant.name || 'workspace').replace(/\s+/g, '-'));
         setLoggedInUser({ name: s.tenant.name || s.tenant.email, email: s.tenant.email, slug });
       }
-    });
+    }).finally(() => setSessionResolved(true));
   }, []);
+
+  // Promo popup — fires 10s after session hydration if:
+  // (a) user is not logged in, (b) promo still active, (c) no recent dismissal
+  useEffect(() => {
+    if (!sessionResolved || loggedInUser || !isPromoActive()) return;
+    try {
+      const dismissedAt = localStorage.getItem(PROMO_DISMISS_KEY);
+      if (dismissedAt) {
+        const daysSince = (Date.now() - new Date(dismissedAt).getTime()) / 86400000;
+        if (daysSince < PROMO_DISMISS_COOLDOWN_DAYS) return;
+      }
+    } catch {}
+    const timer = setTimeout(() => setShowPromo(true), 10_000);
+    return () => clearTimeout(timer);
+  }, [sessionResolved, loggedInUser]);
+
+  const handlePromoStart = async (ws: string) => {
+    setShowPromo(false);
+    trackCTA('promo_start_workspace', 'popup');
+    const name = ws.trim();
+    if (!name) { navigate('/user?tab=register'); return; }
+    const slug = name.replace(/\s+/g, '-');
+    try {
+      const exists = await authService.checkWorkspaceExists(slug);
+      if (exists) navigate(`/${slug}`);
+      else navigate(`/user?workspace=${encodeURIComponent(name)}&tab=register`);
+    } catch {
+      navigate(`/user?workspace=${encodeURIComponent(name)}&tab=register`);
+    }
+  };
 
   const cycleLang = () => {
     const order: Lang[] = ['en', 'ar', 'tr'];
@@ -844,38 +960,81 @@ export function LandingPage() {
           </div>
         </section>
 
-        {/* Pricing */}
+        {/* Pricing — two plans */}
         <section id="pricing" className="py-32 bg-white">
           <div className="container mx-auto px-6 text-center">
             <h2 className="text-4xl font-black text-slate-900 sm:text-6xl">{c.pricing.heading}</h2>
             <p className="mt-6 text-xl text-slate-500 max-w-2xl mx-auto">{c.pricing.sub}</p>
-            <div className="mt-20 mx-auto max-w-lg rounded-[3rem] border border-slate-200 bg-white p-2 shadow-2xl transition-all hover:shadow-emerald-100">
-              <div className="rounded-[2.5rem] bg-slate-50 p-12 text-center">
-                <p className="text-sm font-black uppercase tracking-[0.2em] text-emerald-600 mb-4">{c.pricing.plan}</p>
-                <div className="flex items-center justify-center gap-1">
-                  <span className="text-3xl font-bold text-slate-400 uppercase">USD</span>
-                  <span className="text-7xl font-black text-slate-900">40</span>
-                  <span className="text-xl font-bold text-slate-400">{c.pricing.perYear}</span>
-                </div>
-                <ul className="mt-10 space-y-4 text-left">
-                  {c.pricing.items.map((li, i) => (
-                    <li key={i} className="flex items-center gap-3 font-semibold text-slate-700">
-                      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
-                        <Check size={14} weight="bold" />
+            <div className="mt-16 grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+              {c.pricing.plans.map((plan) => {
+                const planData = plan.id === 'pro' ? PLAN_PRO : PLAN_BASIC;
+                const promoOn = isPromoActive();
+                return (
+                  <div
+                    key={plan.id}
+                    className={cn(
+                      'relative rounded-[2.5rem] border p-2 bg-white shadow-xl transition-all',
+                      plan.recommended ? 'border-emerald-400 ring-2 ring-emerald-500' : 'border-slate-200'
+                    )}
+                  >
+                    {plan.recommended && (
+                      <div className={cn(
+                        'absolute -top-3 bg-emerald-600 text-white text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full',
+                        c.dir === 'rtl' ? 'right-6' : 'left-6'
+                      )}>
+                        {c.pricing.recommended}
                       </div>
-                      {li}
-                    </li>
-                  ))}
-                </ul>
-                <button
-                  onClick={() => { trackCTA('start_trial', 'pricing'); navigate('/user?tab=register'); }}
-                  className="mt-12 w-full rounded-2xl bg-emerald-600 py-5 text-xl font-black text-white transition-all hover:bg-emerald-700 hover:shadow-xl hover:shadow-emerald-100 active:scale-[0.98]"
-                >
-                  {c.pricing.cta}
-                </button>
-                <p className="mt-6 text-sm font-medium text-slate-400">{c.pricing.note}</p>
-              </div>
+                    )}
+                    <div className="rounded-[2rem] bg-slate-50 p-10 text-start">
+                      <div className="flex items-start justify-between mb-4">
+                        <div>
+                          <p className="text-sm font-black uppercase tracking-[0.2em] text-emerald-600">{plan.name}</p>
+                          <p className="text-sm text-slate-500 mt-1">{plan.tagline}</p>
+                        </div>
+                        {promoOn && (
+                          <span className="bg-amber-100 text-amber-700 text-[10px] font-black px-2.5 py-1 rounded-full whitespace-nowrap">
+                            {c.pricing.save}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-baseline gap-2 my-6" dir="ltr">
+                        {promoOn && (
+                          <span className="text-lg text-slate-400 line-through font-bold">
+                            {c.pricing.was} {CURRENCY_SYMBOL}{planData.oldPrice}
+                          </span>
+                        )}
+                        <span className="text-6xl font-black text-slate-900">
+                          {CURRENCY_SYMBOL}{promoOn ? planData.newPrice : planData.oldPrice}
+                        </span>
+                        <span className="text-lg font-bold text-slate-400">{c.pricing.perYear}</span>
+                      </div>
+                      <ul className="space-y-3">
+                        {plan.features.map((li, i) => (
+                          <li key={i} className="flex items-start gap-3 text-sm font-semibold text-slate-700">
+                            <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
+                              <Check size={12} weight="bold" />
+                            </div>
+                            <span>{li}</span>
+                          </li>
+                        ))}
+                      </ul>
+                      <button
+                        onClick={() => { trackCTA(`start_trial_${plan.id}`, 'pricing'); navigate(`/user?tab=register&plan=${plan.id}`); }}
+                        className={cn(
+                          'mt-8 w-full rounded-2xl py-4 text-base font-black transition-all active:scale-[0.98]',
+                          plan.recommended
+                            ? 'bg-emerald-600 text-white hover:bg-emerald-700'
+                            : 'bg-slate-900 text-white hover:bg-slate-800'
+                        )}
+                      >
+                        {plan.cta}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
+            <p className="mt-8 text-sm font-medium text-slate-400">{c.pricing.note}</p>
           </div>
         </section>
       </main>
@@ -923,6 +1082,25 @@ export function LandingPage() {
           </div>
         </div>
       </footer>
+
+      {showPromo && !loggedInUser && (
+        <PromoPopup
+          lang={lang}
+          strings={{
+            title: c.pricing.promo.title,
+            subtitle: c.pricing.promo.subtitle,
+            placeholder: c.pricing.promo.placeholder,
+            cta: c.pricing.promo.cta,
+            perYear: c.pricing.perYear,
+            was: c.pricing.was,
+            save: c.pricing.save,
+            recommended: c.pricing.recommended,
+            basic: { id: 'basic', name: c.pricing.plans[0].name, tagline: c.pricing.plans[0].tagline, recommended: false },
+            pro:   { id: 'pro',   name: c.pricing.plans[1].name, tagline: c.pricing.plans[1].tagline, recommended: true  },
+          }}
+          onStart={handlePromoStart}
+        />
+      )}
     </div>
   );
 }

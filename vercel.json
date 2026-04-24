@@ -9,10 +9,5 @@
       "permanent": true
     }
   ],
-  "rewrites": [{ "source": "/((?!index.html).*)", "destination": "/index.html" }],
-  "crons": [
-    { "path": "/api/cron-sync?channel=airbnb",      "schedule": "0 1 * * *" },
-    { "path": "/api/cron-sync?channel=gathern",     "schedule": "0 2 * * *" },
-    { "path": "/api/cron-sync?channel=booking.com", "schedule": "0 3 * * *" }
-  ]
+  "rewrites": [{ "source": "/((?!index.html).*)", "destination": "/index.html" }]
 }

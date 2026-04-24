@@ -19,6 +19,8 @@ export const ME_QUERY = gql`
       validUntil
       isAdmin
       isActive
+      integrationsEnabled
+      onboardedAt
       createdAt
       bookingsCount
       settings {
@@ -407,6 +409,7 @@ export const GET_CHANNEL_INTEGRATIONS_QUERY = gql`
       channelName
       roomId
       icalUrlMasked
+      label
       isActive
       lastSyncedAt
       lastSyncStatus
@@ -425,6 +428,7 @@ export const SAVE_CHANNEL_INTEGRATION_MUTATION = gql`
       channelName
       roomId
       icalUrlMasked
+      label
       isActive
       lastSyncedAt
       lastSyncStatus
@@ -467,6 +471,26 @@ export const SYNC_ALL_CHANNELS_MUTATION = gql`
       canceled
       success
       message
+    }
+  }
+`;
+
+// ============= TENANT FEATURE FLAGS =============
+
+export const ADMIN_SET_INTEGRATIONS_ENABLED_MUTATION = gql`
+  mutation AdminSetIntegrationsEnabled($tenantId: ID!, $enabled: Boolean!) {
+    adminSetIntegrationsEnabled(tenantId: $tenantId, enabled: $enabled) {
+      id
+      integrationsEnabled
+    }
+  }
+`;
+
+export const COMPLETE_ONBOARDING_MUTATION = gql`
+  mutation CompleteOnboarding {
+    completeOnboarding {
+      id
+      onboardedAt
     }
   }
 `;

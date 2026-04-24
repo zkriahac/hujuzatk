@@ -25,6 +25,7 @@ export const typeDefs = `
     BOOKING_UPDATED
     BOOKING_DELETED
     TENANT_UPDATED
+    TENANT_INTEGRATIONS_TOGGLED
   }
 
   type Room {
@@ -45,6 +46,8 @@ export const typeDefs = `
     validUntil: DateTime!
     isAdmin: Boolean!
     isActive: Boolean!
+    integrationsEnabled: Boolean!
+    onboardedAt: DateTime
     createdAt: DateTime!
     updatedAt: DateTime!
     bookingsCount: Int!
@@ -156,6 +159,7 @@ export const typeDefs = `
     channelName: String!
     roomId: String!
     icalUrlMasked: String!
+    label: String
     isActive: Boolean!
     lastSyncedAt: DateTime
     lastSyncStatus: String
@@ -183,6 +187,7 @@ export const typeDefs = `
     channelName: String!
     roomId: String!
     icalUrl: String!
+    label: String
     isActive: Boolean
   }
 
@@ -228,6 +233,8 @@ export const typeDefs = `
     deleteChannelIntegration(id: ID!): Boolean!
     syncChannel(id: ID!): SyncResult!
     syncAllChannels: [SyncResult!]!
+    adminSetIntegrationsEnabled(tenantId: ID!, enabled: Boolean!): Tenant!
+    completeOnboarding: Tenant!
   }
 
   input RegisterInput {
