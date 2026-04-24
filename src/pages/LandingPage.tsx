@@ -794,7 +794,7 @@ export function LandingPage() {
             <div className="absolute bottom-[10%] right-[-5%] w-[30%] h-[30%] bg-blue-400 rounded-full blur-[100px]" />
           </div>
           <div className="container mx-auto px-6 text-center">
-            <div className="mx-auto mb-8 flex max-w-fit items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50/50 px-4 py-1.5 text-sm font-bold text-emerald-700 backdrop-blur-sm">
+            <div className="mx-auto mb-8 flex max-w-fit items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50/50 px-4 py-1.5 text-sm font-bold text-emerald-700 backdrop-blur-xs">
               <Sparkle size={16} weight="fill" />
               <span>{c.hero.badge}</span>
             </div>
@@ -857,7 +857,7 @@ export function LandingPage() {
                   {/* macOS browser frame */}
                   <div className="rounded-xl overflow-hidden shadow-[0_20px_60px_-10px_rgba(0,0,0,0.6)] ring-1 ring-white/10 transition-transform duration-300 group-hover:-translate-y-1 group-hover:shadow-[0_30px_70px_-10px_rgba(0,0,0,0.7)]">
                     {/* Title bar */}
-                    <div className="bg-[#2a2a2e]/90 backdrop-blur-sm px-3 py-2 flex items-center gap-3 border-b border-white/5">
+                    <div className="bg-[#2a2a2e]/90 backdrop-blur-xs px-3 py-2 flex items-center gap-3 border-b border-white/5">
                       <div className="flex items-center gap-1.5">
                         <div className="h-2.5 w-2.5 rounded-full bg-[#ff5f57] shadow-[0_0_4px_#ff5f57aa]" />
                         <div className="h-2.5 w-2.5 rounded-full bg-[#febc2e] shadow-[0_0_4px_#febc2eaa]" />

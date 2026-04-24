@@ -87,7 +87,7 @@ export default function PromoPopup({ lang, strings, onStart }: Props) {
 
   return (
     <div
-      className="fixed inset-0 z-[150] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200"
+      className="fixed inset-0 z-[150] bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200"
       role="dialog"
       aria-modal="true"
       dir={isRtl ? 'rtl' : 'ltr'}

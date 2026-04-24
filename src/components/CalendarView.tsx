@@ -157,15 +157,24 @@ export default function CalendarView({
                 const isPast = date < startOfToday();
                 const isFirst = date.getDate() === 1;
 
+                const isFirstOfYear = isFirst && date.getMonth() === 0;
                 return (
                   <React.Fragment key={dStr}>
                     {isFirst && (
-                      <tr>
+                      <tr aria-hidden="true">
                         <td
                           colSpan={rooms.length + 1}
-                          className={cn('bg-slate-900 text-white text-[7px] sm:text-xs font-black uppercase tracking-[0.3em] px-2 sm:px-4 py-1 sm:py-2 sticky z-30', isRtl ? 'right-0' : 'left-0')}
+                          className={cn(
+                            'p-0 border-t-2 border-slate-900',
+                            // Year boundary → tiny label strip. Month-only boundary → just the bold line.
+                            isFirstOfYear ? 'bg-slate-50' : 'h-0 leading-[0]',
+                          )}
                         >
-                          {formatTz(date, 'MMMM yyyy', tz, lang).toUpperCase()}
+                          {isFirstOfYear && (
+                            <div className={cn('text-slate-700 text-[10px] sm:text-xs font-black tracking-[0.3em] px-2 sm:px-4 py-0.5', isRtl ? 'text-right' : 'text-left')}>
+                              {date.getFullYear()}
+                            </div>
+                          )}
                         </td>
                       </tr>
                     )}

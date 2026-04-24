@@ -48,7 +48,7 @@ function ConfirmModal({ message, onConfirm, onCancel, confirmColor = 'bg-red-500
   cancelLabel: string;
 }) {
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={onCancel}>
+    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 backdrop-blur-xs p-4" onClick={onCancel}>
       <div className="bg-white rounded-3xl shadow-2xl max-w-sm w-full p-8 text-center space-y-6" onClick={e => e.stopPropagation()}>
         <WarningCircle size={48} weight="fill" className="text-amber-500 mx-auto" />
         <p className="text-sm font-bold text-slate-700">{message}</p>
@@ -125,7 +125,7 @@ export function AddBookingModal({ onClose, onAdd, initialDate, initialRoom, room
         'fixed inset-0 z-[200]',
         // Anchored (desktop) — very faint tint so the highlighted calendar cell stays visible.
         // Centered (mobile/no anchor) — dim + blur for focus on the full-screen modal.
-        anchorPos ? 'bg-slate-900/10' : 'bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4',
+        anchorPos ? 'bg-slate-900/10' : 'bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4',
       )}
       onClick={onClose}
     >
@@ -365,7 +365,7 @@ export function BookingDetailsModal({
       <div
         className={cn(
           'fixed inset-0 z-[200]',
-          anchorPos ? 'bg-slate-900/10' : 'bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4',
+          anchorPos ? 'bg-slate-900/10' : 'bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4',
         )}
         onClick={() => setEditMode(false)}
       >
@@ -510,7 +510,7 @@ export function BookingDetailsModal({
 
   return (
     <div
-      className={cn('fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[200]', !anchorPos && 'flex items-center justify-center p-4')}
+      className={cn('fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-[200]', !anchorPos && 'flex items-center justify-center p-4')}
       onClick={onClose}
     >
       <div
@@ -655,7 +655,7 @@ export function InvoiceModal({ booking, tenantName, currency, lang, tz, dir, onC
   };
 
   return (
-    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-[200] p-4">
+    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-[200] p-4">
       <div className="bg-white rounded-3xl max-w-2xl w-full shadow-2xl overflow-hidden" ref={invoiceRef}>
         <div className="p-6 border-b border-slate-100 flex justify-between items-center hide-on-print">
           <h2 className="font-black text-slate-900 uppercase tracking-tight">{t(lang, 'invoice.title')} Preview</h2>

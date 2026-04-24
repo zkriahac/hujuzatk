@@ -388,7 +388,7 @@ function IntegrationModal(props: {
 
   return (
     <div
-      className="fixed inset-0 z-[200] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4"
+      className="fixed inset-0 z-[200] bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4"
       dir={isRtl ? 'rtl' : 'ltr'}
       onClick={onClose}
     >
