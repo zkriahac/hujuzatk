@@ -1,6 +1,6 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { format, isSameDay, startOfToday, differenceInDays, parseISO } from 'date-fns';
-import { Minus, Plus, Sparkle, DotsThreeVertical, X, ArrowUp, ArrowDown, CircleNotch } from 'phosphor-react';
+import { Minus, Plus, Sparkle, DotsThreeVertical, X, ArrowUp, ArrowDown, CircleNotch, CalendarCheck } from 'phosphor-react';
 import { cn } from '../utils/cn';
 import { t, type Language } from '../lib/i18n';
 import { formatTz } from '../utils/formatTz';
@@ -121,8 +121,17 @@ export default function CalendarView({
           <table className="border-separate border-spacing-0">
             <thead className="sticky top-0 z-40 bg-slate-50">
               <tr>
-                <th className={cn('w-10 sm:w-24 p-1 sm:p-3 border-b border-slate-200 sticky z-50 bg-slate-50 text-[7px] sm:text-[11px] font-black uppercase tracking-widest text-slate-400', isRtl ? 'right-0 border-l' : 'left-0 border-r')}>
-                  {t(lang, 'calendar.date')}
+                <th className={cn('w-10 sm:w-24 p-0 border-b border-slate-200 sticky z-50 bg-slate-50', isRtl ? 'right-0 border-l' : 'left-0 border-r')}>
+                  <button
+                    type="button"
+                    onClick={jumpToToday}
+                    title={t(lang, 'calendar.jumpToday')}
+                    aria-label={t(lang, 'calendar.jumpToday')}
+                    className="w-full h-full py-2 sm:py-3 flex items-center justify-center text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 active:scale-95 transition-all"
+                  >
+                    <CalendarCheck size={16} weight="bold" className="sm:hidden" />
+                    <CalendarCheck size={18} weight="bold" className="hidden sm:block" />
+                  </button>
                 </th>
                 {rooms.map((r: any) => (
                   <th
