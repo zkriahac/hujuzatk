@@ -541,7 +541,11 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
           />
         )}
         {currentView === 'integrations' && session.tenant.integrationsEnabled !== false && (
-          <IntegrationsView session={session} lang={lang} />
+          <IntegrationsView
+            session={session}
+            lang={lang}
+            onNavigateToSettings={() => setCurrentView('settings')}
+          />
         )}
         {currentView === 'settings' && (
           <SettingsView session={session} onSessionChange={onSessionChange} lang={lang} />

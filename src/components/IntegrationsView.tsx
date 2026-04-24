@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react';
-import { ArrowsClockwise, Trash, Plus, WarningCircle, CheckCircle, Link } from 'phosphor-react';
+import {
+  ArrowsClockwise, Trash, WarningCircle, Link as LinkIcon,
+  GearSix, X, Plus,
+} from 'phosphor-react';
 import { apolloClient } from '../lib/apolloClient';
 import { t, type Language } from '../lib/i18n';
 import type { SessionUser } from '../lib/authService';
@@ -14,25 +17,27 @@ import {
 interface IntegrationsViewProps {
   session: SessionUser;
   lang: Language;
+  onNavigateToSettings?: () => void;
 }
 
-const CHANNEL_CONFIG: Record<string, { label: string; color: string; hint: string }> = {
-  airbnb: {
-    label: 'Airbnb',
-    color: '#FF5A5F',
-    hint: 'Airbnb → Manage listings → Calendar → Export calendar → Copy URL',
-  },
-  gathern: {
-    label: 'جاذبين (Gathern)',
-    color: '#00C896',
-    hint: 'في تطبيق جاذبين: الإعدادات ← مزامنة التقويم ← نسخ الرابط',
-  },
-  'booking.com': {
-    label: 'Booking.com',
-    color: '#003580',
-    hint: 'Extranet → Calendar → Sync calendars → Export calendar → Copy iCal URL',
-  },
+const CHANNELS = ['airbnb', 'gathern', 'booking.com'] as const;
+type ChannelKey = typeof CHANNELS[number];
+
+// i18n-key suffix per channel (booking.com has a dot so can't be used directly in keys)
+const CHANNEL_I18N: Record<ChannelKey, string> = {
+  airbnb: 'airbnb',
+  gathern: 'gathern',
+  'booking.com': 'booking',
 };
+
+const CHANNEL_COLORS: Record<ChannelKey, string> = {
+  airbnb: '#FF5A5F',
+  gathern: '#00C896',
+  'booking.com': '#003580',
+};
+
+const channelLabel = (lang: Language, ch: ChannelKey) => t(lang, `channel.${CHANNEL_I18N[ch]}.label`);
+const channelHint  = (lang: Language, ch: ChannelKey) => t(lang, `channel.${CHANNEL_I18N[ch]}.hint`);
 
 interface ChannelIntegration {
   id: string;
@@ -47,14 +52,13 @@ interface ChannelIntegration {
   lastSyncCount: number | null;
 }
 
-interface AddFormState {
-  channelName: string;
+interface ModalState {
   roomId: string;
-  icalUrl: string;
-  label: string;
+  channel: ChannelKey;
+  existing: ChannelIntegration | null;
 }
 
-export default function IntegrationsView({ session, lang }: IntegrationsViewProps) {
+export default function IntegrationsView({ session, lang, onNavigateToSettings }: IntegrationsViewProps) {
   // Feature gate — admin can disable integrations per tenant
   if (session.tenant.integrationsEnabled === false) {
     return (
@@ -73,18 +77,9 @@ export default function IntegrationsView({ session, lang }: IntegrationsViewProp
 
   const [integrations, setIntegrations] = useState<ChannelIntegration[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [form, setForm] = useState<AddFormState>({
-    channelName: 'airbnb',
-    roomId: rooms[0]?.id || '',
-    icalUrl: '',
-    label: '',
-  });
-  const [saving, setSaving] = useState(false);
   const [syncingIds, setSyncingIds] = useState<Set<string>>(new Set());
   const [syncingAll, setSyncingAll] = useState(false);
-  const [formError, setFormError] = useState('');
-  const [syncMessages, setSyncMessages] = useState<Record<string, { success: boolean; message: string }>>({});
+  const [modal, setModal] = useState<ModalState | null>(null);
 
   const loadIntegrations = async () => {
     try {
@@ -94,7 +89,7 @@ export default function IntegrationsView({ session, lang }: IntegrationsViewProp
       });
       setIntegrations((data as any)?.getChannelIntegrations || []);
     } catch {
-      // silently ignore — auth errors are handled by apolloClient error link
+      // Silent — apollo error link handles auth redirects
     } finally {
       setLoading(false);
     }
@@ -102,57 +97,16 @@ export default function IntegrationsView({ session, lang }: IntegrationsViewProp
 
   useEffect(() => { loadIntegrations(); }, []);
 
-  const handleAdd = async () => {
-    setFormError('');
-    if (!form.icalUrl.trim().startsWith('http')) {
-      setFormError('Please enter a valid iCal URL starting with http');
-      return;
-    }
-    if (!form.roomId) {
-      setFormError('Please select a room');
-      return;
-    }
-    setSaving(true);
-    try {
-      await apolloClient.mutate({
-        mutation: SAVE_CHANNEL_INTEGRATION_MUTATION,
-        variables: { input: { channelName: form.channelName, roomId: form.roomId, icalUrl: form.icalUrl.trim(), label: form.label.trim() || null } },
-      });
-      setShowAddForm(false);
-      setForm({ channelName: 'airbnb', roomId: rooms[0]?.id || '', icalUrl: '', label: '' });
-      await loadIntegrations();
-    } catch (err: any) {
-      setFormError(err.graphQLErrors?.[0]?.message || err.message || 'Failed to save');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleDelete = async (id: string) => {
-    if (!confirm('Delete this channel integration?')) return;
-    try {
-      await apolloClient.mutate({ mutation: DELETE_CHANNEL_INTEGRATION_MUTATION, variables: { id } });
-      await loadIntegrations();
-    } catch (err: any) {
-      alert(err.graphQLErrors?.[0]?.message || err.message || 'Delete failed');
-    }
-  };
+  const findIntegration = (roomId: string, channel: ChannelKey): ChannelIntegration | null =>
+    integrations.find(i => i.roomId === roomId && i.channelName === channel) ?? null;
 
   const handleSync = async (id: string) => {
     setSyncingIds(prev => new Set(prev).add(id));
-    setSyncMessages(prev => { const n = { ...prev }; delete n[id]; return n; });
     try {
-      const { data } = await apolloClient.mutate({ mutation: SYNC_CHANNEL_MUTATION, variables: { id } });
-      const result = (data as any)?.syncChannel;
-      if (result) {
-        setSyncMessages(prev => ({ ...prev, [id]: { success: result.success, message: result.message } }));
-        await loadIntegrations();
-      }
+      await apolloClient.mutate({ mutation: SYNC_CHANNEL_MUTATION, variables: { id } });
+      await loadIntegrations();
     } catch (err: any) {
-      setSyncMessages(prev => ({
-        ...prev,
-        [id]: { success: false, message: err.graphQLErrors?.[0]?.message || err.message || 'Sync failed' },
-      }));
+      alert(err.graphQLErrors?.[0]?.message || err.message || 'Sync failed');
     } finally {
       setSyncingIds(prev => { const n = new Set(prev); n.delete(id); return n; });
     }
@@ -170,247 +124,353 @@ export default function IntegrationsView({ session, lang }: IntegrationsViewProp
     }
   };
 
-  const formatDate = (iso: string | null) => {
-    if (!iso) return t(lang, 'integrations.neverSynced');
-    return new Date(iso).toLocaleString(
-      lang === 'ar' ? 'ar-SA' : lang === 'tr' ? 'tr-TR' : 'en-US',
-      { dateStyle: 'short', timeStyle: 'short' }
-    );
+  const handleDelete = async (id: string) => {
+    if (!confirm(t(lang, 'integrations.delete') + '?')) return;
+    try {
+      await apolloClient.mutate({ mutation: DELETE_CHANNEL_INTEGRATION_MUTATION, variables: { id } });
+      await loadIntegrations();
+    } catch (err: any) {
+      alert(err.graphQLErrors?.[0]?.message || err.message || 'Delete failed');
+    }
   };
 
-  const getRoomName = (roomId: string) => rooms.find(r => r.id === roomId)?.name || roomId;
+  const handleSave = async (input: { id?: string; channel: ChannelKey; roomId: string; icalUrl: string; label: string }) => {
+    await apolloClient.mutate({
+      mutation: SAVE_CHANNEL_INTEGRATION_MUTATION,
+      variables: {
+        input: {
+          ...(input.id && { id: input.id }),
+          channelName: input.channel,
+          roomId: input.roomId,
+          icalUrl: input.icalUrl.trim(),
+          label: input.label.trim() || null,
+        },
+      },
+    });
+    await loadIntegrations();
+  };
 
-  const inputClass =
-    'w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm font-black text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500';
-  const selectClass = `${inputClass} pe-10`;
-  const labelClass = 'text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1 block';
+  // ---- Empty room state ---------------------------------------------------
+  if (rooms.length === 0) {
+    return (
+      <div className="max-w-2xl mx-auto py-16 text-center" dir={isRtl ? 'rtl' : 'ltr'}>
+        <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-xl p-10 space-y-5">
+          <GearSix size={40} weight="duotone" className="text-emerald-500 mx-auto" />
+          <h2 className="text-xl font-black text-slate-800">{t(lang, 'integrations.noRoomsTitle')}</h2>
+          <p className="text-sm text-slate-500 leading-relaxed max-w-md mx-auto">{t(lang, 'integrations.noRoomsBody')}</p>
+          {onNavigateToSettings && (
+            <button
+              onClick={onNavigateToSettings}
+              className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm px-5 py-3 rounded-2xl"
+            >
+              {t(lang, 'integrations.noRoomsCta')}
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  }
 
+  // ---- Matrix UI ----------------------------------------------------------
   return (
-    <div className="max-w-4xl mx-auto space-y-8 pb-20" dir={isRtl ? 'rtl' : 'ltr'}>
+    <div className="max-w-6xl mx-auto space-y-6 pb-20" dir={isRtl ? 'rtl' : 'ltr'}>
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-black text-slate-800">{t(lang, 'integrations.title')}</h1>
-          <p className="text-sm text-slate-400 mt-1">{t(lang, 'integrations.emptyHint')}</p>
+          <p className="text-sm text-slate-400 mt-1 max-w-2xl">{t(lang, 'integrations.icalInstructions')}</p>
         </div>
-        <div className="flex gap-3">
-          {integrations.length > 0 && (
-            <button
-              onClick={handleSyncAll}
-              disabled={syncingAll}
-              className="flex items-center gap-2 px-4 py-2 rounded-2xl border border-slate-200 bg-white text-slate-700 text-sm font-black hover:bg-slate-50 disabled:opacity-50 transition-all"
-            >
-              <ArrowsClockwise size={16} className={syncingAll ? 'animate-spin' : ''} />
-              {syncingAll ? t(lang, 'integrations.syncing') : t(lang, 'integrations.syncAll')}
-            </button>
-          )}
+        {integrations.length > 0 && (
           <button
-            onClick={() => { setShowAddForm(true); setFormError(''); }}
-            className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-emerald-600 text-white text-sm font-black hover:bg-emerald-700 transition-all"
+            onClick={handleSyncAll}
+            disabled={syncingAll}
+            className="flex items-center gap-2 px-4 py-2 rounded-2xl border border-slate-200 bg-white text-slate-700 text-sm font-black hover:bg-slate-50 disabled:opacity-50 transition-all"
           >
-            <Plus size={16} />
-            {t(lang, 'integrations.add')}
+            <ArrowsClockwise size={16} className={syncingAll ? 'animate-spin' : ''} />
+            {syncingAll ? t(lang, 'integrations.syncing') : t(lang, 'integrations.syncAll')}
           </button>
-        </div>
+        )}
       </div>
 
-      {/* iCal price note */}
+      {/* Price-note banner */}
       <div className="flex items-start gap-3 bg-amber-50 border border-amber-100 rounded-2xl px-5 py-4 text-sm text-amber-800">
         <WarningCircle size={18} className="mt-0.5 shrink-0" />
         <span>{t(lang, 'integrations.priceNote')}</span>
       </div>
 
-      {/* Add Form */}
-      {showAddForm && (
-        <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-xl p-8 space-y-5">
-          <h2 className="text-base font-black text-slate-700">{t(lang, 'integrations.add')}</h2>
+      {loading && (
+        <div className="text-center py-12 text-slate-400 text-sm font-semibold">Loading…</div>
+      )}
 
-          <div>
-            <label className={labelClass}>{t(lang, 'integrations.channel')}</label>
-            <select
-              value={form.channelName}
-              onChange={e => setForm(f => ({ ...f, channelName: e.target.value }))}
-              className={selectClass}
-            >
-              {Object.entries(CHANNEL_CONFIG).map(([key, cfg]) => (
-                <option key={key} value={key}>{cfg.label}</option>
-              ))}
-            </select>
+      {/* Matrix */}
+      {!loading && (
+        <div className="bg-white rounded-[2rem] border border-slate-200 shadow-xl overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-slate-50 border-b border-slate-200">
+                <tr>
+                  <th className="px-6 py-4 text-start text-[10px] font-black uppercase tracking-widest text-slate-500">
+                    {t(lang, 'integrations.matrixRoomCol')}
+                  </th>
+                  {CHANNELS.map((ch) => (
+                    <th key={ch} className="px-4 py-4 text-start">
+                      <span
+                        className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-white text-[11px] font-black"
+                        style={{ backgroundColor: CHANNEL_COLORS[ch] }}
+                      >
+                        {channelLabel(lang, ch)}
+                      </span>
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {rooms.map((room) => (
+                  <tr key={room.id} className="border-b border-slate-100 last:border-b-0">
+                    <td className="px-6 py-5 font-black text-slate-800 whitespace-nowrap">{room.name}</td>
+                    {CHANNELS.map((ch) => {
+                      const integ = findIntegration(room.id, ch);
+                      const isSyncing = integ ? syncingIds.has(integ.id) : false;
+                      return (
+                        <td key={ch} className="px-4 py-4 align-top">
+                          {integ ? (
+                            <ConnectedCell
+                              integration={integ}
+                              isSyncing={isSyncing}
+                              lang={lang}
+                              onEdit={() => setModal({ roomId: room.id, channel: ch, existing: integ })}
+                              onSync={() => handleSync(integ.id)}
+                              onDelete={() => handleDelete(integ.id)}
+                            />
+                          ) : (
+                            <button
+                              onClick={() => setModal({ roomId: room.id, channel: ch, existing: null })}
+                              className="w-full min-w-[140px] flex items-center justify-center gap-1.5 border-2 border-dashed border-slate-200 hover:border-emerald-400 text-slate-400 hover:text-emerald-600 rounded-xl px-3 py-3 text-xs font-black transition-colors"
+                            >
+                              <Plus size={14} weight="bold" />
+                              {t(lang, 'integrations.connect')}
+                            </button>
+                          )}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
+        </div>
+      )}
 
-          <div>
-            <label className={labelClass}>{t(lang, 'integrations.room')}</label>
-            <select
-              value={form.roomId}
-              onChange={e => setForm(f => ({ ...f, roomId: e.target.value }))}
-              className={selectClass}
-            >
-              {rooms.map(r => (
-                <option key={r.id} value={r.id}>{r.name}</option>
-              ))}
-            </select>
-          </div>
+      {modal && (
+        <IntegrationModal
+          state={modal}
+          lang={lang}
+          onClose={() => setModal(null)}
+          onSave={async (input) => { await handleSave(input); setModal(null); }}
+          onDelete={async (id) => { await handleDelete(id); setModal(null); }}
+        />
+      )}
+    </div>
+  );
+}
 
+// ---- Connected cell ----------------------------------------------------
+function ConnectedCell(props: {
+  integration: ChannelIntegration;
+  isSyncing: boolean;
+  lang: Language;
+  onEdit: () => void;
+  onSync: () => void;
+  onDelete: () => void;
+}) {
+  const { integration: i, isSyncing, lang, onEdit, onSync, onDelete } = props;
+  const statusColor =
+    i.lastSyncStatus === 'success' ? 'bg-emerald-500'
+    : i.lastSyncStatus === 'suspicious' || i.lastSyncStatus === 'partial' ? 'bg-amber-500'
+    : i.lastSyncStatus === 'error' ? 'bg-red-500'
+    : 'bg-slate-300';
+
+  return (
+    <div className="min-w-[180px] bg-emerald-50/50 border border-emerald-100 rounded-xl px-3 py-2.5 space-y-1.5">
+      <div className="flex items-center gap-2">
+        <span className={`h-2 w-2 rounded-full ${statusColor} shrink-0`} />
+        <span className="text-xs font-black text-emerald-700">
+          {i.label || t(lang, 'integrations.connected')}
+        </span>
+      </div>
+      <div className="text-[10px] text-slate-400 font-mono truncate" dir="ltr" title={i.icalUrlMasked}>
+        {i.icalUrlMasked}
+      </div>
+      <div className="flex items-center gap-1.5 pt-1">
+        <button
+          onClick={onSync}
+          disabled={isSyncing}
+          title={t(lang, 'integrations.syncNow')}
+          className="p-1.5 rounded-lg hover:bg-emerald-100 text-emerald-700 disabled:opacity-40"
+        >
+          <ArrowsClockwise size={14} weight="bold" className={isSyncing ? 'animate-spin' : ''} />
+        </button>
+        <button
+          onClick={onEdit}
+          title={t(lang, 'integrations.edit')}
+          className="p-1.5 rounded-lg hover:bg-emerald-100 text-emerald-700"
+        >
+          <LinkIcon size={14} weight="bold" />
+        </button>
+        <button
+          onClick={onDelete}
+          title={t(lang, 'integrations.delete')}
+          className="p-1.5 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-600"
+        >
+          <Trash size={14} weight="bold" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ---- Modal -------------------------------------------------------------
+function IntegrationModal(props: {
+  state: ModalState;
+  lang: Language;
+  onClose: () => void;
+  onSave: (input: { id?: string; channel: ChannelKey; roomId: string; icalUrl: string; label: string }) => Promise<void>;
+  onDelete: (id: string) => Promise<void>;
+}) {
+  const { state, lang, onClose, onSave, onDelete } = props;
+  const isRtl = lang === 'ar';
+  const channelColor = CHANNEL_COLORS[state.channel];
+  const channelLabelText = channelLabel(lang, state.channel);
+  const channelHintText = channelHint(lang, state.channel);
+
+  const [icalUrl, setIcalUrl] = useState(state.existing ? '' : '');
+  const [label, setLabel] = useState(state.existing?.label || '');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  const editing = !!state.existing;
+
+  const handleSave = async () => {
+    setError('');
+    // When editing, allow blank URL to mean "keep current URL" — resolver accepts empty by checking .startsWith
+    const url = icalUrl.trim();
+    if (!editing && !url.startsWith('http')) {
+      setError('Please enter a valid iCal URL starting with http');
+      return;
+    }
+    setSaving(true);
+    try {
+      await onSave({
+        ...(state.existing && { id: state.existing.id }),
+        channel: state.channel,
+        roomId: state.roomId,
+        // If editing without changing URL, send the existing masked URL? No — backend validates starts with http.
+        // Simplest: require URL re-entry on edit (masked URL never leaves the DB).
+        icalUrl: url,
+        label,
+      });
+    } catch (err: any) {
+      setError(err.graphQLErrors?.[0]?.message || err.message || 'Failed to save');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!state.existing) return;
+    if (!confirm(`${t(lang, 'integrations.delete')}?`)) return;
+    await onDelete(state.existing.id);
+  };
+
+  const inputClass = 'w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm font-black text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500';
+  const labelClass = 'text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1 block';
+
+  return (
+    <div
+      className="fixed inset-0 z-[200] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4"
+      dir={isRtl ? 'rtl' : 'ltr'}
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-[2rem] shadow-2xl max-w-md w-full p-7 relative"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          onClick={onClose}
+          aria-label="Close"
+          className={`absolute top-4 ${isRtl ? 'left-4' : 'right-4'} text-slate-400 hover:text-slate-800`}
+        >
+          <X size={20} weight="bold" />
+        </button>
+
+        <div className="flex items-center gap-2 mb-3">
+          <span
+            className="px-3 py-1 rounded-full text-white text-xs font-black"
+            style={{ backgroundColor: channelColor }}
+          >
+            {channelLabelText}
+          </span>
+          <span className="text-xs text-slate-500 font-bold">
+            {editing ? t(lang, 'integrations.edit') : t(lang, 'integrations.connect')}
+          </span>
+        </div>
+
+        <div className="space-y-4">
           <div>
             <label className={labelClass}>{t(lang, 'integrations.icalUrl')}</label>
             <input
               type="url"
-              value={form.icalUrl}
-              onChange={e => setForm(f => ({ ...f, icalUrl: e.target.value }))}
-              placeholder="https://www.airbnb.com/calendar/ical/..."
+              value={icalUrl}
+              onChange={(e) => setIcalUrl(e.target.value)}
+              placeholder={editing ? state.existing!.icalUrlMasked : 'https://www.airbnb.com/calendar/ical/...'}
               className={inputClass}
               dir="ltr"
+              autoFocus
             />
-            <p className="text-[11px] text-slate-400 mt-1.5 leading-relaxed">
-              {CHANNEL_CONFIG[form.channelName]?.hint}
-            </p>
+            <p className="text-[11px] text-slate-400 mt-1.5 leading-relaxed">{channelHintText}</p>
           </div>
 
           <div>
             <label className={labelClass}>{t(lang, 'integrations.label')}</label>
             <input
               type="text"
-              value={form.label}
-              onChange={e => setForm(f => ({ ...f, label: e.target.value }))}
+              value={label}
+              onChange={(e) => setLabel(e.target.value)}
               placeholder={t(lang, 'integrations.labelPlaceholder')}
               className={inputClass}
               maxLength={60}
             />
-            <p className="text-[11px] text-slate-400 mt-1.5 leading-relaxed">
-              {t(lang, 'integrations.labelHint')}
-            </p>
+            <p className="text-[11px] text-slate-400 mt-1.5">{t(lang, 'integrations.labelHint')}</p>
           </div>
 
-          {formError && (
-            <p className="text-sm text-red-600 font-semibold">{formError}</p>
-          )}
+          {error && <p className="text-sm text-red-600 font-semibold">{error}</p>}
 
-          <div className="flex gap-3">
+          <div className="flex gap-3 pt-1">
             <button
-              onClick={handleAdd}
+              onClick={handleSave}
               disabled={saving}
-              className="flex-1 bg-emerald-600 text-white py-3 rounded-2xl text-sm font-black hover:bg-emerald-700 disabled:opacity-50 transition-all"
+              className="flex-1 bg-emerald-600 text-white py-3 rounded-2xl text-sm font-black hover:bg-emerald-700 disabled:opacity-50"
             >
               {saving ? t(lang, 'integrations.syncing') : t(lang, 'integrations.save')}
             </button>
             <button
-              onClick={() => { setShowAddForm(false); setFormError(''); }}
-              className="flex-1 bg-slate-100 text-slate-700 py-3 rounded-2xl text-sm font-black hover:bg-slate-200 transition-all"
+              onClick={onClose}
+              className="flex-1 bg-slate-100 text-slate-700 py-3 rounded-2xl text-sm font-black hover:bg-slate-200"
             >
               {t(lang, 'integrations.cancel')}
             </button>
           </div>
+          {editing && (
+            <button
+              onClick={handleDelete}
+              className="w-full text-xs font-black text-red-500 hover:text-red-700 py-2"
+            >
+              {t(lang, 'integrations.delete')}
+            </button>
+          )}
         </div>
-      )}
-
-      {/* Loading */}
-      {loading && (
-        <div className="text-center py-12 text-slate-400 text-sm font-semibold">Loading…</div>
-      )}
-
-      {/* Empty state */}
-      {!loading && integrations.length === 0 && !showAddForm && (
-        <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-xl p-12 text-center space-y-3">
-          <Link size={40} className="mx-auto text-slate-300" />
-          <p className="font-black text-slate-500">{t(lang, 'integrations.empty')}</p>
-        </div>
-      )}
-
-      {/* Integration Cards */}
-      {integrations.map(integration => {
-        const cfg = CHANNEL_CONFIG[integration.channelName] || {
-          label: integration.channelName,
-          color: '#64748b',
-          hint: '',
-        };
-        const isSyncing = syncingIds.has(integration.id);
-        const syncMsg = syncMessages[integration.id];
-
-        return (
-          <div key={integration.id} className="bg-white rounded-[2.5rem] border border-slate-200 shadow-xl p-8 space-y-5">
-            {/* Card header */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3 flex-wrap">
-                <span
-                  className="px-3 py-1 rounded-full text-white text-xs font-black"
-                  style={{ backgroundColor: cfg.color }}
-                >
-                  {cfg.label}
-                </span>
-                <span className="text-sm font-black text-slate-700">{getRoomName(integration.roomId)}</span>
-                {integration.label && (
-                  <span className="text-xs font-semibold text-slate-500 italic">
-                    {integration.label}
-                  </span>
-                )}
-                <span className={`text-[10px] px-2 py-0.5 rounded-full font-black ${integration.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
-                  {integration.isActive ? t(lang, 'integrations.active') : t(lang, 'integrations.inactive')}
-                </span>
-                {integration.lastSyncStatus === 'suspicious' && (
-                  <span className="flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-black bg-amber-100 text-amber-700">
-                    <WarningCircle size={10} weight="fill" />
-                    {t(lang, 'integrations.suspiciousBadge')}
-                  </span>
-                )}
-              </div>
-              <button
-                onClick={() => handleDelete(integration.id)}
-                className="text-slate-300 hover:text-red-500 transition-colors p-1"
-                title={t(lang, 'integrations.delete')}
-              >
-                <Trash size={18} />
-              </button>
-            </div>
-
-            {/* Masked URL */}
-            <div className="flex items-center gap-2 text-slate-400 text-xs font-mono bg-slate-50 rounded-xl px-4 py-2" dir="ltr">
-              <Link size={12} />
-              <span>{integration.icalUrlMasked}</span>
-            </div>
-
-            {/* Sync status + button */}
-            <div className="flex items-center justify-between flex-wrap gap-3">
-              <div className="space-y-1">
-                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-                  {t(lang, 'integrations.lastSynced')}
-                </p>
-                <p className="text-sm font-semibold text-slate-600">
-                  {formatDate(integration.lastSyncedAt)}
-                  {integration.lastSyncCount != null && ` · ${integration.lastSyncCount} events`}
-                </p>
-                {integration.lastSyncStatus && (
-                  <span className={`inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-full ${
-                    integration.lastSyncStatus === 'success' ? 'bg-emerald-100 text-emerald-700'
-                    : integration.lastSyncStatus === 'partial' || integration.lastSyncStatus === 'suspicious' ? 'bg-amber-100 text-amber-700'
-                    : 'bg-red-100 text-red-600'
-                  }`}>
-                    {integration.lastSyncStatus === 'success' && <CheckCircle size={10} />}
-                    {(integration.lastSyncStatus === 'error' || integration.lastSyncStatus === 'partial' || integration.lastSyncStatus === 'suspicious') && <WarningCircle size={10} />}
-                    {integration.lastSyncMessage}
-                  </span>
-                )}
-              </div>
-
-              <button
-                onClick={() => handleSync(integration.id)}
-                disabled={isSyncing}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-emerald-600 text-white text-sm font-black hover:bg-emerald-700 disabled:opacity-50 transition-all"
-              >
-                <ArrowsClockwise size={15} className={isSyncing ? 'animate-spin' : ''} />
-                {isSyncing ? t(lang, 'integrations.syncing') : t(lang, 'integrations.syncNow')}
-              </button>
-            </div>
-
-            {/* Per-card sync result banner */}
-            {syncMsg && (
-              <div className={`flex items-center gap-2 text-sm font-semibold px-4 py-2.5 rounded-2xl ${syncMsg.success ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'}`}>
-                {syncMsg.success ? <CheckCircle size={16} /> : <WarningCircle size={16} />}
-                {syncMsg.message}
-              </div>
-            )}
-          </div>
-        );
-      })}
+      </div>
     </div>
   );
 }
