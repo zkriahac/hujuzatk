@@ -122,8 +122,10 @@ export function AddBookingModal({ onClose, onAdd, initialDate, initialRoom, room
   return (
     <div
       className={cn(
-        'fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[200]',
-        !anchorPos && 'flex items-center justify-center p-4',
+        'fixed inset-0 z-[200]',
+        // Anchored (desktop) — very faint tint so the highlighted calendar cell stays visible.
+        // Centered (mobile/no anchor) — dim + blur for focus on the full-screen modal.
+        anchorPos ? 'bg-slate-900/10' : 'bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4',
       )}
       onClick={onClose}
     >
@@ -361,7 +363,10 @@ export function BookingDetailsModal({
   if (editMode) {
     return (
       <div
-        className={cn('fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[200]', !anchorPos && 'flex items-center justify-center p-4')}
+        className={cn(
+          'fixed inset-0 z-[200]',
+          anchorPos ? 'bg-slate-900/10' : 'bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4',
+        )}
         onClick={() => setEditMode(false)}
       >
         <form

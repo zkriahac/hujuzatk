@@ -500,6 +500,9 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
             setSelectedBooking={setSelectedBooking}
             setModalAnchor={setModalAnchor}
             selectedBookingId={selectedBooking?.id ?? null}
+            showAddModal={showAddModal}
+            addModalInitialDate={addModalInitialDate}
+            addModalInitialRoom={addModalInitialRoom}
             jumpToToday={jumpToToday}
             onLoadMorePast={loadMorePast}
             onLoadMoreFuture={loadMoreFuture}

@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { format, isSameDay, startOfToday } from 'date-fns';
+import { format, isSameDay, startOfToday, differenceInDays, parseISO } from 'date-fns';
 import { Minus, Plus, Sparkle, DotsThreeVertical, X, ArrowUp, ArrowDown, CircleNotch } from 'phosphor-react';
 import { cn } from '../utils/cn';
 import { t, type Language } from '../lib/i18n';
@@ -42,6 +42,9 @@ interface CalendarViewProps {
   setSelectedBooking: (b: any) => void;
   setModalAnchor?: (a: { x: number; y: number } | null) => void;
   selectedBookingId?: string | null;
+  showAddModal?: boolean;
+  addModalInitialDate?: string;
+  addModalInitialRoom?: string;
   jumpToToday: () => void;
   onLoadMorePast: () => Promise<void>;
   onLoadMoreFuture: () => Promise<void>;
@@ -62,6 +65,9 @@ export default function CalendarView({
   setSelectedBooking,
   setModalAnchor,
   selectedBookingId,
+  showAddModal,
+  addModalInitialDate,
+  addModalInitialRoom,
   jumpToToday,
   onLoadMorePast,
   onLoadMoreFuture,
@@ -74,6 +80,7 @@ export default function CalendarView({
     return n >= 1 && n <= 3 ? n : 1;
   });
   const [showToolbar, setShowToolbar] = useState(false);
+  const [hoveredBookingId, setHoveredBookingId] = useState<string | null>(null);
   const [loadingPast, setLoadingPast] = useState(false);
   const [loadingFuture, setLoadingFuture] = useState(false);
 
@@ -187,6 +194,8 @@ export default function CalendarView({
                           const checkOutStr = b.checkOut.split('T')[0];
                           return inRoom && dStr >= checkInStr && dStr < checkOutStr;
                         });
+                        const hasBookings = cellBookings.length > 0;
+                        const isPendingAdd = !!showAddModal && addModalInitialDate === dStr && addModalInitialRoom === r.id && !hasBookings;
                         return (
                           <td
                             key={r.id}
@@ -199,11 +208,15 @@ export default function CalendarView({
                               setShowAddModal(true);
                             }}
                             className={cn(
-                              'border border-slate-100 relative p-0 transition-all cursor-pointer hover:bg-emerald-100/80',
-                              selectedDateStr === dStr && 'bg-emerald-50/30',
+                              'border border-slate-100 relative p-0 transition-all cursor-pointer',
+                              // Cell hover only when empty — when a booking sits here, the bar itself carries the hover feedback
+                              !hasBookings && 'hover:bg-emerald-100/80',
+                              selectedDateStr === dStr && !hasBookings && 'bg-emerald-50/30',
+                              // Visible confirmation that this is the cell the Add modal is acting on
+                              isPendingAdd && 'bg-emerald-100 ring-2 ring-emerald-500 ring-inset z-20',
                             )}
                           >
-                            {cellBookings.length === 0 && (
+                            {!hasBookings && (
                               <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
                                 <Plus size={12} weight="bold" className="text-emerald-600" />
                               </div>
@@ -219,7 +232,13 @@ export default function CalendarView({
                               const nextDStr = format(prevDay, 'yyyy-MM-dd');
                               const isLast = nextDStr === checkOutStr;
                               const isSingle = isFirst && isLast;
+                              // Show the guest name on the middle slice so it stays centered across the merged bar
+                              const dayOffset = differenceInDays(parseISO(dStr), parseISO(checkInStr));
+                              const totalNights = Math.max(1, differenceInDays(parseISO(checkOutStr), parseISO(checkInStr)));
+                              const middleIdx = Math.floor((totalNights - 1) / 2);
+                              const isMiddle = dayOffset === middleIdx;
                               const isSelected = selectedBookingId === b.id;
+                              const isHovered = hoveredBookingId === b.id;
                               return (
                                 <div
                                   key={b.id}
@@ -228,8 +247,10 @@ export default function CalendarView({
                                     setModalAnchor?.({ x: e.clientX, y: e.clientY });
                                     setSelectedBooking(b);
                                   }}
+                                  onMouseEnter={() => setHoveredBookingId(b.id)}
+                                  onMouseLeave={() => setHoveredBookingId((cur) => (cur === b.id ? null : cur))}
                                   className={cn(
-                                    'absolute left-0.5 right-0.5 font-black text-center leading-tight flex items-center justify-center shadow-sm cursor-pointer hover:shadow-lg transition-all hover:scale-[1.02] px-0.5 border truncate',
+                                    'absolute left-0.5 right-0.5 font-black text-center leading-tight flex items-center justify-center shadow-sm cursor-pointer transition-all px-0.5 border truncate',
                                     bookingText,
                                     palette.bg,
                                     palette.border,
@@ -242,12 +263,14 @@ export default function CalendarView({
                                       : isLast
                                       ? '-top-px bottom-0.5 rounded-b-md rounded-t-none border-t-0'
                                       : '-top-px -bottom-px rounded-none border-y-0',
-                                    isSelected && 'ring-2 ring-emerald-500 ring-inset z-10 shadow-lg scale-[1.02]',
+                                    // Unified emphasis across every slice of the same booking (state-driven, not per-slice :hover)
+                                    (isHovered || isSelected) && 'shadow-lg z-10',
+                                    isSelected && 'ring-2 ring-emerald-500 ring-inset',
                                   )}
                                   title={b.guestName}
                                 >
-                                  {/* Show guest name only on first day/single night — middle/last slices stay as a continuous bar */}
-                                  <span className="truncate">{isFirst ? b.guestName : ''}</span>
+                                  {/* Guest name on the middle slice only — one label centered across the merged bar */}
+                                  <span className="truncate">{isMiddle ? b.guestName : ''}</span>
                                 </div>
                               );
                             })}
