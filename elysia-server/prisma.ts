@@ -1,11 +1,14 @@
 import { PrismaClient } from '@prisma/client';
 
+// Cache Prisma on globalThis in all environments — in Vercel serverless a warm
+// container reuses the globals between invocations, saving ~500ms of client init
+// plus the DB connection handshake on every subsequent request.
 const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
 
-export const prisma = globalForPrisma.prisma ?? new PrismaClient({
-  log: process.env.NODE_ENV === 'development' ? ['warn', 'error'] : ['error'],
-});
+export const prisma =
+  globalForPrisma.prisma ??
+  new PrismaClient({
+    log: ['error'],
+  });
 
-if (process.env.NODE_ENV !== 'production') {
-  globalForPrisma.prisma = prisma;
-}
+globalForPrisma.prisma = prisma;

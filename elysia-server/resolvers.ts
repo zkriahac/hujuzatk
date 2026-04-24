@@ -232,15 +232,14 @@ export const resolvers = {
 		},
 		async login(_: any, { email, password }: any, context: any) {
 			if (!email || !password) throw new GraphQLError('Email and password are required', { extensions: { code: 'BAD_USER_INPUT', http: { status: 400 } } });
-			const tenant = await prisma.tenant.findUnique({ where: { email }, include: { settings: true } });
+			const tenant = await prisma.tenant.findUnique({ where: { email }, include: { settings: true, _count: { select: { bookings: true } } } });
 			if (!tenant) throw new GraphQLError('Invalid credentials', { extensions: { code: 'UNAUTHENTICATED', http: { status: 401 } } });
 			const passwordMatch = await bcrypt.compare(password, tenant.passwordHash);
 			if (!passwordMatch) throw new GraphQLError('Invalid credentials', { extensions: { code: 'UNAUTHENTICATED', http: { status: 401 } } });
 			if (!tenant.isActive) throw new GraphQLError('Account has been deactivated. Please contact support.', { extensions: { code: 'FORBIDDEN', http: { status: 403 } } });
 			if (tenant.subscriptionStatus === 'EXPIRED' || tenant.subscriptionStatus === 'CANCELED') throw new GraphQLError('Subscription expired. Please renew to continue.', { extensions: { code: 'FORBIDDEN', http: { status: 403 } } });
 			const { token, refreshToken } = generateTokens(tenant.id, tenant.email);
-			const bookingsCount = await prisma.booking.count({ where: { tenantId: tenant.id } });
-			return { token, refreshToken, tenant: { ...normalizeTenant(tenant), bookingsCount } };
+			return { token, refreshToken, tenant: { ...normalizeTenant(tenant), bookingsCount: (tenant as any)._count?.bookings || 0 } };
 		},
 		async logout() { return true; },
 		async refreshToken(_: any, { refreshToken }: any, context: any) {
@@ -249,10 +248,9 @@ export const resolvers = {
 				// @ts-ignore
 				const { tenantId, email } = verified;
 				const { token: newToken, refreshToken: newRefreshToken } = generateTokens(tenantId, email);
-				const tenant = await prisma.tenant.findUnique({ where: { id: tenantId }, include: { settings: true } });
+				const tenant = await prisma.tenant.findUnique({ where: { id: tenantId }, include: { settings: true, _count: { select: { bookings: true } } } });
 				if (!tenant) throw new GraphQLError('Tenant not found', { extensions: { code: 'NOT_FOUND', http: { status: 404 } } });
-				const bookingsCount = await prisma.booking.count({ where: { tenantId: tenant.id } });
-				return { token: newToken, refreshToken: newRefreshToken, tenant: { ...normalizeTenant(tenant), bookingsCount } };
+				return { token: newToken, refreshToken: newRefreshToken, tenant: { ...normalizeTenant(tenant), bookingsCount: (tenant as any)._count?.bookings || 0 } };
 			} catch (err) {
 				if (err instanceof GraphQLError) throw err;
 				throw new GraphQLError('Invalid refresh token', { extensions: { code: 'UNAUTHENTICATED', http: { status: 401 } } });
@@ -426,11 +424,10 @@ export const resolvers = {
 		},
 		async adminLoginAs(_: any, { tenantId }: any, context: any) {
 			await requireSuperAdmin(context);
-			const tenant = await prisma.tenant.findUnique({ where: { id: tenantId }, include: { settings: true } });
+			const tenant = await prisma.tenant.findUnique({ where: { id: tenantId }, include: { settings: true, _count: { select: { bookings: true } } } });
 			if (!tenant) throw new GraphQLError('Tenant not found', { extensions: { code: 'NOT_FOUND', http: { status: 404 } } });
 			const { token, refreshToken } = generateTokens(tenant.id, tenant.email);
-			const bookingsCount = await prisma.booking.count({ where: { tenantId: tenant.id } });
-			return { token, refreshToken, tenant: { ...normalizeTenant(tenant), bookingsCount } };
+			return { token, refreshToken, tenant: { ...normalizeTenant(tenant), bookingsCount: (tenant as any)._count?.bookings || 0 } };
 		},
 		async updateGlobalSettings(_: any, { input }: any, context: any) {
 			await requireSuperAdmin(context);
