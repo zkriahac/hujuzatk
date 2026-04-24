@@ -151,10 +151,46 @@ export const typeDefs = `
     tenant: Tenant!
   }
 
+  type ChannelIntegration {
+    id: ID!
+    channelName: String!
+    roomId: String!
+    icalUrlMasked: String!
+    isActive: Boolean!
+    lastSyncedAt: DateTime
+    lastSyncStatus: String
+    lastSyncMessage: String
+    lastSyncCount: Int
+    createdAt: DateTime!
+    updatedAt: DateTime!
+  }
+
+  type SyncResult {
+    integrationId: ID!
+    channelName: String!
+    roomId: String!
+    imported: Int!
+    updated: Int!
+    canceled: Int!
+    skipped: Int!
+    errors: [String!]!
+    success: Boolean!
+    message: String!
+  }
+
+  input SaveChannelIntegrationInput {
+    id: ID
+    channelName: String!
+    roomId: String!
+    icalUrl: String!
+    isActive: Boolean
+  }
+
   type Query {
     me: Tenant
     getTenant(id: ID!): Tenant
     getAllTenants: [Tenant!]!
+    getChannelIntegrations: [ChannelIntegration!]!
     getBookings(filter: BookingFilter, limit: Int, offset: Int, sortBy: String, sortOrder: String): [Booking!]!
     getBooking(id: ID!): Booking
     getBookingsByDateRange(startDate: DateTime!, endDate: DateTime!): [Booking!]!
@@ -188,6 +224,10 @@ export const typeDefs = `
     adminDeactivateTenant(tenantId: ID!): Boolean!
     adminDeleteTenant(tenantId: ID!): Boolean!
     updateGlobalSettings(input: UpdateGlobalSettingsInput!): GlobalSettings!
+    saveChannelIntegration(input: SaveChannelIntegrationInput!): ChannelIntegration!
+    deleteChannelIntegration(id: ID!): Boolean!
+    syncChannel(id: ID!): SyncResult!
+    syncAllChannels: [SyncResult!]!
   }
 
   input RegisterInput {

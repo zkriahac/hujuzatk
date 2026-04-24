@@ -1,6 +1,7 @@
 import { Elysia } from 'elysia';
 import { cors } from '@elysiajs/cors';
 import { yoga } from './graphql';
+import { syncAllTenantsForChannel, VALID_CHANNELS, type Channel } from './channelSync';
 
 const ALLOWED_ORIGINS = [
   'https://hujuzatk.com',
@@ -35,6 +36,33 @@ const app = new Elysia()
     return { error: 'Internal server error', timestamp };
   })
   .get('/health', () => ({ status: 'ok', timestamp: new Date().toISOString() }))
+  .get('/api/cron-sync', async ({ query, headers, set }) => {
+    const isVercelCron = headers['x-vercel-cron'] === '1';
+    const secret = process.env.CRON_SECRET;
+    const hasValidSecret = secret && headers.authorization === `Bearer ${secret}`;
+    if (!isVercelCron && !hasValidSecret) {
+      set.status = 401;
+      return { error: 'Unauthorized' };
+    }
+    const channel = String(query.channel || '').toLowerCase();
+    if (!VALID_CHANNELS.includes(channel as Channel)) {
+      set.status = 400;
+      return { error: `Invalid channel. Must be one of: ${VALID_CHANNELS.join(', ')}` };
+    }
+    const startedAt = Date.now();
+    const results = await syncAllTenantsForChannel(channel as Channel);
+    const totals = results.reduce(
+      (acc, r) => ({
+        imported: acc.imported + r.imported,
+        updated: acc.updated + r.updated,
+        canceled: acc.canceled + r.canceled,
+        skipped: acc.skipped + r.skipped,
+        failed: acc.failed + (r.success ? 0 : 1),
+      }),
+      { imported: 0, updated: 0, canceled: 0, skipped: 0, failed: 0 }
+    );
+    return { ok: true, channel, integrationsProcessed: results.length, totals, durationMs: Date.now() - startedAt, results };
+  })
   .all('/graphql', async ({ request, set }) => {
     const response = await yoga.handle(request);
     set.status = response.status;

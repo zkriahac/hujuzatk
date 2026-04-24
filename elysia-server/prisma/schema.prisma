@@ -34,10 +34,11 @@ model Tenant {
   isActive          Boolean   @default(true)
 
   // Relations
-  bookings          Booking[]
-  auditLogs         AuditLog[]
-  payments          Payment[]
-  settings          TenantSettings?
+  bookings             Booking[]
+  auditLogs            AuditLog[]
+  payments             Payment[]
+  settings             TenantSettings?
+  channelIntegrations  ChannelIntegration[]
 
   @@index([email])
   @@index([subscriptionStatus])
@@ -92,11 +93,15 @@ model Booking {
   status            String    @default("upcoming") // 'upcoming', 'active', 'completed', 'canceled', 'no-show'
   source            String?   // Booking source: 'Booking.com', 'Airbnb', 'WhatsApp', etc.
   notes             String?
-  
+
+  // Channel sync (iCal import)
+  externalId        String?   // iCal UID for deduplication
+  externalChannel   String?   // Channel at sync time: 'airbnb', 'gathern', 'booking.com'
+
   // Timestamps
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
-  
+
   // Optional: track who made the booking
   createdBy         String?
 
@@ -106,7 +111,8 @@ model Booking {
   @@index([checkIn])
   @@index([checkOut])
   @@index([createdAt])
-  @@unique([tenantId, id]) // Ensure tenant isolation
+  @@unique([tenantId, id])
+  @@unique([tenantId, externalId]) // NULL is distinct in Postgres — won't conflict with manual bookings
 }
 
 // ============= AUDIT & COMPLIANCE =============
@@ -160,6 +166,31 @@ model Payment {
   @@index([tenantId])
   @@index([status])
   @@index([createdAt])
+}
+
+// ============= CHANNEL MANAGER =============
+
+model ChannelIntegration {
+  id              String    @id @default(uuid())
+  tenantId        String
+  tenant          Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  channelName     String    // 'airbnb' | 'gathern' | 'booking.com'
+  roomId          String    // References Tenant.rooms[].id
+  icalUrl         String
+
+  isActive        Boolean   @default(true)
+
+  lastSyncedAt    DateTime?
+  lastSyncStatus  String?   // 'success' | 'error' | 'partial'
+  lastSyncMessage String?
+  lastSyncCount   Int?
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([tenantId])
+  @@unique([tenantId, channelName, roomId])
 }
 
 // ============= GLOBAL SETTINGS (Not tenant-specific) =============

@@ -6,7 +6,7 @@ export const DEFAULT_ROOMS = [
   { id: 'A5', name: 'A5' },
 ];
 
-export type View = 'calendar' | 'list' | 'reports' | 'settings' | 'admin';
+export type View = 'calendar' | 'list' | 'reports' | 'integrations' | 'settings' | 'admin';
 export type ListFilter = 'upcoming' | 'active' | 'past' | 'canceled' | 'all';
 export type AuthMode = 'login' | 'register';
 

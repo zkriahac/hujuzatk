@@ -397,3 +397,76 @@ export const BOOKING_DELETED_SUBSCRIPTION = gql`
     bookingDeleted(tenantId: $tenantId)
   }
 `;
+
+// ============= CHANNEL INTEGRATIONS =============
+
+export const GET_CHANNEL_INTEGRATIONS_QUERY = gql`
+  query GetChannelIntegrations {
+    getChannelIntegrations {
+      id
+      channelName
+      roomId
+      icalUrlMasked
+      isActive
+      lastSyncedAt
+      lastSyncStatus
+      lastSyncMessage
+      lastSyncCount
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
+export const SAVE_CHANNEL_INTEGRATION_MUTATION = gql`
+  mutation SaveChannelIntegration($input: SaveChannelIntegrationInput!) {
+    saveChannelIntegration(input: $input) {
+      id
+      channelName
+      roomId
+      icalUrlMasked
+      isActive
+      lastSyncedAt
+      lastSyncStatus
+      lastSyncMessage
+    }
+  }
+`;
+
+export const DELETE_CHANNEL_INTEGRATION_MUTATION = gql`
+  mutation DeleteChannelIntegration($id: ID!) {
+    deleteChannelIntegration(id: $id)
+  }
+`;
+
+export const SYNC_CHANNEL_MUTATION = gql`
+  mutation SyncChannel($id: ID!) {
+    syncChannel(id: $id) {
+      integrationId
+      channelName
+      roomId
+      imported
+      updated
+      canceled
+      skipped
+      errors
+      success
+      message
+    }
+  }
+`;
+
+export const SYNC_ALL_CHANNELS_MUTATION = gql`
+  mutation SyncAllChannels {
+    syncAllChannels {
+      integrationId
+      channelName
+      roomId
+      imported
+      updated
+      canceled
+      success
+      message
+    }
+  }
+`;

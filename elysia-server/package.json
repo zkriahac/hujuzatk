@@ -24,6 +24,7 @@
     "graphql": "^16.13.1",
     "graphql-yoga": "^5.18.0",
     "jsonwebtoken": "^9.0.3",
+    "node-ical": "^0.26.0",
     "prisma": "^6.19.2"
   }
 }

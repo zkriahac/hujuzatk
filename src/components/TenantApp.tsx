@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { format, addMonths, differenceInCalendarDays, differenceInDays, eachMonthOfInterval, endOfMonth, parseISO, startOfMonth } from 'date-fns';
-import { CaretDown, CalendarBlank, ListBullets, ChartPie, GearSix, ShieldCheck } from 'phosphor-react';
+import { CaretDown, CalendarBlank, ListBullets, ChartPie, GearSix, ShieldCheck, ArrowsClockwise } from 'phosphor-react';
 import { authService, type SessionUser } from '../lib/authService';
 import { dataService } from '../lib/dataService';
 import { trackLogout, trackBookingCreated, trackBookingCanceled, trackViewChange } from '../lib/analytics';
@@ -15,6 +15,7 @@ import ListView from './ListView';
 import ReportsView from './ReportsView';
 import SettingsView from './SettingsView';
 import AdminView from './AdminView';
+import IntegrationsView from './IntegrationsView';
 import { AddBookingModal, BookingDetailsModal, InvoiceModal } from './Modals';
 
 interface TenantAppProps {
@@ -378,7 +379,7 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
                 onClick={() => setShowViewMenu(v => !v)}
                 className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 text-[10px] sm:text-[11px] font-black uppercase tracking-widest hover:bg-emerald-100 transition-colors"
               >
-                {(() => { const I = { calendar: CalendarBlank, list: ListBullets, reports: ChartPie, settings: GearSix, admin: ShieldCheck }[currentView]; return <I size={14} weight="fill" />; })()}
+                {(() => { const I = { calendar: CalendarBlank, list: ListBullets, reports: ChartPie, integrations: ArrowsClockwise, settings: GearSix, admin: ShieldCheck }[currentView]; return <I size={14} weight="fill" />; })()}
                 {t(lang, `nav.${currentView}`)}
                 <CaretDown size={11} weight="bold" className={cn('transition-transform', showViewMenu && 'rotate-180')} />
               </button>
@@ -386,8 +387,8 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
                 <>
                   <div className="fixed inset-0 z-99" onClick={() => setShowViewMenu(false)} />
                   <div className={cn('absolute top-full mt-1 z-100 bg-white rounded-2xl border border-slate-200 shadow-2xl py-1 min-w-[130px]', isRtl ? 'left-0' : 'right-0')}>
-                    {(session.isAdmin ? ['admin'] as View[] : ['calendar', 'list', 'reports', 'settings'] as View[]).map((v) => {
-                      const Icon = { calendar: CalendarBlank, list: ListBullets, reports: ChartPie, settings: GearSix, admin: ShieldCheck }[v];
+                    {(session.isAdmin ? ['admin'] as View[] : ['calendar', 'list', 'reports', 'integrations', 'settings'] as View[]).map((v) => {
+                      const Icon = { calendar: CalendarBlank, list: ListBullets, reports: ChartPie, integrations: ArrowsClockwise, settings: GearSix, admin: ShieldCheck }[v];
                       return (
                         <button
                           key={v}
@@ -473,6 +474,9 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
             currency={currency}
             lang={lang}
           />
+        )}
+        {currentView === 'integrations' && (
+          <IntegrationsView session={session} lang={lang} />
         )}
         {currentView === 'settings' && (
           <SettingsView session={session} onSessionChange={onSessionChange} lang={lang} />

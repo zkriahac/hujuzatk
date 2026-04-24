@@ -12,6 +12,7 @@ import bcrypt from 'bcryptjs';
 import { GraphQLError } from 'graphql';
 import { differenceInCalendarDays, getDaysInMonth } from 'date-fns';
 import { prisma } from './prisma';
+import { performSync, VALID_CHANNELS } from './channelSync';
 
 const TRIAL_DAYS = parseInt(process.env.TRIAL_DAYS || '14');
 
@@ -50,6 +51,15 @@ async function requireSuperAdmin(context: any) {
 	requireAuth(context);
 	const tenant = await prisma.tenant.findUnique({ where: { id: context.user.tenantId } });
 	if (!tenant?.isAdmin) throw new GraphQLError('Forbidden: admin access required', { extensions: { code: 'FORBIDDEN', http: { status: 403 } } });
+}
+
+function maskUrl(url: string): string {
+	if (url.length <= 20) return url;
+	return '…' + url.slice(-20);
+}
+
+function normalizeChannelIntegration(ci: any) {
+	return { ...ci, icalUrlMasked: maskUrl(ci.icalUrl) };
 }
 
 export const resolvers = {
@@ -180,6 +190,16 @@ export const resolvers = {
 			return { ...settings, defaultRooms: Array.isArray(rooms) ? rooms : [] };
 		},
 		async health() { return 'ok'; },
+
+		// Channel integrations
+		async getChannelIntegrations(_: any, __: any, context: any) {
+			requireAuth(context);
+			const integrations = await prisma.channelIntegration.findMany({
+				where: { tenantId: context.user.tenantId },
+				orderBy: { createdAt: 'desc' },
+			});
+			return integrations.map(normalizeChannelIntegration);
+		},
 	},
 	Mutation: {
 		// Auth
@@ -439,6 +459,56 @@ export const resolvers = {
 			await prisma.tenant.delete({ where: { id: tenantId } });
 			return true;
 		},
+		// Channel integrations
+		async saveChannelIntegration(_: any, { input }: any, context: any) {
+			requireAuth(context);
+			const channel = input.channelName.toLowerCase();
+			if (!VALID_CHANNELS.includes(channel)) throw new GraphQLError('Invalid channel name', { extensions: { code: 'BAD_USER_INPUT' } });
+			if (!input.icalUrl?.startsWith('http')) throw new GraphQLError('Invalid iCal URL', { extensions: { code: 'BAD_USER_INPUT' } });
+
+			const tenant = await prisma.tenant.findUnique({ where: { id: context.user.tenantId } });
+			if (!tenant) throw new GraphQLError('Tenant not found', { extensions: { code: 'NOT_FOUND' } });
+			const rooms = Array.isArray(tenant.rooms) ? tenant.rooms : JSON.parse(tenant.rooms as any);
+			if (!rooms.find((r: any) => r.id === input.roomId)) throw new GraphQLError('Invalid room', { extensions: { code: 'BAD_USER_INPUT' } });
+
+			let result;
+			if (input.id) {
+				const existing = await prisma.channelIntegration.findFirst({ where: { id: input.id, tenantId: context.user.tenantId } });
+				if (!existing) throw new GraphQLError('Integration not found', { extensions: { code: 'NOT_FOUND' } });
+				result = await prisma.channelIntegration.update({
+					where: { id: input.id },
+					data: { channelName: channel, roomId: input.roomId, icalUrl: input.icalUrl, ...(input.isActive !== undefined && { isActive: input.isActive }) },
+				});
+			} else {
+				result = await prisma.channelIntegration.create({
+					data: { tenantId: context.user.tenantId, channelName: channel, roomId: input.roomId, icalUrl: input.icalUrl, isActive: input.isActive !== undefined ? input.isActive : true },
+				});
+			}
+			return normalizeChannelIntegration(result);
+		},
+		async deleteChannelIntegration(_: any, { id }: any, context: any) {
+			requireAuth(context);
+			const existing = await prisma.channelIntegration.findFirst({ where: { id, tenantId: context.user.tenantId } });
+			if (!existing) throw new GraphQLError('Integration not found', { extensions: { code: 'NOT_FOUND' } });
+			await prisma.channelIntegration.delete({ where: { id } });
+			return true;
+		},
+		async syncChannel(_: any, { id }: any, context: any) {
+			requireAuth(context);
+			const integration = await prisma.channelIntegration.findFirst({ where: { id, tenantId: context.user.tenantId } });
+			if (!integration) throw new GraphQLError('Integration not found', { extensions: { code: 'NOT_FOUND' } });
+			return performSync(integration, context.user.tenantId);
+		},
+		async syncAllChannels(_: any, __: any, context: any) {
+			requireAuth(context);
+			const integrations = await prisma.channelIntegration.findMany({ where: { tenantId: context.user.tenantId, isActive: true } });
+			const results = [];
+			for (const integration of integrations) {
+				results.push(await performSync(integration, context.user.tenantId));
+			}
+			return results;
+		},
+
 		async adminUpdateTenant(_: any, { tenantId, input }: any, context: any) {
 			await requireSuperAdmin(context);
 			const tenant = await prisma.tenant.findUnique({ where: { id: tenantId } });
