@@ -7,12 +7,13 @@ import { formatTz } from '../utils/formatTz';
 import { cn } from '../utils/cn';
 import { Users, X } from 'phosphor-react';
 import type { Tenant } from '../db';
-import { ADMIN_SET_INTEGRATIONS_ENABLED_MUTATION } from '../lib/graphql';
+import { ADMIN_SET_INTEGRATIONS_ENABLED_MUTATION, ADMIN_SET_PLAN_MUTATION } from '../lib/graphql';
+import { PLAN_ORDER, type PlanKey } from '../lib/planConfig';
 
 const ADMIN_UPDATE_TENANT = gql`
   mutation AdminUpdateTenant($tenantId: ID!, $input: UpdateTenantInput!) {
     adminUpdateTenant(tenantId: $tenantId, input: $input) {
-      id name email phone language currency timezone rooms { id name } subscriptionStatus validUntil isAdmin integrationsEnabled onboardedAt bookingsCount
+      id name email phone language currency timezone rooms { id name } subscriptionStatus validUntil isAdmin integrationsEnabled onboardedAt plan maxRooms bookingsCount
     }
   }
 `;
@@ -24,7 +25,7 @@ const ADMIN_LOGIN_AS = gql`
       refreshToken
       tenant {
         id name email phone language currency timezone rooms { id name }
-        subscriptionStatus validUntil isAdmin integrationsEnabled onboardedAt createdAt
+        subscriptionStatus validUntil isAdmin integrationsEnabled onboardedAt plan maxRooms createdAt
       }
     }
   }
@@ -260,6 +261,18 @@ function AdminTenantRow({ tObj, onReload, lang, tz }: { tObj: Tenant; onReload: 
     }
   };
 
+  const handleSetPlan = async (plan: PlanKey) => {
+    try {
+      await apolloClient.mutate({
+        mutation: ADMIN_SET_PLAN_MUTATION,
+        variables: { tenantId: tObj.uuid || (tObj as any).id, plan },
+      });
+      onReload();
+    } catch (err: any) {
+      alert('Failed to change plan: ' + (err.message || 'Unknown error'));
+    }
+  };
+
   const handleRoomChange = (i: number, name: string) => {
     const rooms = [...f.rooms]; rooms[i] = { ...rooms[i], name }; setF({ ...f, rooms });
   };
@@ -318,6 +331,16 @@ function AdminTenantRow({ tObj, onReload, lang, tz }: { tObj: Tenant; onReload: 
               className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-[10px] font-black uppercase tracking-tighter hover:bg-blue-500">
               {editing ? 'Close' : 'Edit'}
             </button>
+            {!(tObj as any).isAdmin && (
+              <select
+                value={(tObj as any).plan || 'trial'}
+                onChange={(e) => handleSetPlan(e.target.value as PlanKey)}
+                title="Change plan"
+                className="px-2 py-1.5 bg-violet-600 text-white rounded-lg text-[10px] font-black uppercase tracking-tighter hover:bg-violet-500 border-0 cursor-pointer"
+              >
+                {PLAN_ORDER.map((p) => <option key={p} value={p}>{p.toUpperCase()}</option>)}
+              </select>
+            )}
             {!(tObj as any).isAdmin && (
               <button
                 onClick={handleToggleIntegrations}

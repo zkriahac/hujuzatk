@@ -108,6 +108,7 @@ export const GET_BOOKINGS_QUERY = gql`
     ) {
       id
       tenantId
+      bookingNumber
       guestName
       guestEmail
       guestPhone
@@ -133,6 +134,7 @@ export const GET_BOOKING_QUERY = gql`
   query GetBooking($id: ID!) {
     getBooking(id: $id) {
       id
+      bookingNumber
       guestName
       guestEmail
       guestPhone
@@ -158,6 +160,7 @@ export const GET_BOOKINGS_BY_DATE_RANGE_QUERY = gql`
   query GetBookingsByDateRange($startDate: DateTime!, $endDate: DateTime!) {
     getBookingsByDateRange(startDate: $startDate, endDate: $endDate) {
       id
+      bookingNumber
       guestName
       room
       checkIn
@@ -174,6 +177,7 @@ export const GET_BOOKINGS_BY_ROOM_QUERY = gql`
   query GetBookingsByRoom($room: String!) {
     getBookingsByRoom(room: $room) {
       id
+      bookingNumber
       guestName
       checkIn
       checkOut
@@ -189,6 +193,7 @@ export const CREATE_BOOKING_MUTATION = gql`
   mutation CreateBooking($input: BookingInput!) {
     createBooking(input: $input) {
       id
+      bookingNumber
       guestName
       guestEmail
       guestPhone
@@ -213,6 +218,7 @@ export const UPDATE_BOOKING_MUTATION = gql`
   mutation UpdateBooking($id: ID!, $input: UpdateBookingInput!) {
     updateBooking(id: $id, input: $input) {
       id
+      bookingNumber
       guestName
       guestEmail
       guestPhone
@@ -243,6 +249,7 @@ export const BULK_IMPORT_BOOKINGS_MUTATION = gql`
   mutation BulkImportBookings($bookings: [BookingInput!]!) {
     bulkImportBookings(bookings: $bookings) {
       id
+      bookingNumber
       guestName
       room
       checkIn
@@ -372,6 +379,7 @@ export const BOOKING_CREATED_SUBSCRIPTION = gql`
   subscription OnBookingCreated($tenantId: ID!) {
     bookingCreated(tenantId: $tenantId) {
       id
+      bookingNumber
       guestName
       room
       checkIn
@@ -386,6 +394,7 @@ export const BOOKING_UPDATED_SUBSCRIPTION = gql`
   subscription OnBookingUpdated($tenantId: ID!) {
     bookingUpdated(tenantId: $tenantId) {
       id
+      bookingNumber
       guestName
       room
       status
@@ -483,6 +492,73 @@ export const ADMIN_SET_INTEGRATIONS_ENABLED_MUTATION = gql`
       id
       integrationsEnabled
     }
+  }
+`;
+
+export const ADMIN_SET_PLAN_MUTATION = gql`
+  mutation AdminSetPlan($tenantId: ID!, $plan: String!) {
+    adminSetPlan(tenantId: $tenantId, plan: $plan) {
+      id
+      plan
+      maxRooms
+      integrationsEnabled
+    }
+  }
+`;
+
+// ============= EXPENSES =============
+
+export const GET_EXPENSES_QUERY = gql`
+  query GetExpenses($startDate: DateTime, $endDate: DateTime, $roomId: String) {
+    getExpenses(startDate: $startDate, endDate: $endDate, roomId: $roomId) {
+      id
+      tenantId
+      roomId
+      date
+      amount
+      category
+      reason
+      notes
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
+export const CREATE_EXPENSE_MUTATION = gql`
+  mutation CreateExpense($input: ExpenseInput!) {
+    createExpense(input: $input) {
+      id
+      tenantId
+      roomId
+      date
+      amount
+      category
+      reason
+      notes
+      createdAt
+    }
+  }
+`;
+
+export const UPDATE_EXPENSE_MUTATION = gql`
+  mutation UpdateExpense($id: ID!, $input: UpdateExpenseInput!) {
+    updateExpense(id: $id, input: $input) {
+      id
+      roomId
+      date
+      amount
+      category
+      reason
+      notes
+      updatedAt
+    }
+  }
+`;
+
+export const DELETE_EXPENSE_MUTATION = gql`
+  mutation DeleteExpense($id: ID!) {
+    deleteExpense(id: $id)
   }
 `;
 

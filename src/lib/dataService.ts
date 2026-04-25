@@ -51,6 +51,8 @@ const GET_ALL_TENANTS = gql`
       isActive
       integrationsEnabled
       onboardedAt
+      plan
+      maxRooms
       bookingsCount
       settings { defaultNightPrice defaultTax }
     }

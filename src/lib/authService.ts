@@ -40,6 +40,8 @@ function convertGraphQLTenantToLocal(graphqlTenant: any): Tenant {
     // response that lacks the field, assume enabled rather than silently hiding the tab.
     integrationsEnabled: graphqlTenant.integrationsEnabled !== false,
     onboardedAt: graphqlTenant.onboardedAt ?? null,
+    plan: graphqlTenant.plan ?? 'trial',
+    maxRooms: graphqlTenant.maxRooms ?? 3,
   };
 }
 
@@ -72,6 +74,8 @@ export const authService = {
                 isAdmin
                 integrationsEnabled
                 onboardedAt
+                plan
+                maxRooms
                 createdAt
               }
             }`,
@@ -156,6 +160,8 @@ export const authService = {
                 isAdmin
                 integrationsEnabled
                 onboardedAt
+                plan
+                maxRooms
                 createdAt
               }
             }
@@ -259,6 +265,8 @@ export const authService = {
                 isAdmin
                 integrationsEnabled
                 onboardedAt
+                plan
+                maxRooms
                 createdAt
               }
             }
@@ -346,6 +354,8 @@ export const authService = {
               isActive
               integrationsEnabled
               onboardedAt
+              plan
+              maxRooms
               createdAt
               bookingsCount
               settings { defaultNightPrice defaultTax }

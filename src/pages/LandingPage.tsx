@@ -82,20 +82,43 @@ const content = {
       note: 'Cancel anytime. No lock-in contracts.',
       plans: [
         {
+          id: 'trial',
+          name: 'Trial',
+          price: 0,
+          priceLabel: 'Free for 14 days',
+          tagline: 'Try every core feature',
+          features: ['3 Rooms', 'Unlimited Bookings', 'Reports', 'Multi-Language (AR/EN/TR)', 'Installable App', '5-Year Calendar'],
+          cta: 'Start Free Trial',
+          recommended: false,
+        },
+        {
           id: 'basic',
           name: 'Basic',
+          price: 35,
+          oldPrice: 40,
           tagline: 'Perfect for small properties',
-          features: ['Unlimited Bookings', 'Up to 50 Rooms', 'Full Reporting Suite', 'Multi-Language (AR/EN/TR)', 'Installable App', '5-Year Calendar'],
+          features: ['10 Rooms', 'Full Reporting Suite', 'Multi-Language (AR/EN/TR)', 'Installable App', '5-Year Calendar'],
           cta: 'Start Free Trial',
           recommended: false,
         },
         {
           id: 'pro',
           name: 'Pro',
+          price: 58,
+          oldPrice: 65,
           tagline: 'Basic + automatic channel sync',
-          features: ['Everything in Basic', 'Auto-Sync Airbnb', 'Auto-Sync Gathern', 'Auto-Sync Booking.com', 'Nightly automated sync', 'Priority WhatsApp support'],
+          features: ['30 Rooms', 'Auto-Sync Airbnb', 'Auto-Sync Gathern', 'Auto-Sync Booking.com', 'Nightly automated sync', 'Priority support'],
           cta: 'Start Free Trial',
           recommended: true,
+        },
+        {
+          id: 'enterprise',
+          name: 'Enterprise',
+          price: 120,
+          tagline: 'Unlimited rooms + dedicated support',
+          features: ['Unlimited Rooms', 'All Pro features', 'Dedicated WhatsApp support', 'Custom onboarding', 'SLA-backed uptime'],
+          cta: 'Contact Sales',
+          recommended: false,
         },
       ],
       promo: {
@@ -195,20 +218,43 @@ const content = {
       note: 'إلغاء في أي وقت. لا عقود ملزمة.',
       plans: [
         {
+          id: 'trial',
+          name: 'تجريبي',
+          price: 0,
+          priceLabel: 'مجاناً 14 يوماً',
+          tagline: 'جرب كل الميزات الأساسية',
+          features: ['3 غرف', 'حجوزات غير محدودة', 'تقارير', 'متعدد اللغات (AR/EN/TR)', 'تطبيق قابل للتثبيت', 'تقويم 5 سنوات'],
+          cta: 'ابدأ التجربة المجانية',
+          recommended: false,
+        },
+        {
           id: 'basic',
           name: 'أساسي',
+          price: 35,
+          oldPrice: 40,
           tagline: 'مثالي للعقارات الصغيرة',
-          features: ['حجوزات غير محدودة', 'حتى 50 غرفة', 'مجموعة تقارير كاملة', 'متعدد اللغات (AR/EN/TR)', 'تطبيق قابل للتثبيت', 'تقويم 5 سنوات'],
+          features: ['10 غرف', 'مجموعة تقارير كاملة', 'متعدد اللغات (AR/EN/TR)', 'تطبيق قابل للتثبيت', 'تقويم 5 سنوات'],
           cta: 'ابدأ التجربة المجانية',
           recommended: false,
         },
         {
           id: 'pro',
           name: 'المحترف',
+          price: 58,
+          oldPrice: 65,
           tagline: 'الأساسي + مزامنة القنوات التلقائية',
-          features: ['كل ما في الأساسي', 'مزامنة Airbnb تلقائية', 'مزامنة جاذبين تلقائية', 'مزامنة Booking.com تلقائية', 'مزامنة ليلية مجدولة', 'دعم واتساب أولوية'],
+          features: ['30 غرفة', 'مزامنة Airbnb تلقائية', 'مزامنة جاذبين تلقائية', 'مزامنة Booking.com تلقائية', 'مزامنة ليلية مجدولة', 'دعم أولوية'],
           cta: 'ابدأ التجربة المجانية',
           recommended: true,
+        },
+        {
+          id: 'enterprise',
+          name: 'مؤسسات',
+          price: 120,
+          tagline: 'غرف غير محدودة + دعم مخصص',
+          features: ['غرف غير محدودة', 'كل ميزات المحترف', 'دعم واتساب مخصص', 'إعداد مخصص', 'ضمان الأداء'],
+          cta: 'تواصل مع المبيعات',
+          recommended: false,
         },
       ],
       promo: {
@@ -308,20 +354,43 @@ const content = {
       note: 'İstediğiniz zaman iptal edin. Sözleşme yok.',
       plans: [
         {
+          id: 'trial',
+          name: 'Deneme',
+          price: 0,
+          priceLabel: '14 gün ücretsiz',
+          tagline: 'Tüm temel özellikleri deneyin',
+          features: ['3 Oda', 'Sınırsız Rezervasyon', 'Raporlar', 'Çoklu Dil (AR/EN/TR)', 'Kurulabilir Uygulama', '5 Yıllık Takvim'],
+          cta: 'Ücretsiz Denemeye Başla',
+          recommended: false,
+        },
+        {
           id: 'basic',
           name: 'Temel',
+          price: 35,
+          oldPrice: 40,
           tagline: 'Küçük mülkler için ideal',
-          features: ['Sınırsız Rezervasyon', '50\'ye Kadar Oda', 'Tam Raporlama', 'Çoklu Dil (AR/EN/TR)', 'Kurulabilir Uygulama', '5 Yıllık Takvim'],
+          features: ['10 Oda', 'Tam Raporlama', 'Çoklu Dil (AR/EN/TR)', 'Kurulabilir Uygulama', '5 Yıllık Takvim'],
           cta: 'Ücretsiz Denemeye Başla',
           recommended: false,
         },
         {
           id: 'pro',
           name: 'Pro',
+          price: 58,
+          oldPrice: 65,
           tagline: 'Temel + otomatik kanal senkronu',
-          features: ['Temel\'deki her şey', 'Airbnb Otomatik Senkron', 'Gathern Otomatik Senkron', 'Booking.com Otomatik Senkron', 'Gecelik otomatik senkron', 'Öncelikli WhatsApp desteği'],
+          features: ['30 Oda', 'Airbnb Otomatik Senkron', 'Gathern Otomatik Senkron', 'Booking.com Otomatik Senkron', 'Gecelik otomatik senkron', 'Öncelikli destek'],
           cta: 'Ücretsiz Denemeye Başla',
           recommended: true,
+        },
+        {
+          id: 'enterprise',
+          name: 'Kurumsal',
+          price: 120,
+          tagline: 'Sınırsız oda + özel destek',
+          features: ['Sınırsız Oda', 'Tüm Pro özellikleri', 'Özel WhatsApp desteği', 'Özel kurulum', 'SLA destekli çalışma süresi'],
+          cta: 'Satışla İletişime Geç',
+          recommended: false,
         },
       ],
       promo: {
@@ -446,9 +515,9 @@ function applySEO(lang: Lang) {
     offers: {
       '@type': 'AggregateOffer',
       lowPrice: '35',
-      highPrice: '65',
+      highPrice: '120',
       priceCurrency: 'USD',
-      offerCount: '2',
+      offerCount: '4',
       priceValidUntil: '2026-12-31',
       availability: 'https://schema.org/InStock',
       description: isAr
@@ -965,16 +1034,16 @@ export function LandingPage() {
           <div className="container mx-auto px-6 text-center">
             <h2 className="text-4xl font-black text-slate-900 sm:text-6xl">{c.pricing.heading}</h2>
             <p className="mt-6 text-xl text-slate-500 max-w-2xl mx-auto">{c.pricing.sub}</p>
-            <div className="mt-16 grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
-              {c.pricing.plans.map((plan) => {
-                const planData = plan.id === 'pro' ? PLAN_PRO : PLAN_BASIC;
+            <div className="mt-16 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
+              {c.pricing.plans.map((plan: any) => {
                 const promoOn = isPromoActive();
+                const showPromoCrossout = promoOn && plan.oldPrice && plan.price !== plan.oldPrice;
                 return (
                   <div
                     key={plan.id}
                     className={cn(
-                      'relative rounded-[2.5rem] border p-2 bg-white shadow-xl transition-all',
-                      plan.recommended ? 'border-emerald-400 ring-2 ring-emerald-500' : 'border-slate-200'
+                      'relative rounded-[2rem] border p-2 bg-white shadow-xl transition-all',
+                      plan.recommended ? 'border-emerald-400 ring-2 ring-emerald-500 lg:scale-[1.02]' : 'border-slate-200'
                     )}
                   >
                     {plan.recommended && (
@@ -985,46 +1054,61 @@ export function LandingPage() {
                         {c.pricing.recommended}
                       </div>
                     )}
-                    <div className="rounded-[2rem] bg-slate-50 p-10 text-start">
-                      <div className="flex items-start justify-between mb-4">
+                    <div className="rounded-[1.5rem] bg-slate-50 p-7 text-start h-full flex flex-col">
+                      <div className="flex items-start justify-between mb-3 gap-2">
                         <div>
                           <p className="text-sm font-black uppercase tracking-[0.2em] text-emerald-600">{plan.name}</p>
-                          <p className="text-sm text-slate-500 mt-1">{plan.tagline}</p>
+                          <p className="text-xs text-slate-500 mt-1">{plan.tagline}</p>
                         </div>
-                        {promoOn && (
-                          <span className="bg-amber-100 text-amber-700 text-[10px] font-black px-2.5 py-1 rounded-full whitespace-nowrap">
+                        {showPromoCrossout && (
+                          <span className="bg-amber-100 text-amber-700 text-[9px] font-black px-2 py-0.5 rounded-full whitespace-nowrap">
                             {c.pricing.save}
                           </span>
                         )}
                       </div>
-                      <div className="flex items-baseline gap-2 my-6" dir="ltr">
-                        {promoOn && (
-                          <span className="text-lg text-slate-400 line-through font-bold">
-                            {c.pricing.was} {CURRENCY_SYMBOL}{planData.oldPrice}
-                          </span>
+                      <div className="my-5" dir="ltr">
+                        {plan.price === 0 ? (
+                          <div className="text-2xl font-black text-emerald-600">{plan.priceLabel}</div>
+                        ) : (
+                          <div className="flex items-baseline gap-2 flex-wrap">
+                            {showPromoCrossout && (
+                              <span className="text-base text-slate-400 line-through font-bold">
+                                {CURRENCY_SYMBOL}{plan.oldPrice}
+                              </span>
+                            )}
+                            <span className="text-5xl font-black text-slate-900">
+                              {CURRENCY_SYMBOL}{plan.price}
+                            </span>
+                            <span className="text-sm font-bold text-slate-400">{c.pricing.perYear}</span>
+                          </div>
                         )}
-                        <span className="text-6xl font-black text-slate-900">
-                          {CURRENCY_SYMBOL}{promoOn ? planData.newPrice : planData.oldPrice}
-                        </span>
-                        <span className="text-lg font-bold text-slate-400">{c.pricing.perYear}</span>
                       </div>
-                      <ul className="space-y-3">
-                        {plan.features.map((li, i) => (
-                          <li key={i} className="flex items-start gap-3 text-sm font-semibold text-slate-700">
-                            <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
-                              <Check size={12} weight="bold" />
+                      <ul className="space-y-2.5 flex-1">
+                        {plan.features.map((li: string, i: number) => (
+                          <li key={i} className="flex items-start gap-2.5 text-xs font-semibold text-slate-700">
+                            <div className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
+                              <Check size={10} weight="bold" />
                             </div>
                             <span>{li}</span>
                           </li>
                         ))}
                       </ul>
                       <button
-                        onClick={() => { trackCTA(`start_trial_${plan.id}`, 'pricing'); navigate(`/user?tab=register&plan=${plan.id}`); }}
+                        onClick={() => {
+                          trackCTA(`start_trial_${plan.id}`, 'pricing');
+                          if (plan.id === 'enterprise') {
+                            window.open('https://wa.me/905523205496?text=I%27m%20interested%20in%20Hujuzatk%20Enterprise', '_blank');
+                          } else {
+                            navigate(`/user?tab=register&plan=${plan.id}`);
+                          }
+                        }}
                         className={cn(
-                          'mt-8 w-full rounded-2xl py-4 text-base font-black transition-all active:scale-[0.98]',
+                          'mt-6 w-full rounded-2xl py-3 text-sm font-black transition-all active:scale-[0.98]',
                           plan.recommended
                             ? 'bg-emerald-600 text-white hover:bg-emerald-700'
-                            : 'bg-slate-900 text-white hover:bg-slate-800'
+                            : plan.id === 'enterprise'
+                            ? 'bg-slate-900 text-white hover:bg-slate-800'
+                            : 'bg-white border-2 border-slate-200 text-slate-900 hover:bg-slate-50'
                         )}
                       >
                         {plan.cta}
