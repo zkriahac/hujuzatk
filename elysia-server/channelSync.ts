@@ -125,7 +125,13 @@ export async function performSync(integration: any, tenantId: string): Promise<S
         });
         wasCanceled ? canceled++ : updated++;
       } else {
-        await prisma.booking.create({ data: bookingData });
+        // Claim a booking number atomically (same pattern as createBooking)
+        const tenantRow = await prisma.tenant.update({
+          where: { id: tenantId },
+          data: { nextBookingNumber: { increment: 1 } },
+          select: { nextBookingNumber: true },
+        });
+        await prisma.booking.create({ data: { ...bookingData, bookingNumber: tenantRow.nextBookingNumber - 1 } });
         imported++;
       }
     } catch (err: any) {

@@ -48,6 +48,8 @@ export const typeDefs = `
     isActive: Boolean!
     integrationsEnabled: Boolean!
     onboardedAt: DateTime
+    plan: String!
+    maxRooms: Int!
     createdAt: DateTime!
     updatedAt: DateTime!
     bookingsCount: Int!
@@ -67,6 +69,7 @@ export const typeDefs = `
   type Booking {
     id: ID!
     tenantId: String!
+    bookingNumber: Int
     guestName: String!
     guestEmail: String
     guestPhone: String
@@ -191,6 +194,38 @@ export const typeDefs = `
     isActive: Boolean
   }
 
+  type Expense {
+    id: ID!
+    tenantId: String!
+    roomId: String
+    date: DateTime!
+    amount: Float!
+    category: String!
+    reason: String!
+    notes: String
+    createdBy: String
+    createdAt: DateTime!
+    updatedAt: DateTime!
+  }
+
+  input ExpenseInput {
+    roomId: String
+    date: DateTime!
+    amount: Float!
+    category: String!
+    reason: String!
+    notes: String
+  }
+
+  input UpdateExpenseInput {
+    roomId: String
+    date: DateTime
+    amount: Float
+    category: String
+    reason: String
+    notes: String
+  }
+
   type Query {
     me: Tenant
     getTenant(id: ID!): Tenant
@@ -205,6 +240,7 @@ export const typeDefs = `
     getGuestStatistics: GuestStatistics!
     getAuditLogs(limit: Int, offset: Int, action: AuditAction): [AuditLog!]!
     getGlobalSettings: GlobalSettings!
+    getExpenses(startDate: DateTime, endDate: DateTime, roomId: String): [Expense!]!
     health: String!
   }
 
@@ -234,7 +270,11 @@ export const typeDefs = `
     syncChannel(id: ID!): SyncResult!
     syncAllChannels: [SyncResult!]!
     adminSetIntegrationsEnabled(tenantId: ID!, enabled: Boolean!): Tenant!
+    adminSetPlan(tenantId: ID!, plan: String!): Tenant!
     completeOnboarding: Tenant!
+    createExpense(input: ExpenseInput!): Expense!
+    updateExpense(id: ID!, input: UpdateExpenseInput!): Expense!
+    deleteExpense(id: ID!): Boolean!
   }
 
   input RegisterInput {

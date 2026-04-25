@@ -13,6 +13,7 @@ import { GraphQLError } from 'graphql';
 import { differenceInCalendarDays, getDaysInMonth } from 'date-fns';
 import { prisma } from './prisma';
 import { performSync, VALID_CHANNELS } from './channelSync';
+import { PLANS, isValidPlan } from './planConfig';
 
 const TRIAL_DAYS = parseInt(process.env.TRIAL_DAYS || '14');
 
@@ -200,6 +201,19 @@ export const resolvers = {
 		},
 		async health() { return 'ok'; },
 
+		async getExpenses(_: any, { startDate, endDate, roomId }: any, context: any) {
+			requireAuth(context);
+			const where: any = { tenantId: context.user.tenantId };
+			if (startDate || endDate) {
+				where.date = {};
+				if (startDate) where.date.gte = new Date(startDate);
+				if (endDate) where.date.lte = new Date(endDate);
+			}
+			if (roomId !== undefined) where.roomId = roomId; // null filters general expenses
+			const expenses = await prisma.expense.findMany({ where, orderBy: { date: 'desc' } });
+			return expenses;
+		},
+
 		// Channel integrations
 		async getChannelIntegrations(_: any, __: any, context: any) {
 			requireAuth(context);
@@ -225,7 +239,9 @@ export const resolvers = {
 				? globals.defaultRooms
 				: [{ id: 'r1', name: 'Room 1' }, { id: 'r2', name: 'Room 2' }, { id: 'r3', name: 'Room 3' }, { id: 'r4', name: 'Room 4' }, { id: 'r5', name: 'Room 5' }];
 			const trialDays = globals?.defaultTrialDays || TRIAL_DAYS;
-			const tenant = await prisma.tenant.create({ data: { name: input.name, email: input.email, phone: input.phone || null, passwordHash, currency: input.currency || globals?.defaultCurrency || 'OMR', timezone: input.timezone || globals?.defaultTimezone || 'Asia/Muscat', language: input.language || globals?.defaultLanguage || 'en', subscriptionStatus: 'TRIAL', validUntil: calculateValidUntil(trialDays), rooms: defaultRooms, isAdmin: false, isActive: true, settings: { create: { defaultNightPrice: 50, defaultTax: 0 } } }, include: { settings: true } });
+			// New tenants default to the "trial" plan: 3-room cap, integrations off.
+			const trialPlan = PLANS.trial;
+			const tenant = await prisma.tenant.create({ data: { name: input.name, email: input.email, phone: input.phone || null, passwordHash, currency: input.currency || globals?.defaultCurrency || 'OMR', timezone: input.timezone || globals?.defaultTimezone || 'Asia/Muscat', language: input.language || globals?.defaultLanguage || 'en', subscriptionStatus: 'TRIAL', validUntil: calculateValidUntil(trialDays), rooms: defaultRooms, isAdmin: false, isActive: true, plan: 'trial', maxRooms: trialPlan.maxRooms, integrationsEnabled: trialPlan.integrationsEnabled, settings: { create: { defaultNightPrice: 50, defaultTax: 0 } } }, include: { settings: true } });
 			const { token, refreshToken } = generateTokens(tenant.id, tenant.email);
 			await prisma.auditLog.create({ data: { tenantId: tenant.id, action: 'TENANT_UPDATED', entityType: 'Tenant', entityId: tenant.id, changes: { action: 'tenant_created' } } });
 			return { token, refreshToken, tenant: { ...normalizeTenant(tenant), bookingsCount: 0 } };
@@ -274,7 +290,27 @@ export const resolvers = {
 			const totalPrice = nights * input.nightPrice;
 			const tax = totalPrice * ((tenant.settings?.defaultTax || 0) / 100);
 			const remaining = totalPrice + tax - input.deposit;
-			const booking = await prisma.booking.create({ data: { tenantId: context.user.tenantId, guestName: input.guestName, guestEmail: input.guestEmail, guestPhone: input.guestPhone, city: input.city, room: input.room, checkIn, checkOut, nightPrice: input.nightPrice, deposit: input.deposit, status: input.status?.toLowerCase() || 'upcoming', source: input.source || null, notes: input.notes, nights, totalPrice, tax, remaining } });
+			// Atomically: increment the tenant's booking counter and create the booking with the
+			// number that was just claimed. The unique index on (tenantId, bookingNumber) is the
+			// final safety net if two requests ever race past the transaction guard.
+			const booking = await prisma.$transaction(async (tx) => {
+				const updatedTenant = await tx.tenant.update({
+					where: { id: context.user.tenantId },
+					data: { nextBookingNumber: { increment: 1 } },
+					select: { nextBookingNumber: true },
+				});
+				const bookingNumber = updatedTenant.nextBookingNumber - 1; // we incremented after claiming this number
+				return tx.booking.create({
+					data: {
+						tenantId: context.user.tenantId,
+						bookingNumber,
+						guestName: input.guestName, guestEmail: input.guestEmail, guestPhone: input.guestPhone, city: input.city,
+						room: input.room, checkIn, checkOut, nightPrice: input.nightPrice, deposit: input.deposit,
+						status: input.status?.toLowerCase() || 'upcoming', source: input.source || null, notes: input.notes,
+						nights, totalPrice, tax, remaining,
+					},
+				});
+			});
 			await prisma.auditLog.create({ data: { tenantId: context.user.tenantId, action: 'BOOKING_CREATED', entityType: 'Booking', entityId: booking.id, changes: { action: 'booking_created', booking } } });
 			return normalizeBooking(booking);
 		},
@@ -322,16 +358,26 @@ export const resolvers = {
 			if (bookings.length > 500) throw new GraphQLError('Cannot import more than 500 bookings at once', { extensions: { code: 'BAD_USER_INPUT', http: { status: 400 } } });
 			const tenant = await prisma.tenant.findUnique({ where: { id: context.user.tenantId }, include: { settings: true } });
 			if (!tenant) throw new GraphQLError('Tenant not found', { extensions: { code: 'NOT_FOUND', http: { status: 404 } } });
+			// Reserve a contiguous range of booking numbers up front (single counter bump),
+			// then assign them in order. Avoids N round-trips on the counter.
+			const validInputs = bookings.filter((b) => differenceInCalendarDays(new Date(b.checkOut), new Date(b.checkIn)) > 0);
+			if (!validInputs.length) return [];
+			const updatedTenant = await prisma.tenant.update({
+				where: { id: context.user.tenantId },
+				data: { nextBookingNumber: { increment: validInputs.length } },
+				select: { nextBookingNumber: true },
+			});
+			const startNumber = updatedTenant.nextBookingNumber - validInputs.length;
 			const created = [];
-			for (const input of bookings) {
+			for (let i = 0; i < validInputs.length; i++) {
+				const input = validInputs[i];
 				const checkIn = new Date(input.checkIn);
 				const checkOut = new Date(input.checkOut);
 				const nights = differenceInCalendarDays(checkOut, checkIn);
-				if (nights <= 0) continue;
 				const totalPrice = nights * input.nightPrice;
 				const tax = totalPrice * ((tenant.settings?.defaultTax || 0) / 100);
 				const remaining = totalPrice + tax - input.deposit;
-				const booking = await prisma.booking.create({ data: { tenantId: context.user.tenantId, guestName: input.guestName, guestEmail: input.guestEmail, guestPhone: input.guestPhone, city: input.city, room: input.room, checkIn, checkOut, nightPrice: input.nightPrice, deposit: input.deposit, status: input.status?.toLowerCase() || 'upcoming', source: input.source || null, notes: input.notes, nights, totalPrice, tax, remaining } });
+				const booking = await prisma.booking.create({ data: { tenantId: context.user.tenantId, bookingNumber: startNumber + i, guestName: input.guestName, guestEmail: input.guestEmail, guestPhone: input.guestPhone, city: input.city, room: input.room, checkIn, checkOut, nightPrice: input.nightPrice, deposit: input.deposit, status: input.status?.toLowerCase() || 'upcoming', source: input.source || null, notes: input.notes, nights, totalPrice, tax, remaining } });
 				created.push(normalizeBooking(booking));
 			}
 			return created;
@@ -383,6 +429,12 @@ export const resolvers = {
 			const tenant = await prisma.tenant.findUnique({ where: { id: context.user.tenantId } });
 			if (!tenant) throw new GraphQLError('Tenant not found', { extensions: { code: 'NOT_FOUND', http: { status: 404 } } });
 			const rooms = Array.isArray(tenant.rooms) ? tenant.rooms : JSON.parse(tenant.rooms as any);
+			// Plan-based room cap. Admins skip the check.
+			if (!tenant.isAdmin && rooms.length >= tenant.maxRooms) {
+				throw new GraphQLError(`Your ${tenant.plan} plan is limited to ${tenant.maxRooms} rooms. Upgrade to add more.`, {
+					extensions: { code: 'QUOTA_EXCEEDED', http: { status: 403 } },
+				});
+			}
 			if (rooms.some((r: any) => r.name === name)) throw new GraphQLError('Room name already exists', { extensions: { code: 'BAD_USER_INPUT', http: { status: 400 } } });
 			const maxNum = rooms.reduce((max: number, r: any) => {
 				const m = r.id.match(/^r(\d+)$/);
@@ -575,6 +627,82 @@ export const resolvers = {
 				include: { settings: true, _count: { select: { bookings: true } } },
 			});
 			return { ...normalizeTenant(updated), bookingsCount: updated._count?.bookings || 0 };
+		},
+
+		// Switch a tenant to a different plan tier — cascades maxRooms + integrationsEnabled
+		// from the planConfig table. Existing rooms beyond the new cap are preserved (we only
+		// block addRoom going forward).
+		async adminSetPlan(_: any, { tenantId, plan }: { tenantId: string; plan: string }, context: any) {
+			await requireSuperAdmin(context);
+			if (!isValidPlan(plan)) {
+				throw new GraphQLError(`Invalid plan: ${plan}. Must be one of trial | basic | pro | enterprise.`, { extensions: { code: 'BAD_USER_INPUT', http: { status: 400 } } });
+			}
+			const cfg = PLANS[plan];
+			const updated = await prisma.tenant.update({
+				where: { id: tenantId },
+				data: {
+					plan,
+					maxRooms: cfg.maxRooms === Number.MAX_SAFE_INTEGER ? 999 : cfg.maxRooms, // store a sentinel int for "unlimited"
+					integrationsEnabled: cfg.integrationsEnabled,
+				},
+				include: { settings: true, _count: { select: { bookings: true } } },
+			});
+			await prisma.auditLog.create({
+				data: {
+					tenantId,
+					action: 'TENANT_UPDATED',
+					entityType: 'Tenant',
+					entityId: tenantId,
+					changes: { action: 'plan_changed', plan, actorId: context.user.tenantId },
+				},
+			});
+			return { ...normalizeTenant(updated), bookingsCount: updated._count?.bookings || 0 };
+		},
+
+		// Expense CRUD
+		async createExpense(_: any, { input }: any, context: any) {
+			requireAuth(context);
+			if (input.amount < 0) throw new GraphQLError('Amount cannot be negative', { extensions: { code: 'BAD_USER_INPUT', http: { status: 400 } } });
+			if (!input.reason?.trim()) throw new GraphQLError('Reason is required', { extensions: { code: 'BAD_USER_INPUT', http: { status: 400 } } });
+			const validCategories = ['utilities', 'cleaning', 'maintenance', 'supplies', 'other'];
+			if (!validCategories.includes(input.category)) throw new GraphQLError('Invalid category', { extensions: { code: 'BAD_USER_INPUT', http: { status: 400 } } });
+			const expense = await prisma.expense.create({
+				data: {
+					tenantId: context.user.tenantId,
+					roomId: input.roomId || null,
+					date: new Date(input.date),
+					amount: input.amount,
+					category: input.category,
+					reason: input.reason.trim(),
+					notes: input.notes || null,
+					createdBy: context.user.tenantId,
+				},
+			});
+			return expense;
+		},
+		async updateExpense(_: any, { id, input }: any, context: any) {
+			requireAuth(context);
+			const existing = await prisma.expense.findFirst({ where: { id, tenantId: context.user.tenantId } });
+			if (!existing) throw new GraphQLError('Expense not found', { extensions: { code: 'NOT_FOUND', http: { status: 404 } } });
+			const updated = await prisma.expense.update({
+				where: { id },
+				data: {
+					...(input.roomId !== undefined && { roomId: input.roomId || null }),
+					...(input.date && { date: new Date(input.date) }),
+					...(input.amount !== undefined && { amount: input.amount }),
+					...(input.category && { category: input.category }),
+					...(input.reason && { reason: input.reason.trim() }),
+					...(input.notes !== undefined && { notes: input.notes || null }),
+				},
+			});
+			return updated;
+		},
+		async deleteExpense(_: any, { id }: any, context: any) {
+			requireAuth(context);
+			const existing = await prisma.expense.findFirst({ where: { id, tenantId: context.user.tenantId } });
+			if (!existing) throw new GraphQLError('Expense not found', { extensions: { code: 'NOT_FOUND', http: { status: 404 } } });
+			await prisma.expense.delete({ where: { id } });
+			return true;
 		},
 
 		async adminUpdateTenant(_: any, { tenantId, input }: any, context: any) {

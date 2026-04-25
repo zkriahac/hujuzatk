@@ -38,12 +38,18 @@ model Tenant {
   integrationsEnabled Boolean  @default(true)  // Admin-gated channel manager access
   onboardedAt       DateTime?                  // Set when guided tour is completed/skipped
 
+  // Plan / quota
+  plan              String    @default("trial")  // 'trial' | 'basic' | 'pro' | 'enterprise'
+  maxRooms          Int       @default(3)        // Cap derived from plan; admin-overridable
+  nextBookingNumber Int       @default(1)        // Atomic counter for human-friendly booking IDs
+
   // Relations
   bookings             Booking[]
   auditLogs            AuditLog[]
   payments             Payment[]
   settings             TenantSettings?
   channelIntegrations  ChannelIntegration[]
+  expenses             Expense[]
 
   @@index([email])
   @@index([subscriptionStatus])
@@ -103,6 +109,10 @@ model Booking {
   externalId        String?   // iCal UID for deduplication
   externalChannel   String?   // Channel at sync time: 'airbnb', 'gathern', 'booking.com'
 
+  // Human-friendly booking ID (sequential per tenant — assigned via the
+  // Tenant.nextBookingNumber atomic counter)
+  bookingNumber     Int?
+
   // Timestamps
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
@@ -118,6 +128,7 @@ model Booking {
   @@index([createdAt])
   @@unique([tenantId, id])
   @@unique([tenantId, externalId]) // NULL is distinct in Postgres — won't conflict with manual bookings
+  @@unique([tenantId, bookingNumber]) // Sequential per tenant
 }
 
 // ============= AUDIT & COMPLIANCE =============
@@ -197,6 +208,28 @@ model ChannelIntegration {
 
   @@index([tenantId])
   @@unique([tenantId, channelName, roomId])
+}
+
+// ============= EXPENSES =============
+
+model Expense {
+  id          String   @id @default(uuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  roomId      String?  // null = general / tenant-wide expense not tied to a single room
+  date        DateTime // The day the expense applies to (not createdAt)
+  amount      Float
+  category    String   // 'utilities' | 'cleaning' | 'maintenance' | 'supplies' | 'other'
+  reason      String   // Short label, e.g. "Electricity bill"
+  notes       String?
+
+  createdBy   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([tenantId, date])
+  @@index([tenantId, roomId, date])
 }
 
 // ============= GLOBAL SETTINGS (Not tenant-specific) =============
