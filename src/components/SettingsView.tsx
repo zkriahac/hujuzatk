@@ -155,17 +155,36 @@ export default function SettingsView({ session, onSessionChange, lang }: Setting
       </div>
 
       <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-xl p-10">
-        <div className="flex justify-between items-center mb-8">
+        <div className="flex justify-between items-center mb-8 flex-wrap gap-3">
           <h2 className="text-2xl font-black text-slate-900 flex items-center gap-3">
             <Layout size={28} className="text-blue-500" />
             {t(lang, 'settings.rooms')}
+            {/* Quota indicator: e.g. "5 / 10" or "3 / unlimited" */}
+            {tenant.maxRooms && (
+              <span className="text-xs font-mono font-black text-slate-400 tabular-nums">
+                {(tenant.rooms || []).length} / {tenant.maxRooms >= 999 ? '∞' : tenant.maxRooms}
+              </span>
+            )}
           </h2>
-          <button
-            onClick={handleAddRoom}
-            className="bg-slate-900 text-white px-6 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-xl shadow-slate-200 active:scale-95"
-          >
-            {t(lang, 'settings.addRoom')}
-          </button>
+          {(() => {
+            const atCap = !!tenant.maxRooms && tenant.maxRooms < 999 && (tenant.rooms || []).length >= tenant.maxRooms;
+            return (
+              <div className="flex items-center gap-3">
+                {atCap && (
+                  <span className="text-[10px] font-black uppercase tracking-widest text-amber-600 bg-amber-50 px-3 py-1.5 rounded-xl">
+                    {t(lang, 'settings.upgradeForMoreRooms')}
+                  </span>
+                )}
+                <button
+                  onClick={handleAddRoom}
+                  disabled={atCap}
+                  className="bg-slate-900 text-white px-6 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-xl shadow-slate-200 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  {t(lang, 'settings.addRoom')}
+                </button>
+              </div>
+            );
+          })()}
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
           {(tenant.rooms || []).map((room, idx) => (

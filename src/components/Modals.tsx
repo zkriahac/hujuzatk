@@ -525,6 +525,11 @@ export function BookingDetailsModal({
         </button>
         <div className="flex justify-between items-start mb-8">
           <div>
+            {booking.bookingNumber != null && (
+              <div className="text-[11px] font-mono font-black tracking-widest text-slate-400 mb-1">
+                #{String(booking.bookingNumber).padStart(4, '0')}
+              </div>
+            )}
             <h2 className="text-3xl font-black text-slate-900 tracking-tight leading-none mb-2">{booking.guestName}</h2>
             <div className="flex gap-2 items-center">
               <span className="text-[10px] font-black uppercase tracking-widest px-2 py-0.5 bg-slate-100 rounded text-slate-500">
@@ -641,7 +646,34 @@ interface InvoiceModalProps {
 
 export function InvoiceModal({ booking, tenantName, currency, lang, tz, dir, onClose }: InvoiceModalProps) {
   const invoiceRef = useRef<HTMLDivElement | null>(null);
+  const [generating, setGenerating] = useState(false);
 
+  // Real PDF download — preserves the on-screen design via html2pdf.js (lazy-loaded so the
+  // 150 KB library only ships when the user actually clicks Download).
+  const downloadPdf = async () => {
+    if (!invoiceRef.current) return;
+    setGenerating(true);
+    try {
+      const html2pdf = (await import('html2pdf.js')).default;
+      const code = booking.bookingNumber != null
+        ? String(booking.bookingNumber).padStart(4, '0')
+        : booking.id.slice(0, 8);
+      await html2pdf()
+        .set({
+          margin: 10,
+          filename: `invoice-${code}-${(booking.guestName || 'guest').replace(/\s+/g, '_')}.pdf`,
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        })
+        .from(invoiceRef.current)
+        .save();
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  // Browser-native print fallback (kept for users who prefer printing physically)
   const printInvoice = () => {
     if (!invoiceRef.current) return;
     const content = invoiceRef.current.innerHTML;
@@ -656,12 +688,12 @@ export function InvoiceModal({ booking, tenantName, currency, lang, tz, dir, onC
 
   return (
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-[200] p-4">
-      <div className="bg-white rounded-3xl max-w-2xl w-full shadow-2xl overflow-hidden" ref={invoiceRef}>
+      <div className="bg-white rounded-3xl max-w-2xl w-full shadow-2xl overflow-hidden">
         <div className="p-6 border-b border-slate-100 flex justify-between items-center hide-on-print">
           <h2 className="font-black text-slate-900 uppercase tracking-tight">{t(lang, 'invoice.title')} Preview</h2>
           <button onClick={onClose} className="h-10 w-10 flex items-center justify-center rounded-full hover:bg-slate-100">×</button>
         </div>
-        <div className="p-12 relative overflow-auto max-h-[80vh]">
+        <div ref={invoiceRef} className="p-12 relative overflow-auto max-h-[80vh] bg-white">
           {booking.status === 'CANCELED' && (
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 border-[12px] border-red-500 text-red-500 font-black text-8xl opacity-10 transform -rotate-12 p-8 rounded-3xl uppercase pointer-events-none">
               {t(lang, 'invoice.canceled')}
@@ -670,7 +702,7 @@ export function InvoiceModal({ booking, tenantName, currency, lang, tz, dir, onC
           <div className="flex justify-between mb-12">
             <div className="space-y-1">
               <h1 className="text-4xl font-black text-emerald-600 tracking-tighter uppercase">{t(lang, 'invoice.title')}</h1>
-              <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">{t(lang, 'invoice.bookingId')}: #{booking.id}</p>
+              <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">{t(lang, 'invoice.bookingId')}: {booking.bookingNumber != null ? `#${String(booking.bookingNumber).padStart(4, '0')}` : `#${booking.id.slice(0, 8)}`}</p>
               <p className="text-xs font-semibold text-slate-400">
                 {t(lang, 'invoice.created')}: {formatTz(parseISO(booking.createdAt), 'dd MMM yyyy', tz, lang)}
               </p>
@@ -731,12 +763,20 @@ export function InvoiceModal({ booking, tenantName, currency, lang, tz, dir, onC
             </div>
           </div>
         </div>
-        <div className="p-8 bg-slate-50 border-t border-slate-100 flex justify-end gap-3 hide-on-print">
+        <div className="p-8 bg-slate-50 border-t border-slate-100 flex justify-end gap-3 hide-on-print flex-wrap">
           <button onClick={onClose} className="px-6 py-3 border border-slate-200 rounded-2xl font-bold hover:bg-white transition-all">
             {t(lang, 'invoice.close')}
           </button>
-          <button onClick={printInvoice} className="px-8 py-3 bg-emerald-600 text-white rounded-2xl font-black shadow-lg shadow-emerald-100 hover:bg-emerald-700 transition-all flex items-center gap-2">
-            <FileText size={20} weight="bold" /> {t(lang, 'invoice.print')}
+          <button onClick={printInvoice} className="px-6 py-3 border border-slate-200 rounded-2xl font-bold hover:bg-white transition-all flex items-center gap-2">
+            <FileText size={18} weight="bold" /> {t(lang, 'invoice.print')}
+          </button>
+          <button
+            onClick={downloadPdf}
+            disabled={generating}
+            className="px-8 py-3 bg-emerald-600 text-white rounded-2xl font-black shadow-lg shadow-emerald-100 hover:bg-emerald-700 transition-all flex items-center gap-2 disabled:opacity-60"
+          >
+            <FileText size={20} weight="bold" />
+            {generating ? '…' : t(lang, 'invoice.downloadPdf')}
           </button>
         </div>
       </div>

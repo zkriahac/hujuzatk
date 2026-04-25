@@ -26,6 +26,9 @@ export interface Tenant {
   // Feature flags (from backend Tenant model)
   integrationsEnabled?: boolean; // default true; admin can disable per-tenant
   onboardedAt?: string | null; // ISO timestamp when guided tour is completed
+  // Plan / quota
+  plan?: string; // 'trial' | 'basic' | 'pro' | 'enterprise'
+  maxRooms?: number; // Cap derived from plan; admin-overridable
   // Local-only password hash for Dexie mode (Supabase Auth is used in cloud mode)
   passwordHash?: string;
 }
@@ -33,6 +36,7 @@ export interface Tenant {
 export interface Booking {
   id: string;
   tenantId: string; // multi-tenant isolation key
+  bookingNumber?: number | null; // Sequential per-tenant human-friendly ID
   guestName: string;
   guestEmail?: string;
   guestPhone: string;

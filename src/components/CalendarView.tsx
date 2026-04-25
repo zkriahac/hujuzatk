@@ -1,6 +1,6 @@
-import React, { useCallback, useMemo, useState } from 'react';
-import { format, isSameDay, startOfToday, differenceInDays, parseISO } from 'date-fns';
-import { Minus, Plus, Sparkle, DotsThreeVertical, X, ArrowUp, ArrowDown, CircleNotch, CalendarCheck } from 'phosphor-react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { format, isSameDay, startOfToday, differenceInDays, differenceInCalendarMonths, parseISO } from 'date-fns';
+import { Minus, Plus, ArrowUp, ArrowDown, CircleNotch, CalendarCheck } from 'phosphor-react';
 import { cn } from '../utils/cn';
 import { t, type Language } from '../lib/i18n';
 import { formatTz } from '../utils/formatTz';
@@ -16,6 +16,17 @@ export const ROOM_GROUP_PALETTES = [
   { header: 'bg-fuchsia-100 text-fuchsia-800', booking: { bg: 'bg-fuchsia-50', border: 'border-fuchsia-300', text: 'text-fuchsia-800' } },
   { header: 'bg-lime-100 text-lime-800',       booking: { bg: 'bg-lime-50',    border: 'border-lime-300',    text: 'text-lime-800'    } },
 ];
+
+// Visual overlay applied on top of the room-palette per booking status. Room hue still wins
+// for normal upcoming/active bookings (empty overlay); other statuses get a distinguishing
+// treatment so users can tell at a glance what's canceled / completed / a no-show.
+export const STATUS_OVERLAY: Record<string, string> = {
+  UPCOMING: '',
+  ACTIVE: 'ring-2 ring-emerald-500 ring-inset',
+  COMPLETED: 'opacity-60 saturate-50',
+  CANCELED: 'opacity-50 line-through bg-red-50! border-red-300! text-red-700!',
+  'NO-SHOW': 'bg-amber-100! border-amber-400! text-amber-800!',
+};
 
 // Build roomId → palette index map from the rooms list, grouped by room name prefix
 export function buildRoomPaletteMap(rooms: any[]): Record<string, number> {
@@ -79,8 +90,39 @@ export default function CalendarView({
     const n = saved ? parseInt(saved) : 1;
     return n >= 1 && n <= 3 ? n : 1;
   });
-  const [showToolbar, setShowToolbar] = useState(false);
   const [hoveredBookingId, setHoveredBookingId] = useState<string | null>(null);
+  // Whether the calendar is scrolled ≥ 2 months away from today. Drives the "jump to today" icon.
+  const [farFromToday, setFarFromToday] = useState(false);
+
+  useEffect(() => {
+    const el = calendarContainerRef.current;
+    if (!el) return;
+    let raf: number | null = null;
+    const compute = () => {
+      raf = null;
+      const rect = el.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+      // Find the row that owns the center pixel and read its data-date.
+      const node = document.elementFromPoint(centerX, centerY);
+      const tr = node?.closest?.('tr[data-date]') as HTMLElement | null;
+      const dateStr = tr?.dataset.date;
+      if (!dateStr) return;
+      const months = Math.abs(differenceInCalendarMonths(parseISO(dateStr), new Date()));
+      setFarFromToday(months >= 2);
+    };
+    const onScroll = () => {
+      if (raf !== null) return;
+      raf = requestAnimationFrame(compute);
+    };
+    el.addEventListener('scroll', onScroll, { passive: true });
+    // Initial check after first paint
+    raf = requestAnimationFrame(compute);
+    return () => {
+      el.removeEventListener('scroll', onScroll);
+      if (raf !== null) cancelAnimationFrame(raf);
+    };
+  }, [calendarContainerRef]);
   const [loadingPast, setLoadingPast] = useState(false);
   const [loadingFuture, setLoadingFuture] = useState(false);
 
@@ -206,7 +248,7 @@ export default function CalendarView({
                       </td>
                       {rooms.map((r: any) => {
                         const cellBookings = bookings.filter((b: any) => {
-                          if (b.status === 'CANCELED') return false;
+                          // Show canceled too — just visually faded
                           const inRoom = b.room === r.id;
                           const checkInStr = b.checkIn.split('T')[0];
                           const checkOutStr = b.checkOut.split('T')[0];
@@ -241,6 +283,7 @@ export default function CalendarView({
                             )}
                             {cellBookings.map((b: any) => {
                               const palette = ROOM_GROUP_PALETTES[roomPaletteMap[b.room] ?? 0].booking;
+                              const statusOverlay = STATUS_OVERLAY[(b.status || '').toUpperCase()] || '';
                               const checkInStr = b.checkIn.split('T')[0];
                               const checkOutStr = b.checkOut.split('T')[0];
                               const isFirst = dStr === checkInStr;
@@ -281,14 +324,21 @@ export default function CalendarView({
                                       : isLast
                                       ? '-top-px bottom-0.5 rounded-b-md rounded-t-none border-t-0'
                                       : '-top-px -bottom-px rounded-none border-y-0',
+                                    // Status-aware overlay (canceled, completed, no-show)
+                                    statusOverlay,
                                     // Unified emphasis across every slice of the same booking (state-driven, not per-slice :hover)
                                     (isHovered || isSelected) && 'shadow-lg z-10',
                                     isSelected && 'ring-2 ring-emerald-500 ring-inset',
                                   )}
-                                  title={b.guestName}
+                                  title={`${b.bookingNumber ? '#' + String(b.bookingNumber).padStart(4, '0') + ' • ' : ''}${b.guestName}`}
                                 >
-                                  {/* Guest name on the middle slice only — one label centered across the merged bar */}
-                                  <span className="truncate">{isMiddle ? b.guestName : ''}</span>
+                                  {/* Guest name on the middle slice; booking # appended on first slice when zoom permits */}
+                                  <span className="truncate">
+                                    {isFirst && b.bookingNumber && zoom >= 2 && (
+                                      <span className="opacity-60 me-1">#{b.bookingNumber}</span>
+                                    )}
+                                    {isMiddle ? b.guestName : ''}
+                                  </span>
                                 </div>
                               );
                             })}
@@ -316,61 +366,41 @@ export default function CalendarView({
         </div>
       </div>
 
-      {/* Floating Action Button */}
-      <button
-        onClick={() => setShowToolbar(v => !v)}
-        className={cn(
-          'fixed bottom-6 z-50 w-10 h-10 rounded-full shadow-2xl flex items-center justify-center transition-all active:scale-90',
-          showToolbar ? 'bg-slate-800 text-white' : 'bg-emerald-600 text-white hover:bg-emerald-700',
-          isRtl ? 'left-6' : 'right-6',
+      {/* Floating zoom + (conditional) today cluster — small, low-opacity until hovered.
+          The "today" icon only appears when the user has scrolled ≥ 2 months away from
+          today, so on initial load the cluster is just the two zoom buttons. */}
+      <div className={cn(
+        'fixed bottom-4 z-50 flex items-center gap-1 bg-white/80 backdrop-blur rounded-full shadow-lg border border-slate-200 p-1 transition-opacity hover:opacity-100',
+        farFromToday ? 'opacity-90' : 'opacity-30',
+        isRtl ? 'left-4' : 'right-4',
+      )}>
+        <button
+          onClick={() => setZoomAndSave(z => Math.max(1, z - 1))}
+          disabled={zoom === 1}
+          aria-label="Zoom out"
+          className="w-8 h-8 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-100 disabled:opacity-30 transition-all"
+        >
+          <Minus size={14} weight="bold" />
+        </button>
+        <button
+          onClick={() => setZoomAndSave(z => Math.min(3, z + 1))}
+          disabled={zoom === 3}
+          aria-label="Zoom in"
+          className="w-8 h-8 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-100 disabled:opacity-30 transition-all"
+        >
+          <Plus size={14} weight="bold" />
+        </button>
+        {farFromToday && (
+          <button
+            onClick={jumpToToday}
+            aria-label={t(lang, 'calendar.jumpToday')}
+            title={t(lang, 'calendar.jumpToday')}
+            className="w-8 h-8 rounded-full flex items-center justify-center text-emerald-600 hover:bg-emerald-50 transition-all"
+          >
+            <CalendarCheck size={16} weight="bold" />
+          </button>
         )}
-      >
-        {showToolbar ? <X size={24} weight="bold" /> : <DotsThreeVertical size={24} weight="bold" />}
-      </button>
-
-      {/* Toolbar popup */}
-      {showToolbar && (
-        <div className={cn(
-          'fixed bottom-18 z-50 flex flex-col gap-2 bg-white p-4 rounded-3xl border border-slate-200 shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-200',
-          isRtl ? 'left-4' : 'right-4',
-        )}>
-          <button
-            onClick={() => { jumpToToday(); setShowToolbar(false); }}
-            className="text-xs bg-slate-900 text-white px-5 py-2.5 rounded-2xl font-black uppercase tracking-widest hover:bg-slate-800 transition-all active:scale-95"
-          >
-            {t(lang, 'calendar.jumpToday')}
-          </button>
-          <div className="flex items-center justify-center gap-1 bg-slate-100 rounded-xl p-1">
-            <button
-              onClick={() => setZoomAndSave(z => Math.max(1, z - 1))}
-              disabled={zoom === 1}
-              className="p-2 rounded-lg text-slate-500 hover:bg-white hover:text-slate-900 disabled:opacity-30 transition-all"
-            >
-              <Minus size={14} weight="bold" />
-            </button>
-            <span className="text-[11px] font-black text-slate-500 w-5 text-center tabular-nums">{zoom}x</span>
-            <button
-              onClick={() => setZoomAndSave(z => Math.min(3, z + 1))}
-              disabled={zoom === 3}
-              className="p-2 rounded-lg text-slate-500 hover:bg-white hover:text-slate-900 disabled:opacity-30 transition-all"
-            >
-              <Plus size={14} weight="bold" />
-            </button>
-          </div>
-          <button
-            data-tour="new-booking"
-            onClick={() => {
-              setAddModalInitialDate(selectedDateStr);
-              setShowAddModal(true);
-              setShowToolbar(false);
-            }}
-            className="bg-emerald-600 text-white px-5 py-2.5 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-emerald-700 shadow-lg shadow-emerald-50 transition-all flex items-center justify-center gap-2 active:scale-95"
-          >
-            <Sparkle size={16} weight="fill" />
-            {t(lang, 'calendar.newBooking')}
-          </button>
-        </div>
-      )}
+      </div>
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { format, addMonths, differenceInCalendarDays, differenceInDays, eachMonthOfInterval, endOfMonth, parseISO, startOfMonth } from 'date-fns';
-import { CaretDown, CalendarBlank, ListBullets, ChartPie, GearSix, ShieldCheck, ArrowsClockwise } from 'phosphor-react';
+import { CaretDown, CalendarBlank, ListBullets, ChartPie, GearSix, ShieldCheck, ArrowsClockwise, CurrencyCircleDollar } from 'phosphor-react';
 import { authService, type SessionUser } from '../lib/authService';
 import { dataService } from '../lib/dataService';
 import { trackLogout, trackBookingCreated, trackBookingCanceled, trackViewChange } from '../lib/analytics';
@@ -16,6 +16,8 @@ import ReportsView from './ReportsView';
 import SettingsView from './SettingsView';
 import AdminView from './AdminView';
 import IntegrationsView from './IntegrationsView';
+import ExpenseView from './ExpenseView';
+import AccountSwitcher from './AccountSwitcher';
 import OnboardingTour, { type OnboardingStep } from './OnboardingTour';
 import { apolloClient } from '../lib/apolloClient';
 import { COMPLETE_ONBOARDING_MUTATION } from '../lib/graphql';
@@ -308,10 +310,13 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
       );
     });
     if (listFilter !== 'all') {
+      const todayStr = format(new Date(), 'yyyy-MM-dd');
       filtered = filtered.filter((b: Booking) => {
         const effective = getEffectiveStatus(b);
         if (listFilter === 'canceled') return effective === 'CANCELED';
         if (effective === 'CANCELED') return false;
+        if (listFilter === 'today_checkin')  return b.checkIn.split('T')[0]  === todayStr;
+        if (listFilter === 'today_checkout') return b.checkOut.split('T')[0] === todayStr;
         if (listFilter === 'upcoming') return effective === 'UPCOMING';
         if (listFilter === 'active') return effective === 'ACTIVE';
         if (listFilter === 'past') return effective === 'COMPLETED' || effective === 'NO_SHOW';
@@ -410,19 +415,34 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
     window.location.href = '/';
   };
 
+  // Subscription badge — visible on every viewport size. Within 7 days of expiry it
+  // turns amber and shows "Expires in N days"; expired turns red.
+  const daysUntilExpiry = session.tenant.validUntil
+    ? Math.ceil((new Date(session.tenant.validUntil).getTime() - Date.now()) / 86400000)
+    : null;
+  const isExpiring = daysUntilExpiry !== null && daysUntilExpiry >= 0 && daysUntilExpiry <= 7;
+  const isExpired = daysUntilExpiry !== null && daysUntilExpiry < 0;
   const subscriptionBadge = (() => {
     const status = session.tenant.subscriptionStatus;
     const validUntil = session.tenant.validUntil;
     const label = t(lang, `status.${status.toLowerCase()}`);
     const color =
+      isExpired ? 'bg-red-100 text-red-700' :
+      isExpiring ? 'bg-amber-100 text-amber-700' :
       status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-700' :
       status === 'TRIAL'  ? 'bg-blue-100 text-blue-700' :
-      status === 'EXPIRED' ? 'bg-amber-100 text-amber-700' :
-      'bg-red-100 text-red-700';
+      'bg-slate-100 text-slate-600';
+    const dot = isExpired ? 'bg-red-500' : isExpiring ? 'bg-amber-500' : status === 'ACTIVE' ? 'bg-emerald-500' : 'bg-blue-500';
+    const detailText = isExpiring && daysUntilExpiry !== null
+      ? ` • ${daysUntilExpiry === 0 ? 'today' : `${daysUntilExpiry}d`}`
+      : isExpired ? ` • expired`
+      : validUntil ? ` • ${formatTz(validUntil, 'yyyy-MM-dd', tz, lang)}`
+      : '';
     return (
-      <span className={cn('text-[10px] px-2 py-0.5 rounded-full font-black mr-2 uppercase', color)}>
-        {label}
-        {validUntil && ` • ${t(lang, 'admin.validUntil')} ${formatTz(validUntil, 'yyyy-MM-dd', tz, lang)}`}
+      <span className={cn('inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-black uppercase mx-2', color)}>
+        <span className={cn('w-1.5 h-1.5 rounded-full', dot)} />
+        <span className="hidden sm:inline">{label}{detailText}</span>
+        <span className="sm:hidden">{isExpiring ? `${daysUntilExpiry}d` : label}</span>
       </span>
     );
   })();
@@ -434,7 +454,15 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
           <div className="flex items-center gap-2 min-w-0">
             <img src="/logo.svg" alt="Logo" className="w-8 h-8 sm:w-9 sm:h-9 shrink-0" />
             <span className="font-black text-sm tracking-tight truncate max-w-[100px] sm:max-w-none">{session.tenant.name || 'Hujuzatk'}</span>
-            {!session.isAdmin && <span className="hidden sm:inline">{subscriptionBadge}</span>}
+            {!session.isAdmin && subscriptionBadge}
+            {!session.isAdmin && (
+              <AccountSwitcher
+                lang={lang}
+                isRtl={isRtl}
+                currentTenantId={session.tenantId}
+                currentName={session.tenant.name}
+              />
+            )}
           </div>
           <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             <div className="relative">
@@ -443,7 +471,7 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
                 data-tour="view-switcher"
                 className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 text-[10px] sm:text-[11px] font-black uppercase tracking-widest hover:bg-emerald-100 transition-colors"
               >
-                {(() => { const I = { calendar: CalendarBlank, list: ListBullets, reports: ChartPie, integrations: ArrowsClockwise, settings: GearSix, admin: ShieldCheck }[currentView]; return <I size={14} weight="fill" />; })()}
+                {(() => { const I = { calendar: CalendarBlank, list: ListBullets, reports: ChartPie, integrations: ArrowsClockwise, expenses: CurrencyCircleDollar, settings: GearSix, admin: ShieldCheck }[currentView]; return <I size={14} weight="fill" />; })()}
                 {t(lang, `nav.${currentView}`)}
                 <CaretDown size={11} weight="bold" className={cn('transition-transform', showViewMenu && 'rotate-180')} />
               </button>
@@ -453,9 +481,9 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
                   <div className={cn('absolute top-full mt-1 z-100 bg-white rounded-2xl border border-slate-200 shadow-2xl py-1 min-w-[130px]', isRtl ? 'left-0' : 'right-0')}>
                     {(session.isAdmin
                       ? ['admin'] as View[]
-                      : (['calendar', 'list', 'reports', (session.tenant.integrationsEnabled !== false ? 'integrations' : null), 'settings'].filter(Boolean) as View[])
+                      : (['calendar', 'list', 'reports', 'expenses', (session.tenant.integrationsEnabled !== false ? 'integrations' : null), 'settings'].filter(Boolean) as View[])
                     ).map((v) => {
-                      const Icon = { calendar: CalendarBlank, list: ListBullets, reports: ChartPie, integrations: ArrowsClockwise, settings: GearSix, admin: ShieldCheck }[v];
+                      const Icon = { calendar: CalendarBlank, list: ListBullets, reports: ChartPie, integrations: ArrowsClockwise, expenses: CurrencyCircleDollar, settings: GearSix, admin: ShieldCheck }[v];
                       return (
                         <button
                           key={v}
@@ -545,6 +573,7 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
             setReportRoomFilter={setReportRoomFilter}
             reportData={reportData}
             currency={currency}
+            tenantName={session.tenant.name}
             lang={lang}
           />
         )}
@@ -554,6 +583,9 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
             lang={lang}
             onNavigateToSettings={() => setCurrentView('settings')}
           />
+        )}
+        {currentView === 'expenses' && (
+          <ExpenseView session={session} lang={lang} tz={tz} currency={currency} />
         )}
         {currentView === 'settings' && (
           <SettingsView session={session} onSessionChange={onSessionChange} lang={lang} />
