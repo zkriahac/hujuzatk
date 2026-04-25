@@ -1,5 +1,8 @@
-import { FileText, Layout, ChartPie, CreditCard, Calendar, Users, Target } from 'phosphor-react';
+import { useEffect, useMemo, useState } from 'react';
+import { FileText, Layout, ChartPie, CreditCard, Calendar, Users, Target, FileXls, TrendDown, Scales } from 'phosphor-react';
 import { t, type Language } from '../lib/i18n';
+import { apolloClient } from '../lib/apolloClient';
+import { GET_EXPENSES_QUERY } from '../lib/graphql';
 
 interface ReportsViewProps {
   rooms: any[];
@@ -14,6 +17,16 @@ interface ReportsViewProps {
   reportData: any;
   currency: string;
   lang: Language;
+  tenantName?: string;
+}
+
+interface Expense {
+  id: string;
+  roomId: string | null;
+  date: string;
+  amount: number;
+  category: string;
+  reason: string;
 }
 
 export default function ReportsView({
@@ -29,11 +42,87 @@ export default function ReportsView({
   reportData,
   currency,
   lang,
+  tenantName,
 }: ReportsViewProps) {
   const avgFill =
     reportData.roomStats.length === 0
       ? 0
       : reportData.roomStats.reduce((a: any, b: any) => a + b.occupancyRate, 0) / reportData.roomStats.length;
+
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+  // Refetch expenses whenever the date range / room filter changes — keeps the
+  // P&L numbers in sync with the bookings panel above.
+  useEffect(() => {
+    const variables: any = {
+      startDate: new Date(reportStartDate + 'T00:00:00').toISOString(),
+      endDate: new Date(reportEndDate + 'T23:59:59').toISOString(),
+    };
+    if (reportRoomFilter !== 'ALL') variables.roomId = reportRoomFilter;
+    apolloClient.query({ query: GET_EXPENSES_QUERY, variables, fetchPolicy: 'network-only' })
+      .then(({ data }) => setExpenses((data as any)?.getExpenses || []))
+      .catch(() => setExpenses([]));
+  }, [reportStartDate, reportEndDate, reportRoomFilter]);
+
+  const totalExpenses = useMemo(() => expenses.reduce((s, e) => s + e.amount, 0), [expenses]);
+  const netIncome = reportData.totalRevenue - totalExpenses;
+  const expensesByRoom = useMemo(() => {
+    const m: Record<string, number> = {};
+    expenses.forEach((e) => {
+      const key = e.roomId || '__general__';
+      m[key] = (m[key] || 0) + e.amount;
+    });
+    return m;
+  }, [expenses]);
+  const expensesByCategory = useMemo(() => {
+    const m: Record<string, number> = {};
+    expenses.forEach((e) => { m[e.category] = (m[e.category] || 0) + e.amount; });
+    return m;
+  }, [expenses]);
+
+  // Dynamic-import xlsx so it only loads when the user clicks Export
+  const handleExportExcel = async () => {
+    const XLSX = await import('xlsx');
+    const wb = XLSX.utils.book_new();
+    // Sheet 1: Summary
+    const summaryRows = [
+      ['Hujuzatk Report', tenantName || ''],
+      ['Range', `${reportStartDate} → ${reportEndDate}`],
+      ['Room filter', reportRoomFilter === 'ALL' ? 'All' : reportRoomFilter],
+      [],
+      ['Total revenue', reportData.totalRevenue],
+      ['Total expenses', totalExpenses],
+      ['Net income', netIncome],
+      ['Total nights', reportData.totalNights],
+      ['Bookings', reportData.bookingCount],
+      ['Avg fill rate %', avgFill.toFixed(2)],
+    ];
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(summaryRows), 'Summary');
+    // Sheet 2: Per-room
+    const roomMap = Object.fromEntries(rooms.map((r: any) => [r.id, r.name]));
+    const perRoom = [['Room', 'Revenue', 'Expenses', 'Net', 'Occupancy %']];
+    reportData.roomStats.forEach((s: any) => {
+      const exp = expensesByRoom[s.roomId] || 0;
+      perRoom.push([s.roomName || s.roomId, s.totalRevenue, exp, s.totalRevenue - exp, s.occupancyRate.toFixed(1)]);
+    });
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(perRoom), 'Per-room');
+    // Sheet 3: Expenses
+    const expSheet = [['Date', 'Room', 'Category', 'Reason', 'Amount']];
+    expenses.forEach((e) => {
+      expSheet.push([
+        e.date.split('T')[0],
+        e.roomId ? (roomMap[e.roomId] || e.roomId) : 'General',
+        e.category,
+        e.reason,
+        String(e.amount),
+      ]);
+    });
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(expSheet), 'Expenses');
+    // Sheet 4: Monthly
+    const monthly = [['Month', 'Revenue', 'Fill rate %']];
+    reportData.monthlyStats.forEach((s: any) => monthly.push([s.month, s.revenue, s.fillRate.toFixed(1)]));
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(monthly), 'Monthly');
+    XLSX.writeFile(wb, `hujuzatk-report-${(tenantName || 'tenant').replace(/\s+/g, '_')}-${reportStartDate}-${reportEndDate}.xlsx`);
+  };
 
   return (
     <div className="space-y-8 pb-12">
@@ -81,13 +170,50 @@ export default function ReportsView({
               ))}
             </select>
           </div>
-          <div className="w-full md:w-auto">
+          <div className="w-full md:w-auto flex gap-2">
+            <button
+              onClick={handleExportExcel}
+              className="bg-emerald-600 text-white px-5 py-2.5 rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-emerald-700 transition-all active:scale-95 flex items-center gap-2"
+            >
+              <FileXls size={18} weight="bold" /> {t(lang, 'reports.exportExcel')}
+            </button>
             <button
               onClick={() => window.print()}
-              className="w-full bg-slate-900 text-white px-8 py-2.5 rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-slate-800 shadow-xl shadow-slate-200 transition-all active:scale-95 flex items-center gap-2 justify-center"
+              className="bg-slate-900 text-white px-5 py-2.5 rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-slate-800 transition-all active:scale-95 flex items-center gap-2"
             >
               <FileText size={18} weight="bold" /> {t(lang, 'reports.print')}
             </button>
+          </div>
+        </div>
+      </div>
+
+      {/* P&L summary row — revenue / expenses / net */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+        <div className="bg-emerald-50 border border-emerald-200 rounded-3xl p-6">
+          <div className="flex items-center gap-2 text-emerald-700 mb-2">
+            <CreditCard size={20} weight="duotone" />
+            <span className="text-[10px] font-black uppercase tracking-widest">{t(lang, 'reports.income')}</span>
+          </div>
+          <div className="text-3xl font-black text-emerald-900 tabular-nums" dir="ltr">
+            {currency} {reportData.totalRevenue.toLocaleString()}
+          </div>
+        </div>
+        <div className="bg-red-50 border border-red-200 rounded-3xl p-6">
+          <div className="flex items-center gap-2 text-red-700 mb-2">
+            <TrendDown size={20} weight="duotone" />
+            <span className="text-[10px] font-black uppercase tracking-widest">{t(lang, 'reports.expenses')}</span>
+          </div>
+          <div className="text-3xl font-black text-red-900 tabular-nums" dir="ltr">
+            {currency} {totalExpenses.toLocaleString()}
+          </div>
+        </div>
+        <div className={`${netIncome >= 0 ? 'bg-blue-50 border-blue-200' : 'bg-amber-50 border-amber-300'} border rounded-3xl p-6`}>
+          <div className={`flex items-center gap-2 ${netIncome >= 0 ? 'text-blue-700' : 'text-amber-700'} mb-2`}>
+            <Scales size={20} weight="duotone" />
+            <span className="text-[10px] font-black uppercase tracking-widest">{t(lang, 'reports.netIncome')}</span>
+          </div>
+          <div className={`text-3xl font-black tabular-nums ${netIncome >= 0 ? 'text-blue-900' : 'text-amber-900'}`} dir="ltr">
+            {currency} {netIncome.toLocaleString()}
           </div>
         </div>
       </div>

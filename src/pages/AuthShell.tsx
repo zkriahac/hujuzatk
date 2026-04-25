@@ -6,7 +6,25 @@ import { cn } from '../utils/cn';
 import { Sparkle } from 'phosphor-react';
 import { t, getDir, type Language } from '../lib/i18n';
 import { trackLogin, trackRegister } from '../lib/analytics';
+import { addAccount } from '../lib/accountStore';
 import TenantApp from '../components/TenantApp';
+
+// Save the freshly-authenticated session into the multi-account switcher store
+function rememberAccount(s: SessionUser) {
+  const token = localStorage.getItem('authToken');
+  const refreshToken = localStorage.getItem('refreshToken');
+  if (!token || !refreshToken) return;
+  try {
+    addAccount({
+      tenantId: s.tenantId,
+      name: s.tenant.name,
+      email: s.tenant.email,
+      slug: (s.tenant.name || 'workspace').replace(/\s+/g, '-'),
+      token,
+      refreshToken,
+    });
+  } catch {}
+}
 
 function detectLang(): Language {
   try {
@@ -63,10 +81,12 @@ export function AuthScreen({ mode, onModeChange, onLoggedIn, error, setError, wo
           try { await authService.updateTenantConfig(s.tenantId, { rooms: defaults.rooms }); } catch {}
         }
         trackRegister(name || email);
+        rememberAccount(s);
         onLoggedIn(s);
       } else {
         const s = await authService.loginLocal(email, password);
         trackLogin('email');
+        rememberAccount(s);
         onLoggedIn(s);
       }
     } catch (err: any) {
