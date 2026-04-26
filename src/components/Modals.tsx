@@ -804,7 +804,7 @@ export function InvoiceModal({ booking, tenantName, currency, lang, tz, dir, onC
                 {t(lang, 'invoice.created')}: {formatTz(parseISO(booking.createdAt), 'dd MMM yyyy', tz, lang)}
               </p>
             </div>
-            <div className="text-right">
+            <div className="text-end">
               {company?.companyLogoUrl && (
                 <img src={company.companyLogoUrl} alt="" className="h-12 ms-auto mb-2 object-contain" crossOrigin="anonymous" />
               )}
@@ -838,7 +838,7 @@ export function InvoiceModal({ booking, tenantName, currency, lang, tz, dir, onC
                 </div>
               )}
             </div>
-            <div className="text-right">
+            <div className="text-end">
               <div className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em] mb-3">{t(lang, 'invoice.roomDetails')}</div>
               <div className="font-black text-2xl text-slate-900 leading-tight mb-1">{t(lang, 'list.room')} {booking.room}</div>
               <div className="text-sm font-bold text-emerald-600 uppercase tracking-widest mb-1">{booking.nights} {t(lang, 'invoice.night')}</div>
@@ -852,16 +852,16 @@ export function InvoiceModal({ booking, tenantName, currency, lang, tz, dir, onC
           <table className="w-full mb-12">
             <thead className="border-b-4 border-slate-900">
               <tr className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
-                <th className="py-4 text-left">{t(lang, 'invoice.description')}</th>
-                <th className="py-4 text-right">{t(lang, 'invoice.priceNight')}</th>
-                <th className="py-4 text-right">{t(lang, 'invoice.amount')}</th>
+                <th className="py-4 text-start">{t(lang, 'invoice.description')}</th>
+                <th className="py-4 text-end">{t(lang, 'invoice.priceNight')}</th>
+                <th className="py-4 text-end">{t(lang, 'invoice.amount')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               <tr className="text-slate-700">
                 <td className="py-6 font-bold">{t(lang, 'invoice.roomFees')} ({booking.nights} Nights)</td>
-                <td className="py-6 text-right font-medium">{currency} {booking.nightPrice}</td>
-                <td className="py-6 text-right font-black text-lg text-slate-900">{currency} {booking.totalPrice}</td>
+                <td className="py-6 text-end font-medium">{currency} {booking.nightPrice}</td>
+                <td className="py-6 text-end font-black text-lg text-slate-900">{currency} {booking.totalPrice}</td>
               </tr>
             </tbody>
           </table>

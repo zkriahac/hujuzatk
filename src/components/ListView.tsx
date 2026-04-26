@@ -89,11 +89,11 @@ export default function ListView({
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-slate-50 border-b border-slate-100 text-[11px] font-black uppercase tracking-[0.2em] text-slate-400">
-              <th className="px-4 py-3 text-left">{t(lang, 'list.guest')}</th>
-              <th className="px-4 py-3 text-left w-16">{t(lang, 'list.room')}</th>
-              <th className="px-4 py-3 text-left min-w-40">{t(lang, 'list.dates')}</th>
-              <th className="px-4 py-3 text-right">{t(lang, 'list.amount')}</th>
-              <th className="px-4 py-3 text-right">{t(lang, 'list.balance')}</th>
+              <th className="px-4 py-3 text-start">{t(lang, 'list.guest')}</th>
+              <th className="px-4 py-3 text-start w-16">{t(lang, 'list.room')}</th>
+              <th className="px-4 py-3 text-start min-w-40">{t(lang, 'list.dates')}</th>
+              <th className="px-4 py-3 text-end">{t(lang, 'list.amount')}</th>
+              <th className="px-4 py-3 text-end">{t(lang, 'list.balance')}</th>
               <th className="px-4 py-3 text-center">{t(lang, 'list.status')}</th>
               <th className="px-4 py-3" />
             </tr>
@@ -159,16 +159,16 @@ export default function ListView({
                         {b.nights} {t(lang, 'list.nights')} · {formatTz(b.checkOut, 'dd MMM', tz, lang)}
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-right font-black text-slate-900 text-sm">
+                    <td className="px-4 py-3 text-end font-black text-slate-900 text-sm">
                       {currency} {b.totalPrice}
                     </td>
-                    <td className={cn('px-4 py-3 text-right font-black text-sm', b.remaining > 0 ? 'text-red-500' : 'text-emerald-600')}>
+                    <td className={cn('px-4 py-3 text-end font-black text-sm', b.remaining > 0 ? 'text-red-500' : 'text-emerald-600')}>
                       {currency} {b.remaining}
                     </td>
                     <td className="px-4 py-3 text-center">
                       <span className={cn('inline-block px-3 py-1 rounded-[10px] text-[10px] font-black uppercase tracking-wider whitespace-nowrap', statusColor)}>{statusText}</span>
                     </td>
-                    <td className="px-4 py-3 text-right">
+                    <td className="px-4 py-3 text-end">
                       <button
                         onClick={() => setSelectedBooking(b)}
                         className="h-10 w-10 flex items-center justify-center rounded-xl text-emerald-600 hover:bg-emerald-50 transition-all"

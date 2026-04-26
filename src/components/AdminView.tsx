@@ -320,7 +320,7 @@ function AdminTenantRow({ tObj, onReload, lang, tz }: { tObj: Tenant; onReload: 
         <td className="px-6 py-4 text-xs font-black text-slate-400">
           {tObj.validUntil ? formatTz(tObj.validUntil, 'yyyy-MM-dd', tz, lang) : '—'}
         </td>
-        <td className="px-6 py-4 text-right whitespace-nowrap" onClick={e => e.stopPropagation()}>
+        <td className="px-6 py-4 text-end whitespace-nowrap" onClick={e => e.stopPropagation()}>
           <div className="flex gap-2 justify-end">
             <button onClick={handleLoginAs}
               className="px-3 py-1.5 bg-purple-600 text-white rounded-lg text-[10px] font-black uppercase tracking-tighter hover:bg-purple-500"
@@ -541,11 +541,11 @@ export default function AdminView({ lang, tz }: AdminViewProps) {
               <table className="w-full text-sm">
                 <thead className="bg-slate-950/80 sticky top-0 z-10">
                   <tr className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
-                    <th className="px-6 py-5 text-left">{t(lang, 'admin.name')}</th>
-                    <th className="px-6 py-5 text-left">{t(lang, 'admin.email')}</th>
-                    <th className="px-6 py-5 text-left">{t(lang, 'admin.config')}</th>
-                    <th className="px-6 py-5 text-left">{t(lang, 'admin.subscription')}</th>
-                    <th className="px-6 py-5 text-left">{t(lang, 'admin.validUntil')}</th>
+                    <th className="px-6 py-5 text-start">{t(lang, 'admin.name')}</th>
+                    <th className="px-6 py-5 text-start">{t(lang, 'admin.email')}</th>
+                    <th className="px-6 py-5 text-start">{t(lang, 'admin.config')}</th>
+                    <th className="px-6 py-5 text-start">{t(lang, 'admin.subscription')}</th>
+                    <th className="px-6 py-5 text-start">{t(lang, 'admin.validUntil')}</th>
                     <th className="px-6 py-5" />
                   </tr>
                 </thead>

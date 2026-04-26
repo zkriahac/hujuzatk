@@ -214,7 +214,7 @@ export default function ReportsView({
                   label={t(lang, 'reports.totalNights')}
                   value={String(reportData.totalNights)}
                   Icon={Calendar} />
-        <StatCard variant="pastel" tone="slate"
+        <StatCard variant="pastel" tone="indigo"
                   label={t(lang, 'reports.totalBookings')}
                   value={String(reportData.bookingCount)}
                   Icon={Users} />
@@ -234,31 +234,38 @@ export default function ReportsView({
             <table className="w-full text-sm">
               <thead className="bg-slate-50 sticky top-0 z-10">
                 <tr className="text-[10px] font-black uppercase tracking-widest text-slate-300">
-                  <th className="px-8 py-4 text-left">{t(lang, 'reports.room')}</th>
-                  <th className="px-8 py-4 text-right">{t(lang, 'reports.revenue')}</th>
-                  <th className="px-8 py-4 text-center">{t(lang, 'reports.occupancy')}</th>
+                  <th className="px-6 py-4 text-start">{t(lang, 'reports.room')}</th>
+                  <th className="px-6 py-4 text-end">{t(lang, 'reports.revenue')}</th>
+                  <th className="px-6 py-4 text-end">{t(lang, 'reports.expenses')}</th>
+                  <th className="px-6 py-4 text-center">{t(lang, 'reports.occupancy')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
-                {reportData.roomStats.map((s: any) => (
-                  <tr key={s.roomId} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-8 py-5 font-black text-slate-900 text-lg">{s.roomName || s.roomId}</td>
-                    <td className="px-8 py-5 text-right text-emerald-600 font-black">
-                      {currency} {s.totalRevenue.toLocaleString()}
-                    </td>
-                    <td className="px-8 py-5">
-                      <div className="flex items-center justify-center gap-3">
-                        <div className="flex-1 max-w-[100px] bg-slate-100 h-3 rounded-full overflow-hidden shadow-inner">
-                          <div
-                            className="bg-gradient-to-r from-blue-500 to-blue-600 h-full rounded-full transition-all duration-1000"
-                            style={{ width: `${Math.min(100, s.occupancyRate).toFixed(0)}%` }}
-                          />
+                {reportData.roomStats.map((s: any) => {
+                  const exp = expensesByRoom[s.roomId] || 0;
+                  return (
+                    <tr key={s.roomId} className="hover:bg-slate-50 transition-colors">
+                      <td className="px-6 py-5 font-black text-slate-900 text-lg">{s.roomName || s.roomId}</td>
+                      <td className="px-6 py-5 text-end text-emerald-600 font-black">
+                        {currency} {s.totalRevenue.toLocaleString()}
+                      </td>
+                      <td className={`px-6 py-5 text-end font-black ${exp > 0 ? 'text-rose-600' : 'text-slate-300'}`}>
+                        {currency} {exp.toLocaleString()}
+                      </td>
+                      <td className="px-6 py-5">
+                        <div className="flex items-center justify-center gap-3">
+                          <div className="flex-1 max-w-[100px] bg-slate-100 h-3 rounded-full overflow-hidden shadow-inner">
+                            <div
+                              className="bg-gradient-to-r from-blue-500 to-blue-600 h-full rounded-full transition-all duration-1000"
+                              style={{ width: `${Math.min(100, s.occupancyRate).toFixed(0)}%` }}
+                            />
+                          </div>
+                          <span className="text-xs font-black text-slate-400 w-10 text-end">{s.occupancyRate.toFixed(0)}%</span>
                         </div>
-                        <span className="text-xs font-black text-slate-400 w-10 text-right">{s.occupancyRate.toFixed(0)}%</span>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -273,8 +280,8 @@ export default function ReportsView({
             <table className="w-full text-sm">
               <thead className="bg-slate-50 sticky top-0 z-10">
                 <tr className="text-[10px] font-black uppercase tracking-widest text-slate-300">
-                  <th className="px-8 py-4 text-left">{t(lang, 'reports.month')}</th>
-                  <th className="px-8 py-4 text-right">{t(lang, 'reports.revenue')}</th>
+                  <th className="px-8 py-4 text-start">{t(lang, 'reports.month')}</th>
+                  <th className="px-8 py-4 text-end">{t(lang, 'reports.revenue')}</th>
                   <th className="px-8 py-4 text-center">{t(lang, 'reports.fillRate')}</th>
                 </tr>
               </thead>
@@ -282,7 +289,7 @@ export default function ReportsView({
                 {reportData.monthlyStats.map((s: any, i: number) => (
                   <tr key={i} className="hover:bg-slate-50 transition-colors">
                     <td className="px-8 py-5 font-black text-slate-900">{s.month}</td>
-                    <td className="px-8 py-5 text-right text-emerald-600 font-black">
+                    <td className="px-8 py-5 text-end text-emerald-600 font-black">
                       {currency} {s.revenue.toLocaleString()}
                     </td>
                     <td className="px-8 py-5">
@@ -293,7 +300,7 @@ export default function ReportsView({
                             style={{ width: `${Math.min(100, s.fillRate).toFixed(0)}%` }}
                           />
                         </div>
-                        <span className="text-xs font-black text-slate-400 w-10 text-right">{s.fillRate.toFixed(0)}%</span>
+                        <span className="text-xs font-black text-slate-400 w-10 text-end">{s.fillRate.toFixed(0)}%</span>
                       </div>
                     </td>
                   </tr>
@@ -315,7 +322,7 @@ export default function ReportsView({
 // `variant` only swaps the surface treatment (soft pastel vs bold filled);
 // the layout is identical so the row of pastel + the row of bold reads as
 // one design language.
-type StatTone = 'blue' | 'rose' | 'emerald' | 'amber' | 'slate';
+type StatTone = 'blue' | 'rose' | 'emerald' | 'amber' | 'slate' | 'indigo';
 type StatVariant = 'pastel' | 'bold';
 
 const TONE_PASTEL: Record<StatTone, { bg: string; border: string; label: string; value: string; watermark: string }> = {
@@ -324,6 +331,7 @@ const TONE_PASTEL: Record<StatTone, { bg: string; border: string; label: string;
   emerald: { bg: 'bg-emerald-50', border: 'border-emerald-100', label: 'text-emerald-600', value: 'text-emerald-700', watermark: 'text-emerald-200' },
   amber:   { bg: 'bg-amber-50',   border: 'border-amber-100',   label: 'text-amber-600',   value: 'text-amber-700',   watermark: 'text-amber-200' },
   slate:   { bg: 'bg-slate-50',   border: 'border-slate-100',   label: 'text-slate-600',   value: 'text-slate-700',   watermark: 'text-slate-200' },
+  indigo:  { bg: 'bg-indigo-50',  border: 'border-indigo-100',  label: 'text-indigo-600',  value: 'text-indigo-700',  watermark: 'text-indigo-200' },
 };
 
 const TONE_BOLD: Record<StatTone, { bg: string }> = {
@@ -332,6 +340,7 @@ const TONE_BOLD: Record<StatTone, { bg: string }> = {
   emerald: { bg: 'bg-emerald-600' },
   amber:   { bg: 'bg-amber-500' },
   slate:   { bg: 'bg-slate-900' },
+  indigo:  { bg: 'bg-indigo-600' },
 };
 
 function StatCard({
