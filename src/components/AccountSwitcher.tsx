@@ -160,7 +160,6 @@ export default function AccountSwitcher({ lang, isRtl, currentTenantId, session,
             onClick={() => { setShowAdd(true); setOpen(false); }}
             className="w-full px-4 py-2.5 text-xs font-black text-emerald-600 hover:bg-emerald-50 transition-colors flex items-center gap-2"
           >
-            <Plus size={14} weight="bold" />
             {t(lang, 'account.addAnother')}
           </button>
 
