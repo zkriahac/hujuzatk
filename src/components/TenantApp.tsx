@@ -423,18 +423,8 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
         <div className="px-3 sm:px-6 flex justify-between h-full items-center gap-2">
           <div className="flex items-center gap-2 min-w-0">
             <img src="/logo.svg" alt="Logo" className="w-8 h-8 sm:w-9 sm:h-9 shrink-0" />
-            {!session.isAdmin && (
-              <AccountSwitcher
-                lang={lang}
-                isRtl={isRtl}
-                currentTenantId={session.tenantId}
-                session={session}
-                onLogout={handleLogout}
-                onNavigate={(v) => setCurrentView(v)}
-              />
-            )}
           </div>
-          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             <div className="relative">
               <button
                 onClick={() => setShowViewMenu(v => !v)}
@@ -448,7 +438,7 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
               {showViewMenu && (
                 <>
                   <div className="fixed inset-0 z-99" onClick={() => setShowViewMenu(false)} />
-                  <div className={cn('absolute top-full mt-1 z-100 bg-white rounded-2xl border border-slate-200 shadow-2xl py-1 min-w-[130px]', isRtl ? 'left-0' : 'right-0')}>
+                  <div className="absolute top-full mt-1 z-100 bg-white rounded-2xl border border-slate-200 shadow-2xl py-1 min-w-[130px] end-0">
                     {(session.isAdmin
                       ? ['admin'] as View[]
                       : (['calendar', 'list', 'expenses', 'reports'] as View[])
@@ -473,6 +463,16 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
                 </>
               )}
             </div>
+            {!session.isAdmin && (
+              <AccountSwitcher
+                lang={lang}
+                isRtl={isRtl}
+                currentTenantId={session.tenantId}
+                session={session}
+                onLogout={handleLogout}
+                onNavigate={(v) => setCurrentView(v)}
+              />
+            )}
           </div>
         </div>
       </nav>

@@ -74,7 +74,7 @@ export default function AccountSwitcher({ lang, isRtl, currentTenantId, session,
 
       {open && (
         <div className={cn(
-          'absolute top-full mt-2 z-100 bg-white rounded-2xl border border-slate-200 shadow-2xl py-2 w-72 start-0',
+          'absolute top-full mt-2 z-100 bg-white rounded-2xl border border-slate-200 shadow-2xl py-2 w-72 end-0',
         )}>
 
           {/* ── Profile card ── */}

@@ -180,7 +180,7 @@ export default function CalendarView({
                     key={r.id}
                     style={{ width: colW, minWidth: colW }}
                     className={cn(
-                      'p-1 sm:p-3 border-b border-r border-slate-200 text-[7px] sm:text-xs font-black uppercase tracking-widest text-center whitespace-nowrap',
+                      'p-1 sm:p-3 border-b border-r border-slate-200 text-[md] sm:text-sm font-black uppercase tracking-widest text-center whitespace-nowrap',
                       ROOM_GROUP_PALETTES[roomPaletteMap[r.id] ?? 0].header,
                     )}
                   >
