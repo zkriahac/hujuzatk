@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   Calendar, FileText, Globe, ChartPie, DeviceMobile, Database,
   ArrowRight, Buildings, Check, Star, ShieldCheck, Sparkle,
-  List, X, CaretDown, ArrowsClockwise, Receipt,
+  List, X, CaretDown, ArrowsClockwise, Receipt, CaretLeft, CaretRight,
 } from 'phosphor-react';
 import { authService } from '../lib/authService';
 import { trackCTA, trackWorkspaceSearch } from '../lib/analytics';
@@ -911,50 +911,22 @@ export function LandingPage() {
           </div>
         </section>
 
-        {/* Screenshots showcase */}
+        {/* Screenshots showcase — slider */}
         <section className="bg-slate-900 py-24 lg:py-32 overflow-hidden">
           <div className="container mx-auto px-6">
-            {/* Heading */}
-            <div className="text-center mb-16">
+            <div className="text-center mb-14">
               <h2 className="text-3xl font-black text-white sm:text-5xl">{c.screenshots.heading}</h2>
               <p className="mt-4 text-lg text-slate-400 max-w-2xl mx-auto">{c.screenshots.sub}</p>
             </div>
-
-            {/* Uniform 4-col grid — 1 col mobile */}
-            <div className="mx-auto max-w-6xl grid grid-cols-1 lg:grid-cols-4 gap-5">
-              {[
-                { src: '/screenshots/calendar.png', label: c.screenshots.labels.calendar, caption: c.screenshots.captions.calendar, dot: 'bg-emerald-500' },
-                { src: '/screenshots/list.png',     label: c.screenshots.labels.list,     caption: c.screenshots.captions.list,     dot: 'bg-teal-500' },
-                { src: '/screenshots/reports.png',  label: c.screenshots.labels.reports,  caption: c.screenshots.captions.reports,  dot: 'bg-amber-500' },
-                { src: '/screenshots/settings.png', label: c.screenshots.labels.settings, caption: c.screenshots.captions.settings, dot: 'bg-blue-500' },
-              ].map((s) => (
-                <div key={s.src} className="group flex flex-col">
-                  {/* macOS browser frame */}
-                  <div className="rounded-xl overflow-hidden shadow-[0_20px_60px_-10px_rgba(0,0,0,0.6)] ring-1 ring-white/10 transition-transform duration-300 group-hover:-translate-y-1 group-hover:shadow-[0_30px_70px_-10px_rgba(0,0,0,0.7)]">
-                    {/* Title bar */}
-                    <div className="bg-[#2a2a2e]/90 backdrop-blur-xs px-3 py-2 flex items-center gap-3 border-b border-white/5">
-                      <div className="flex items-center gap-1.5">
-                        <div className="h-2.5 w-2.5 rounded-full bg-[#ff5f57] shadow-[0_0_4px_#ff5f57aa]" />
-                        <div className="h-2.5 w-2.5 rounded-full bg-[#febc2e] shadow-[0_0_4px_#febc2eaa]" />
-                        <div className="h-2.5 w-2.5 rounded-full bg-[#28c840] shadow-[0_0_4px_#28c840aa]" />
-                      </div>
-                      <div className="flex-1 bg-[#3a3a3e]/70 rounded-md h-4 flex items-center justify-center">
-                        <span className="text-[9px] text-slate-500 font-medium tracking-tight">hujuzatk.com</span>
-                      </div>
-                    </div>
-                    {/* Screenshot */}
-                    <img src={s.src} alt={s.label} className="w-full block" loading="lazy" />
-                  </div>
-                  <div className="mt-3 flex items-start gap-2 px-1">
-                    <span className={cn('mt-1.5 h-2 w-2 rounded-full shrink-0', s.dot)} />
-                    <div>
-                      <p className="text-sm font-black text-white leading-tight">{s.label}</p>
-                      <p className="text-xs text-slate-500 mt-0.5">{s.caption}</p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <ShowcaseSlider
+              slides={[
+                { src: '/screenshots/calendar.png', label: c.screenshots.labels.calendar, caption: c.screenshots.captions.calendar, featureIndices: [0, 2, 5, 4] },
+                { src: '/screenshots/list.png',     label: c.screenshots.labels.list,     caption: c.screenshots.captions.list,     featureIndices: [1, 7, 3, 4] },
+                { src: '/screenshots/reports.png',  label: c.screenshots.labels.reports,  caption: c.screenshots.captions.reports,  featureIndices: [3, 7, 0, 5] },
+                { src: '/screenshots/settings.png', label: c.screenshots.labels.settings, caption: c.screenshots.captions.settings, featureIndices: [2, 4, 1, 6] },
+              ]}
+              features={c.features.items}
+            />
           </div>
         </section>
 
@@ -1191,6 +1163,159 @@ export function LandingPage() {
           onStart={handlePromoStart}
         />
       )}
+    </div>
+  );
+}
+
+// -------- ShowcaseSlider --------
+
+interface SlideItem {
+  src: string;
+  label: string;
+  caption: string;
+  featureIndices: number[];
+}
+
+interface ShowcaseSliderProps {
+  slides: SlideItem[];
+  features: { title: string; desc: string }[];
+}
+
+function FeatureBadge({ icon: Icon, title }: { icon: React.ComponentType<any>; title: string }) {
+  return (
+    <div className="flex items-center gap-3 bg-slate-800 border border-slate-700 rounded-2xl px-4 py-3 w-full hover:border-emerald-500/40 transition-colors">
+      <div className="flex-shrink-0 w-8 h-8 rounded-xl bg-emerald-500/15 flex items-center justify-center text-emerald-400">
+        <Icon size={16} weight="duotone" />
+      </div>
+      <span className="text-xs font-black text-slate-300 leading-tight">{title}</span>
+    </div>
+  );
+}
+
+function ShowcaseSlider({ slides, features }: ShowcaseSliderProps) {
+  const [active, setActive] = useState(0);
+
+  useEffect(() => {
+    const id = setInterval(() => setActive(i => (i + 1) % slides.length), 4000);
+    return () => clearInterval(id);
+  }, [slides.length]);
+
+  const slide = slides[active];
+  const leftIndices = slide.featureIndices.slice(0, 2);
+  const rightIndices = slide.featureIndices.slice(2, 4);
+
+  return (
+    <div className="space-y-8">
+      {/* Desktop: 3-column layout with feature badges on sides */}
+      <div className="hidden lg:grid grid-cols-[200px_1fr_200px] gap-6 items-center">
+        {/* Left badges */}
+        <div className="flex flex-col gap-3">
+          {leftIndices.map(idx => (
+            <FeatureBadge key={idx} icon={FEATURE_ICONS[idx]} title={features[idx]?.title ?? ''} />
+          ))}
+        </div>
+
+        {/* Mac frame */}
+        <div className="rounded-2xl overflow-hidden shadow-2xl shadow-black/60 border border-slate-700">
+          {/* Title bar */}
+          <div className="bg-slate-800 border-b border-slate-700 px-4 py-2.5 flex items-center gap-3">
+            <div className="flex gap-1.5">
+              <div className="w-3 h-3 rounded-full bg-red-500/80" />
+              <div className="w-3 h-3 rounded-full bg-yellow-500/80" />
+              <div className="w-3 h-3 rounded-full bg-green-500/80" />
+            </div>
+            <div className="flex-1 bg-slate-700 rounded-md px-3 py-1 text-[10px] text-slate-400 font-mono text-center">
+              hujuzatk.com
+            </div>
+          </div>
+          {/* Screenshot */}
+          <div className="relative bg-slate-950 aspect-[16/10] overflow-hidden">
+            {slides.map((s, i) => (
+              <img
+                key={i}
+                src={s.src}
+                alt={s.label}
+                className={cn(
+                  'absolute inset-0 w-full h-full object-cover object-top transition-opacity duration-700',
+                  i === active ? 'opacity-100' : 'opacity-0',
+                )}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* Right badges */}
+        <div className="flex flex-col gap-3">
+          {rightIndices.map(idx => (
+            <FeatureBadge key={idx} icon={FEATURE_ICONS[idx]} title={features[idx]?.title ?? ''} />
+          ))}
+        </div>
+      </div>
+
+      {/* Mobile: mac frame + 2×2 badge grid */}
+      <div className="lg:hidden space-y-6">
+        <div className="rounded-2xl overflow-hidden shadow-xl shadow-black/60 border border-slate-700">
+          <div className="bg-slate-800 border-b border-slate-700 px-4 py-2.5 flex items-center gap-3">
+            <div className="flex gap-1.5">
+              <div className="w-2.5 h-2.5 rounded-full bg-red-500/80" />
+              <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/80" />
+              <div className="w-2.5 h-2.5 rounded-full bg-green-500/80" />
+            </div>
+            <div className="flex-1 bg-slate-700 rounded-md px-3 py-1 text-[10px] text-slate-400 font-mono text-center">
+              hujuzatk.com
+            </div>
+          </div>
+          <div className="relative bg-slate-950 aspect-[16/10] overflow-hidden">
+            {slides.map((s, i) => (
+              <img
+                key={i}
+                src={s.src}
+                alt={s.label}
+                className={cn(
+                  'absolute inset-0 w-full h-full object-cover object-top transition-opacity duration-700',
+                  i === active ? 'opacity-100' : 'opacity-0',
+                )}
+              />
+            ))}
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          {slide.featureIndices.map(idx => (
+            <FeatureBadge key={idx} icon={FEATURE_ICONS[idx]} title={features[idx]?.title ?? ''} />
+          ))}
+        </div>
+      </div>
+
+      {/* Caption + dots */}
+      <div className="flex flex-col items-center gap-4">
+        <p className="text-sm font-bold text-slate-400 text-center">{slide.caption}</p>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setActive(i => (i - 1 + slides.length) % slides.length)}
+            className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white transition-colors"
+          >
+            <CaretLeft size={14} weight="bold" />
+          </button>
+          <div className="flex gap-1.5">
+            {slides.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => setActive(i)}
+                className={cn(
+                  'rounded-full transition-all duration-300',
+                  i === active ? 'w-6 h-2 bg-emerald-500' : 'w-2 h-2 bg-slate-600 hover:bg-slate-500',
+                )}
+              />
+            ))}
+          </div>
+          <button
+            onClick={() => setActive(i => (i + 1) % slides.length)}
+            className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white transition-colors"
+          >
+            <CaretRight size={14} weight="bold" />
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
