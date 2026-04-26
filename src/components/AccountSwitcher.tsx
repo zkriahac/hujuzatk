@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ArrowsClockwise, Check, GearSix, Plus, SignOut, UserGear, X } from 'phosphor-react';
+import { ArrowsClockwise, Check, GearSix, Plus, SignOut, UserGear, Users, X } from 'phosphor-react';
 import { cn } from '../utils/cn';
 import { t, type Language } from '../lib/i18n';
 import { addAccount, getAccounts, removeAccount, setActive, type LinkedAccount } from '../lib/accountStore';
@@ -18,11 +18,8 @@ interface Props {
 
 export default function AccountSwitcher({ lang, isRtl, currentTenantId, session, onLogout, onNavigate }: Props) {
   const [open, setOpen] = useState(false);
-  const [accounts, setAccounts] = useState<LinkedAccount[]>([]);
-  const [showAdd, setShowAdd] = useState(false);
+  const [showSwitch, setShowSwitch] = useState(false);
   const ref = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => { setAccounts(getAccounts()); }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -33,17 +30,6 @@ export default function AccountSwitcher({ lang, isRtl, currentTenantId, session,
     return () => document.removeEventListener('mousedown', onClick);
   }, [open]);
 
-  const handleSwitch = (id: string) => {
-    if (id === currentTenantId) return;
-    setActive(id);
-  };
-
-  const handleRemove = (id: string) => {
-    removeAccount(id);
-    setAccounts(getAccounts());
-  };
-
-  // Plan / subscription badge logic (mirrors TenantApp)
   const daysUntilExpiry = session.tenant.validUntil
     ? Math.ceil((new Date(session.tenant.validUntil).getTime() - Date.now()) / 86400000)
     : null;
@@ -62,6 +48,7 @@ export default function AccountSwitcher({ lang, isRtl, currentTenantId, session,
     status === 'ACTIVE' ? 'bg-emerald-500' : 'bg-blue-500';
 
   const initial = (session.tenant.name || 'H')[0].toUpperCase();
+
   return (
     <div className="relative" ref={ref}>
       <button
@@ -73,9 +60,7 @@ export default function AccountSwitcher({ lang, isRtl, currentTenantId, session,
       </button>
 
       {open && (
-        <div className={cn(
-          'absolute top-full mt-2 z-100 bg-white rounded-2xl border border-slate-200 shadow-2xl py-2 w-72 end-0',
-        )}>
+        <div className="absolute top-full mt-2 z-100 bg-white rounded-2xl border border-slate-200 shadow-2xl py-2 w-72 end-0">
 
           {/* ── Profile card ── */}
           <div className="px-4 py-3 flex items-start gap-3">
@@ -124,43 +109,13 @@ export default function AccountSwitcher({ lang, isRtl, currentTenantId, session,
 
           <div className="border-t border-slate-100 my-1" />
 
-          {/* ── Linked accounts ── */}
-          <div className="px-4 py-1.5 text-[10px] font-black uppercase tracking-widest text-slate-400">
-            {t(lang, 'account.linkedAccounts')}
-          </div>
-          {accounts.length === 0 && (
-            <div className="px-4 py-2 text-xs text-slate-400">{t(lang, 'account.noLinkedYet')}</div>
-          )}
-          {accounts.map((a) => {
-            const active = a.tenantId === currentTenantId;
-            return (
-              <div
-                key={a.tenantId}
-                className={cn('group flex items-center gap-2 px-3 py-2 text-xs transition-colors', active ? 'bg-emerald-50' : 'hover:bg-slate-50')}
-              >
-                <button onClick={() => handleSwitch(a.tenantId)} className="flex-1 text-start min-w-0">
-                  <div className="font-black text-slate-800 truncate">{a.name}</div>
-                  <div className="text-[10px] text-slate-400 truncate">{a.email}</div>
-                </button>
-                {active && <Check size={14} weight="bold" className="text-emerald-600 shrink-0" />}
-                {!active && (
-                  <button
-                    onClick={() => handleRemove(a.tenantId)}
-                    className="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-red-500 transition-all p-1"
-                    title={t(lang, 'account.remove')}
-                  >
-                    <SignOut size={14} weight="bold" />
-                  </button>
-                )}
-              </div>
-            );
-          })}
-
+          {/* ── Switch account ── */}
           <button
-            onClick={() => { setShowAdd(true); setOpen(false); }}
-            className="w-full px-4 py-2.5 text-xs font-black text-emerald-600 hover:bg-emerald-50 transition-colors flex items-center gap-2"
+            onClick={() => { setShowSwitch(true); setOpen(false); }}
+            className="w-full px-4 py-2.5 text-[11px] font-black uppercase tracking-widest text-slate-500 hover:text-slate-800 hover:bg-slate-50 transition-colors flex items-center gap-2.5 text-start"
           >
-            {t(lang, 'account.addAnother')}
+            <Users size={15} weight="bold" />
+            {t(lang, 'account.switch')}
           </button>
 
           <div className="border-t border-slate-100 my-1" />
@@ -176,14 +131,116 @@ export default function AccountSwitcher({ lang, isRtl, currentTenantId, session,
         </div>
       )}
 
-      {showAdd && (
-        <AddAccountModal
+      {showSwitch && (
+        <SwitchAccountModal
           lang={lang}
           isRtl={isRtl}
-          onClose={() => setShowAdd(false)}
-          onAdded={() => { setShowAdd(false); setAccounts(getAccounts()); }}
+          currentTenantId={currentTenantId}
+          session={session}
+          onClose={() => setShowSwitch(false)}
+          onSwitch={(id) => { setActive(id); setShowSwitch(false); }}
         />
       )}
+    </div>
+  );
+}
+
+function SwitchAccountModal({
+  lang, isRtl, currentTenantId, session, onClose, onSwitch,
+}: {
+  lang: Language; isRtl: boolean; currentTenantId: string | null;
+  session: SessionUser; onClose: () => void; onSwitch: (id: string) => void;
+}) {
+  const [accounts, setAccounts] = useState<LinkedAccount[]>(getAccounts());
+  const [showAdd, setShowAdd] = useState(false);
+
+  const handleRemove = (id: string) => {
+    removeAccount(id);
+    setAccounts(getAccounts());
+  };
+
+  if (showAdd) {
+    return (
+      <AddAccountModal
+        lang={lang}
+        isRtl={isRtl}
+        onClose={() => setShowAdd(false)}
+        onAdded={() => { setShowAdd(false); setAccounts(getAccounts()); }}
+      />
+    );
+  }
+
+  const initial = (session.tenant.name || 'H')[0].toUpperCase();
+
+  return (
+    <div
+      className="fixed inset-0 z-[200] bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4"
+      onClick={onClose}
+      dir={isRtl ? 'rtl' : 'ltr'}
+    >
+      <div
+        className="bg-white rounded-[2rem] shadow-2xl max-w-sm w-full overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 pt-5 pb-3">
+          <h3 className="text-base font-black text-slate-900">{t(lang, 'account.switch')}</h3>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-700 p-1">
+            <X size={18} weight="bold" />
+          </button>
+        </div>
+
+        <div className="px-3 pb-2 space-y-1">
+          {/* Current session (always shown first) */}
+          <div className="flex items-center gap-3 px-3 py-3 rounded-2xl bg-emerald-50 border border-emerald-100">
+            <div className="w-9 h-9 rounded-full bg-emerald-600 text-white font-black text-base flex items-center justify-center shrink-0">
+              {initial}
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="font-black text-slate-900 text-sm truncate">{session.tenant.name}</div>
+              <div className="text-[10px] text-slate-400 truncate">{session.tenant.email}</div>
+            </div>
+            <Check size={16} weight="bold" className="text-emerald-600 shrink-0" />
+          </div>
+
+          {/* Linked accounts */}
+          {accounts.filter(a => a.tenantId !== currentTenantId).map((a) => (
+            <div key={a.tenantId} className="group flex items-center gap-3 px-3 py-3 rounded-2xl hover:bg-slate-50 transition-colors">
+              <div className="w-9 h-9 rounded-full bg-slate-200 text-slate-600 font-black text-base flex items-center justify-center shrink-0">
+                {(a.name || '?')[0].toUpperCase()}
+              </div>
+              <button onClick={() => onSwitch(a.tenantId)} className="flex-1 text-start min-w-0">
+                <div className="font-black text-slate-800 text-sm truncate">{a.name}</div>
+                <div className="text-[10px] text-slate-400 truncate">{a.email}</div>
+              </button>
+              <button
+                onClick={() => handleRemove(a.tenantId)}
+                className="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-red-500 transition-all p-1 shrink-0"
+                title={t(lang, 'account.remove')}
+              >
+                <X size={13} weight="bold" />
+              </button>
+            </div>
+          ))}
+
+          {accounts.filter(a => a.tenantId !== currentTenantId).length === 0 && (
+            <p className="text-xs text-slate-400 px-3 py-2">{t(lang, 'account.noLinkedYet')}</p>
+          )}
+        </div>
+
+        {/* Add account */}
+        <div className="px-3 pb-4">
+          <button
+            onClick={() => setShowAdd(true)}
+            className="w-full flex items-center gap-3 px-3 py-3 rounded-2xl border border-dashed border-slate-200 text-slate-500 hover:border-emerald-400 hover:text-emerald-600 hover:bg-emerald-50/50 transition-colors"
+          >
+            <div className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center shrink-0">
+              <Plus size={16} weight="bold" />
+            </div>
+            <span className="text-sm font-black">{t(lang, 'account.addAnother')}</span>
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

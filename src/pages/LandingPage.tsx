@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import {
   Calendar, FileText, Globe, ChartPie, DeviceMobile, Database,
   ArrowRight, Buildings, Check, Star, ShieldCheck, Sparkle,
-  List, X, CaretDown, ArrowsClockwise,
+  List, X, CaretDown, ArrowsClockwise, Receipt,
 } from 'phosphor-react';
 import { authService } from '../lib/authService';
 import { trackCTA, trackWorkspaceSearch } from '../lib/analytics';
@@ -40,6 +40,7 @@ const content = {
         { title: 'Installable Mobile App', desc: 'Install Hujuzatk to your phone\'s home screen in one tap — works offline, sends push notifications, no App Store or Play Store download needed.' },
         { title: 'Auto-Sync External Bookings', desc: 'Nightly + on-demand iCal sync from Airbnb, Gathern, and Booking.com. New reservations appear in your calendar automatically — no copy-paste.' },
         { title: 'Enterprise Scaling', desc: 'Start locally with high-speed Dexie DB and upgrade to PostgreSQL (Supabase) in seconds. Your data, your control.' },
+        { title: 'Expense Tracking', desc: 'Log property expenses by room or category — maintenance, cleaning, utilities, and more. Monthly and annual breakdowns sit alongside your revenue so you always know your real margin.' },
       ],
     },
     trust: {
@@ -87,7 +88,7 @@ const content = {
           price: 0,
           priceLabel: 'Free for 14 days',
           tagline: 'Try every core feature',
-          features: ['3 Rooms', 'Unlimited Bookings', 'Reports', 'Multi-Language (AR/EN/TR)', 'Installable App', '5-Year Calendar'],
+          features: ['3 Rooms', 'Unlimited Bookings', 'Reports', 'Expense Tracking', 'Multi-Language (AR/EN/TR)', 'Installable App', '5-Year Calendar'],
           cta: 'Start Free Trial',
           recommended: false,
         },
@@ -97,7 +98,7 @@ const content = {
           price: 40,
           oldPrice: 50,
           tagline: 'Perfect for small properties — no channel sync',
-          features: ['30 Rooms', 'Full Reporting Suite', 'Multi-Language (AR/EN/TR)', 'Installable App', '5-Year Calendar'],
+          features: ['30 Rooms', 'Full Reporting Suite', 'Expense Tracking', 'Multi-Language (AR/EN/TR)', 'Installable App', '5-Year Calendar'],
           cta: 'Start Free Trial',
           recommended: false,
         },
@@ -177,6 +178,7 @@ const content = {
         { title: 'تطبيق جوال قابل للتثبيت', desc: 'ثبّت حجوزاتك على شاشتك الرئيسية بنقرة واحدة — يعمل بدون إنترنت، ويرسل إشعارات، بدون الحاجة لتحميل من App Store أو Play Store.' },
         { title: 'مزامنة تلقائية للحجوزات الخارجية', desc: 'مزامنة ليلية وعند الطلب لتقويم Airbnb وجاذبين وBooking.com. الحجوزات الجديدة تظهر تلقائياً في تقويمك — دون أي نسخ ولصق.' },
         { title: 'قابلية توسع المؤسسات', desc: 'ابدأ محلياً مع Dexie DB عالية السرعة وانتقل إلى PostgreSQL في ثوانٍ. بياناتك، تحكمك.' },
+        { title: 'تتبع المصروفات', desc: 'سجّل نفقات العقار حسب الغرفة أو الفئة — صيانة، تنظيف، مرافق، وأكثر. تقارير شهرية وسنوية تُظهر مصروفاتك جنباً إلى جنب مع إيراداتك حتى تعرف هامش ربحك الحقيقي.' },
       ],
     },
     trust: {
@@ -224,7 +226,7 @@ const content = {
           price: 0,
           priceLabel: 'مجاناً 14 يوماً',
           tagline: 'جرب كل الميزات الأساسية',
-          features: ['3 غرف', 'حجوزات غير محدودة', 'تقارير', 'متعدد اللغات (AR/EN/TR)', 'تطبيق قابل للتثبيت', 'تقويم 5 سنوات'],
+          features: ['3 غرف', 'حجوزات غير محدودة', 'تقارير', 'تتبع المصروفات', 'متعدد اللغات (AR/EN/TR)', 'تطبيق قابل للتثبيت', 'تقويم 5 سنوات'],
           cta: 'ابدأ التجربة المجانية',
           recommended: false,
         },
@@ -234,7 +236,7 @@ const content = {
           price: 40,
           oldPrice: 50,
           tagline: 'مثالي للعقارات الصغيرة — بدون مزامنة القنوات',
-          features: ['30 غرفة', 'مجموعة تقارير كاملة', 'متعدد اللغات (AR/EN/TR)', 'تطبيق قابل للتثبيت', 'تقويم 5 سنوات'],
+          features: ['30 غرفة', 'مجموعة تقارير كاملة', 'تتبع المصروفات', 'متعدد اللغات (AR/EN/TR)', 'تطبيق قابل للتثبيت', 'تقويم 5 سنوات'],
           cta: 'ابدأ التجربة المجانية',
           recommended: false,
         },
@@ -314,6 +316,7 @@ const content = {
         { title: 'Telefona Kurulabilir', desc: "Hujuzatk'ı tek dokunuşla ana ekrana ekleyin — çevrimdışı çalışır, bildirim gönderir, App Store veya Play Store indirmeye gerek yok." },
         { title: 'Harici Rezervasyonları Otomatik Senkronize Et', desc: "Airbnb, Gathern ve Booking.com'dan gecelik ve talep üzerine iCal senkronizasyonu. Yeni rezervasyonlar otomatik olarak takviminizde belirir — kopyala-yapıştır yok." },
         { title: 'Kurumsal Ölçeklendirme', desc: 'Yerel yüksek hızlı Dexie DB ile başlayın, saniyeler içinde PostgreSQL\'e geçin. Verileriniz, kontrolünüz.' },
+        { title: 'Gider Takibi', desc: 'Mülk giderlerini oda veya kategoriye göre kaydedin — bakım, temizlik, faturalar ve daha fazlası. Aylık ve yıllık özetler gelirinizin yanında göründüğünde gerçek kâr marjınızı her zaman bilirsiniz.' },
       ],
     },
     trust: {
@@ -361,7 +364,7 @@ const content = {
           price: 0,
           priceLabel: '14 gün ücretsiz',
           tagline: 'Tüm temel özellikleri deneyin',
-          features: ['3 Oda', 'Sınırsız Rezervasyon', 'Raporlar', 'Çoklu Dil (AR/EN/TR)', 'Kurulabilir Uygulama', '5 Yıllık Takvim'],
+          features: ['3 Oda', 'Sınırsız Rezervasyon', 'Raporlar', 'Gider Takibi', 'Çoklu Dil (AR/EN/TR)', 'Kurulabilir Uygulama', '5 Yıllık Takvim'],
           cta: 'Ücretsiz Denemeye Başla',
           recommended: false,
         },
@@ -371,7 +374,7 @@ const content = {
           price: 40,
           oldPrice: 50,
           tagline: 'Küçük mülkler için ideal — kanal senkronu yok',
-          features: ['30 Oda', 'Tam Raporlama', 'Çoklu Dil (AR/EN/TR)', 'Kurulabilir Uygulama', '5 Yıllık Takvim'],
+          features: ['30 Oda', 'Tam Raporlama', 'Gider Takibi', 'Çoklu Dil (AR/EN/TR)', 'Kurulabilir Uygulama', '5 Yıllık Takvim'],
           cta: 'Ücretsiz Denemeye Başla',
           recommended: false,
         },
@@ -430,8 +433,8 @@ const content = {
   },
 };
 
-// Order matches features.items array: Calendar, Invoicing, Arabic+RTL, Financial, Installable, AutoSync, Enterprise
-const FEATURE_ICONS = [Calendar, FileText, Globe, ChartPie, DeviceMobile, ArrowsClockwise, Database];
+// Order matches features.items array: Calendar, Invoicing, Arabic+RTL, Financial, Installable, AutoSync, Enterprise, Expenses
+const FEATURE_ICONS = [Calendar, FileText, Globe, ChartPie, DeviceMobile, ArrowsClockwise, Database, Receipt];
 
 // -------- SEO helpers --------
 
@@ -528,8 +531,8 @@ function applySEO(lang: Lang) {
         : 'Basic $40/year (30 rooms, no sync), Pro $90/year (20 rooms + channel sync), Enterprise $140/year (50 rooms + channel sync). 14-day free trial included.',
     },
     featureList: isAr
-      ? ['تقويم حجوزات 5 سنوات', 'فوترة PDF تلقائية', 'دعم العربية RTL', 'تحليلات مالية', 'تطبيق جوال قابل للتثبيت', 'تكامل قنوات (Airbnb / جاذبين / Booking.com)', 'إدارة متعددة المستأجرين', 'دعم متعدد العملات', 'إدارة الضيوف', 'تتبع الإشغال']
-      : ['5-Year Booking Calendar', 'Automated PDF Invoicing', 'Arabic RTL Support', 'Financial Analytics', 'Installable Mobile Web App', 'Channel Integrations (Airbnb / Gathern / Booking.com)', 'Multi-tenant Architecture', 'Multi-currency Support', 'Guest Management', 'Occupancy Tracking'],
+      ? ['تقويم حجوزات 5 سنوات', 'فوترة PDF تلقائية', 'دعم العربية RTL', 'تحليلات مالية', 'تتبع المصروفات', 'تطبيق جوال قابل للتثبيت', 'تكامل قنوات (Airbnb / جاذبين / Booking.com)', 'إدارة متعددة المستأجرين', 'دعم متعدد العملات', 'إدارة الضيوف', 'تتبع الإشغال']
+      : ['5-Year Booking Calendar', 'Automated PDF Invoicing', 'Expense Tracking', 'Arabic RTL Support', 'Financial Analytics', 'Installable Mobile Web App', 'Channel Integrations (Airbnb / Gathern / Booking.com)', 'Multi-tenant Architecture', 'Multi-currency Support', 'Guest Management', 'Occupancy Tracking'],
     screenshot: 'https://hujuzatk.com/og-image.png',
     aggregateRating: {
       '@type': 'AggregateRating',
