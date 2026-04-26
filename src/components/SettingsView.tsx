@@ -1,11 +1,14 @@
 import { useState } from 'react';
-import { Globe, Layout, X, CurrencyDollar, Buildings } from 'phosphor-react';
+import { Globe, Layout, X, CurrencyDollar, Buildings, Crown, Check, Calendar } from 'phosphor-react';
 import { authService } from '../lib/authService';
 import type { SessionUser } from '../lib/authService';
 import { t, type Language } from '../lib/i18n';
 import type { Tenant } from '../db';
 import { apolloClient } from '../lib/apolloClient';
 import { UPDATE_TENANT_SETTINGS_MUTATION } from '../lib/graphql';
+import { PLANS, type PlanKey, isUnlimited } from '../lib/planConfig';
+import { formatTz } from '../utils/formatTz';
+import { cn } from '../utils/cn';
 
 interface CompanyForm {
   companyName: string;
@@ -110,8 +113,100 @@ export default function SettingsView({ session, onSessionChange, lang }: Setting
     }
   };
 
+  // ---- Plan + subscription summary ----------------------------------------
+  // Pulled from PLANS constants + tenant.{plan, validUntil, subscriptionStatus}.
+  // Shown at the very top of Settings so users can see what they're paying for
+  // and when it expires without searching for it elsewhere.
+  const planKey: PlanKey = ((session.tenant.plan as PlanKey) || 'trial');
+  const planConfig = PLANS[planKey] || PLANS.trial;
+  const usedRooms = (session.tenant.rooms || []).length;
+  const planRoomsLabel = isUnlimited(planConfig.maxRooms) ? '∞' : String(planConfig.maxRooms);
+  const validUntil = session.tenant.validUntil;
+  const daysUntilExpiry = validUntil
+    ? Math.ceil((new Date(validUntil).getTime() - Date.now()) / 86400000)
+    : null;
+  const subStatus = session.tenant.subscriptionStatus;
+  const subDot =
+    daysUntilExpiry !== null && daysUntilExpiry < 0 ? 'bg-red-500'
+    : daysUntilExpiry !== null && daysUntilExpiry <= 7 ? 'bg-amber-500'
+    : subStatus === 'ACTIVE' ? 'bg-emerald-500'
+    : subStatus === 'TRIAL' ? 'bg-blue-500'
+    : 'bg-slate-400';
+
+  const planFeatures: string[] = [
+    `${t(lang, 'plan.upTo')} ${planRoomsLabel} ${t(lang, 'plan.rooms')}`,
+    planConfig.integrationsEnabled
+      ? t(lang, 'plan.integrationsIncluded')
+      : t(lang, 'plan.integrationsNotIncluded'),
+    t(lang, 'plan.unlimitedBookings'),
+    t(lang, 'plan.fullReports'),
+  ];
+
   return (
     <div className="max-w-4xl mx-auto space-y-8 pb-20">
+      {/* Plan card — what they're on, what's included, when it expires */}
+      <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-xl p-6 sm:p-7">
+        <div className="flex items-start justify-between gap-4 flex-wrap">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+              <Crown size={24} weight="duotone" />
+            </div>
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">{t(lang, 'plan.currentPlan')}</p>
+              <h2 className="text-2xl font-black text-slate-900 capitalize">
+                {t(lang, `plan.${planKey}`)}
+              </h2>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 bg-slate-50 px-4 py-2 rounded-2xl">
+            <span className={cn('w-2 h-2 rounded-full', subDot)} />
+            <div className="text-end">
+              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 leading-tight">
+                {t(lang, `status.${(subStatus || '').toLowerCase()}`)}
+              </p>
+              {validUntil && (
+                <p className="text-xs font-black text-slate-700 leading-tight mt-0.5 flex items-center gap-1">
+                  <Calendar size={11} weight="bold" className="text-slate-400" />
+                  {formatTz(validUntil, 'yyyy-MM-dd', tenant.timezone || 'Asia/Muscat', lang)}
+                  {daysUntilExpiry !== null && daysUntilExpiry >= 0 && (
+                    <span className="text-slate-400 font-semibold">
+                      ({daysUntilExpiry} {t(lang, 'plan.daysLeft')})
+                    </span>
+                  )}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+        <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          {planFeatures.map((line, i) => (
+            <div key={i} className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+              <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
+                <Check size={12} weight="bold" />
+              </div>
+              <span>{line}</span>
+            </div>
+          ))}
+        </div>
+        {/* Quota indicator */}
+        <div className="mt-5 pt-5 border-t border-slate-100 flex items-center justify-between gap-3 flex-wrap">
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">{t(lang, 'plan.roomsUsed')}</p>
+            <p className="text-lg font-black text-slate-800 tabular-nums">{usedRooms} / {planRoomsLabel}</p>
+          </div>
+          {planKey !== 'enterprise' && (
+            <a
+              href="https://wa.me/905523205496?text=I%27d%20like%20to%20upgrade%20my%20Hujuzatk%20plan"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs font-black uppercase tracking-widest text-emerald-600 hover:text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-4 py-2 rounded-2xl transition-colors"
+            >
+              {t(lang, 'plan.upgrade')}
+            </a>
+          )}
+        </div>
+      </div>
+
       <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-xl p-5">
         <h2 className="text-2xl font-black text-slate-900 mb-8 flex items-center gap-3">
           <Globe size={28} className="text-emerald-500" />

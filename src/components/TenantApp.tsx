@@ -417,8 +417,9 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
     window.location.href = '/';
   };
 
-  // Subscription badge — visible on every viewport size. Within 7 days of expiry it
-  // turns amber and shows "Expires in N days"; expired turns red.
+  // Subscription badge — minimal status pill. The expiry date and full plan
+  // breakdown live in the Settings → Plan card; the header just shows whether
+  // the account is active so users can see at a glance.
   const daysUntilExpiry = session.tenant.validUntil
     ? Math.ceil((new Date(session.tenant.validUntil).getTime() - Date.now()) / 86400000)
     : null;
@@ -426,7 +427,6 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
   const isExpired = daysUntilExpiry !== null && daysUntilExpiry < 0;
   const subscriptionBadge = (() => {
     const status = session.tenant.subscriptionStatus;
-    const validUntil = session.tenant.validUntil;
     const label = t(lang, `status.${status.toLowerCase()}`);
     const color =
       isExpired ? 'bg-red-100 text-red-700' :
@@ -435,16 +435,10 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
       status === 'TRIAL'  ? 'bg-blue-100 text-blue-700' :
       'bg-slate-100 text-slate-600';
     const dot = isExpired ? 'bg-red-500' : isExpiring ? 'bg-amber-500' : status === 'ACTIVE' ? 'bg-emerald-500' : 'bg-blue-500';
-    const detailText = isExpiring && daysUntilExpiry !== null
-      ? ` • ${daysUntilExpiry === 0 ? 'today' : `${daysUntilExpiry}d`}`
-      : isExpired ? ` • expired`
-      : validUntil ? ` • ${formatTz(validUntil, 'yyyy-MM-dd', tz, lang)}`
-      : '';
     return (
       <span className={cn('inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-black uppercase mx-2', color)}>
         <span className={cn('w-1.5 h-1.5 rounded-full', dot)} />
-        <span className="hidden sm:inline">{label}{detailText}</span>
-        <span className="sm:hidden">{isExpiring ? `${daysUntilExpiry}d` : label}</span>
+        <span>{label}</span>
       </span>
     );
   })();
