@@ -180,7 +180,7 @@ export default function CalendarView({
                     key={r.id}
                     style={{ width: colW, minWidth: colW }}
                     className={cn(
-                      'p-1 sm:p-3 border-b border-r border-slate-200 text-[md] sm:text-sm font-black uppercase tracking-widest text-center whitespace-nowrap',
+                      'p-1 sm:p-3 border-b border-r border-slate-200 text-[10px] sm:text-xs font-black uppercase tracking-widest text-center whitespace-nowrap',
                       ROOM_GROUP_PALETTES[roomPaletteMap[r.id] ?? 0].header,
                     )}
                   >
@@ -233,7 +233,7 @@ export default function CalendarView({
                       <td
                         onClick={() => setSelectedDateStr(dStr)}
                         className={cn(
-                          'w-10 sm:w-24 border-slate-200 text-center text-[7px] sm:text-[12px] font-black cursor-pointer sticky z-30 transition-colors p-0 sm:p-2 whitespace-nowrap',
+                          'w-10 sm:w-24 border-slate-200 text-center text-[10px] sm:text-[12px] font-black cursor-pointer sticky z-30 transition-colors p-0 sm:p-2 whitespace-nowrap',
                           isRtl ? 'right-0 border-l' : 'left-0 border-r',
                           isToday
                             ? 'bg-emerald-600 text-white shadow-xl scale-105 z-40'
