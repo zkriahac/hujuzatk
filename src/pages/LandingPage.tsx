@@ -146,12 +146,14 @@ const content = {
         settings: 'Settings',
         reports: 'Financial Reports',
         list: 'Reservations List',
+        expense: 'Expense Tracking',
       },
       captions: {
         calendar: '5-year grid — scroll years in seconds',
         settings: 'Set Rooms and Local ',
         reports: 'Revenue, occupancy & fill-rate at a glance',
         list: 'Smart filters · search · status badges',
+        expense: 'Log costs by room or category — know your real margin',
       },
     },
   },
@@ -284,12 +286,14 @@ const content = {
         settings: 'اعدادات',
         reports: 'التقارير المالية',
         list: 'قائمة الحجوزات',
+        expense: 'تتبع المصروفات',
       },
       captions: {
         calendar: 'شبكة 5 سنوات — تصفح السنوات في ثوانٍ',
         settings: 'ضبط الإعدادات الضرورية',
         reports: 'الإيرادات والإشغال ومعدل الإشغال في لمحة',
         list: 'فلاتر ذكية · بحث · شارات الحالة',
+        expense: 'سجّل التكاليف حسب الغرفة أو الفئة — اعرف هامشك الحقيقي',
       },
     },
   },
@@ -422,12 +426,14 @@ const content = {
         settings: 'Ayarlar',
         reports: 'Finansal Raporlar',
         list: 'Rezervasyon Listesi',
+        expense: 'Gider Takibi',
       },
       captions: {
         calendar: '5 yıllık ızgara — saniyeler içinde yılları kaydırın',
         settings: 'Oda ve yerel ayarları yapılandırın',
         reports: 'Gelir, doluluk ve doluluk oranı bir bakışta',
         list: 'Akıllı filtreler · arama · durum rozetleri',
+        expense: 'Oda veya kategoriye göre maliyet kaydedin — gerçek marjınızı bilin',
       },
     },
   },
@@ -863,49 +869,75 @@ export function LandingPage() {
 
       <main>
         {/* Hero */}
-        <section className="relative overflow-hidden pt-32 pb-20 lg:pt-48 lg:pb-32">
+        <section className="relative overflow-hidden pt-32 pb-20 lg:pt-40 lg:pb-24">
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-full -z-10 pointer-events-none opacity-20">
             <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-emerald-400 rounded-full blur-[120px]" />
             <div className="absolute bottom-[10%] right-[-5%] w-[30%] h-[30%] bg-blue-400 rounded-full blur-[100px]" />
           </div>
-          <div className="container mx-auto px-6 text-center">
-            <div className="mx-auto mb-8 flex max-w-fit items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50/50 px-4 py-1.5 text-sm font-bold text-emerald-700 backdrop-blur-xs">
-              <Sparkle size={16} weight="fill" />
-              <span>{c.hero.badge}</span>
-            </div>
-            <h1 className="mx-auto max-w-5xl text-5xl font-black leading-[1.1] tracking-tight text-slate-900 sm:text-7xl lg:text-8xl">
-              {c.hero.headline} <br className="hidden lg:block" />
-              <span className="bg-gradient-to-r from-emerald-600 to-teal-500 bg-clip-text text-transparent italic">{c.hero.italic}</span>
-            </h1>
-            <p className="mx-auto mt-8 max-w-2xl text-lg font-medium leading-relaxed text-slate-600 sm:text-xl">{c.hero.sub}</p>
-            <div className="mx-auto mt-12 max-w-2xl">
-              <div className="group relative flex flex-col gap-3 rounded-2xl bg-white p-3 shadow-2xl shadow-slate-200 ring-1 ring-slate-200 sm:flex-row">
-                <div className="relative flex-grow">
-                  <div className={cn('absolute inset-y-0 flex items-center pointer-events-none text-slate-400 group-focus-within:text-emerald-500 transition-colors', lang === 'ar' ? 'right-5' : 'left-5')}>
-                    <Buildings size={20} />
+          <div className="container mx-auto px-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+              {/* Text column */}
+              <div className="flex flex-col items-start">
+                <div className="mb-8 flex max-w-fit items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50/50 px-4 py-1.5 text-sm font-bold text-emerald-700 backdrop-blur-xs">
+                  <Sparkle size={16} weight="fill" />
+                  <span>{c.hero.badge}</span>
+                </div>
+                <h1 className="text-5xl font-black leading-[1.1] tracking-tight text-slate-900 sm:text-6xl lg:text-7xl">
+                  {c.hero.headline}{' '}
+                  <span className="bg-gradient-to-r from-emerald-600 to-teal-500 bg-clip-text text-transparent italic">{c.hero.italic}</span>
+                </h1>
+                <p className="mt-8 max-w-xl text-lg font-medium leading-relaxed text-slate-600">{c.hero.sub}</p>
+                <div className="mt-10 w-full max-w-lg">
+                  <div className="group relative flex flex-col gap-3 rounded-2xl bg-white p-3 shadow-2xl shadow-slate-200 ring-1 ring-slate-200 sm:flex-row">
+                    <div className="relative flex-grow">
+                      <div className={cn('absolute inset-y-0 flex items-center pointer-events-none text-slate-400 group-focus-within:text-emerald-500 transition-colors', lang === 'ar' ? 'right-5' : 'left-5')}>
+                        <Buildings size={20} />
+                      </div>
+                      <input
+                        type="text"
+                        placeholder={c.hero.placeholder}
+                        className={cn('w-full h-14 rounded-[1.5rem] border-0 bg-slate-50 text-lg font-semibold text-slate-900 ring-0 focus:ring-2 focus:ring-emerald-500 transition-all placeholder:text-slate-400', lang === 'ar' ? 'pr-14 pl-6' : 'pl-14 pr-6')}
+                        value={workspaceName}
+                        onChange={(e) => setWorkspaceName(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleOpenWorkspace()}
+                      />
+                    </div>
+                    <button
+                      onClick={handleOpenWorkspace}
+                      className="h-14 flex items-center justify-center gap-3 rounded-[1.5rem] bg-emerald-600 px-10 text-lg font-bold text-white transition-all hover:bg-emerald-700 hover:shadow-xl hover:shadow-emerald-200 active:scale-95"
+                    >
+                      {c.hero.cta} <ArrowRight size={20} weight="bold" className={lang === 'ar' ? 'rotate-180' : ''} />
+                    </button>
                   </div>
-                  <input
-                    type="text"
-                    placeholder={c.hero.placeholder}
-                    className={cn('w-full h-14 rounded-[1.5rem] border-0 bg-slate-50 text-lg font-semibold text-slate-900 ring-0 focus:ring-2 focus:ring-emerald-500 transition-all placeholder:text-slate-400', lang === 'ar' ? 'pr-14 pl-6' : 'pl-14 pr-6')}
-                    value={workspaceName}
-                    onChange={(e) => setWorkspaceName(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleOpenWorkspace()}
+                  <div className="mt-6 flex flex-wrap items-center gap-6 text-sm font-bold text-slate-400 uppercase tracking-widest">
+                    {c.hero.pills.map((p, i) => (
+                      <span key={i} className="flex items-center gap-2">
+                        <Check size={18} weight="bold" className="text-emerald-500" /> {p}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Calendar Mac frame — desktop only */}
+              <div className="hidden lg:block">
+                <div className="rounded-2xl overflow-hidden shadow-2xl shadow-slate-300/60 ring-1 ring-slate-200">
+                  <div className="bg-slate-100 border-b border-slate-200 px-4 py-2.5 flex items-center gap-3">
+                    <div className="flex gap-1.5">
+                      <div className="w-3 h-3 rounded-full bg-red-400" />
+                      <div className="w-3 h-3 rounded-full bg-yellow-400" />
+                      <div className="w-3 h-3 rounded-full bg-green-500" />
+                    </div>
+                    <div className="flex-1 bg-white rounded-md px-3 py-1 text-[10px] text-slate-400 font-mono text-center border border-slate-200">
+                      hujuzatk.com
+                    </div>
+                  </div>
+                  <img
+                    src="/screenshots/calendar.png"
+                    alt={c.screenshots.labels.calendar}
+                    className="w-full object-cover object-top"
                   />
                 </div>
-                <button
-                  onClick={handleOpenWorkspace}
-                  className="h-14 flex items-center justify-center gap-3 rounded-[1.5rem] bg-emerald-600 px-10 text-lg font-bold text-white transition-all hover:bg-emerald-700 hover:shadow-xl hover:shadow-emerald-200 active:scale-95"
-                >
-                  {c.hero.cta} <ArrowRight size={20} weight="bold" className={lang === 'ar' ? 'rotate-180' : ''} />
-                </button>
-              </div>
-              <div className="mt-6 flex flex-wrap items-center justify-center gap-8 text-sm font-bold text-slate-400 uppercase tracking-widest">
-                {c.hero.pills.map((p, i) => (
-                  <span key={i} className="flex items-center gap-2">
-                    <Check size={18} weight="bold" className="text-emerald-500" /> {p}
-                  </span>
-                ))}
               </div>
             </div>
           </div>
@@ -920,10 +952,10 @@ export function LandingPage() {
             </div>
             <ShowcaseSlider
               slides={[
-                { src: '/screenshots/calendar.png', label: c.screenshots.labels.calendar, caption: c.screenshots.captions.calendar, featureIndices: [0, 2, 5, 4] },
                 { src: '/screenshots/list.png',     label: c.screenshots.labels.list,     caption: c.screenshots.captions.list,     featureIndices: [1, 7, 3, 4] },
-                { src: '/screenshots/reports.png',  label: c.screenshots.labels.reports,  caption: c.screenshots.captions.reports,  featureIndices: [3, 7, 0, 5] },
-                { src: '/screenshots/settings.png', label: c.screenshots.labels.settings, caption: c.screenshots.captions.settings, featureIndices: [2, 4, 1, 6] },
+                { src: '/screenshots/reports.png',  label: c.screenshots.labels.reports,  caption: c.screenshots.captions.reports,  featureIndices: [3, 6, 0, 5] },
+                { src: '/screenshots/expense.png',  label: c.screenshots.labels.expense,  caption: c.screenshots.captions.expense,  featureIndices: [7, 3, 1, 4] },
+                { src: '/screenshots/settings.png', label: c.screenshots.labels.settings, caption: c.screenshots.captions.settings, featureIndices: [2, 4, 6, 1] },
               ]}
               features={c.features.items}
             />
