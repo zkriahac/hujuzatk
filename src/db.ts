@@ -29,6 +29,15 @@ export interface Tenant {
   // Plan / quota
   plan?: string; // 'trial' | 'basic' | 'pro' | 'enterprise'
   maxRooms?: number; // Cap derived from plan; admin-overridable
+  // Company profile (for invoices) — lifted out of TenantSettings so the
+  // current session carries them without refetching settings every render.
+  companyName?: string | null;
+  companyAddress?: string | null;
+  companyPhone?: string | null;
+  companyEmail?: string | null;
+  companyTaxId?: string | null;
+  companyLogoUrl?: string | null;
+  invoiceFooter?: string | null;
   // Local-only password hash for Dexie mode (Supabase Auth is used in cloud mode)
   passwordHash?: string;
 }
@@ -40,6 +49,7 @@ export interface Booking {
   guestName: string;
   guestEmail?: string;
   guestPhone: string;
+  guestIdNumber?: string; // Civil/national/passport ID — optional
   city?: string;
   room: string;
   checkIn: string; // ISO DateTime

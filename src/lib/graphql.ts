@@ -28,6 +28,13 @@ export const ME_QUERY = gql`
         defaultTax
         notifyOnBooking
         notifyOnCancellation
+        companyName
+        companyAddress
+        companyPhone
+        companyEmail
+        companyTaxId
+        companyLogoUrl
+        invoiceFooter
       }
     }
   }
@@ -112,6 +119,7 @@ export const GET_BOOKINGS_QUERY = gql`
       guestName
       guestEmail
       guestPhone
+      guestIdNumber
       city
       room
       checkIn
@@ -138,6 +146,7 @@ export const GET_BOOKING_QUERY = gql`
       guestName
       guestEmail
       guestPhone
+      guestIdNumber
       city
       room
       checkIn
@@ -197,6 +206,7 @@ export const CREATE_BOOKING_MUTATION = gql`
       guestName
       guestEmail
       guestPhone
+      guestIdNumber
       city
       room
       checkIn
@@ -222,6 +232,7 @@ export const UPDATE_BOOKING_MUTATION = gql`
       guestName
       guestEmail
       guestPhone
+      guestIdNumber
       city
       room
       checkIn
@@ -329,6 +340,13 @@ export const UPDATE_TENANT_SETTINGS_MUTATION = gql`
       defaultTax
       notifyOnBooking
       notifyOnCancellation
+      companyName
+      companyAddress
+      companyPhone
+      companyEmail
+      companyTaxId
+      companyLogoUrl
+      invoiceFooter
     }
   }
 `;

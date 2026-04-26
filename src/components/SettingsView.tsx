@@ -1,11 +1,21 @@
 import { useState } from 'react';
-import { Globe, Layout, X, CurrencyDollar } from 'phosphor-react';
+import { Globe, Layout, X, CurrencyDollar, Buildings } from 'phosphor-react';
 import { authService } from '../lib/authService';
 import type { SessionUser } from '../lib/authService';
 import { t, type Language } from '../lib/i18n';
 import type { Tenant } from '../db';
 import { apolloClient } from '../lib/apolloClient';
 import { UPDATE_TENANT_SETTINGS_MUTATION } from '../lib/graphql';
+
+interface CompanyForm {
+  companyName: string;
+  companyAddress: string;
+  companyPhone: string;
+  companyEmail: string;
+  companyTaxId: string;
+  companyLogoUrl: string;
+  invoiceFooter: string;
+}
 
 const TIMEZONES = [
   'Asia/Muscat', 'Asia/Riyadh', 'Asia/Dubai', 'Asia/Kuwait', 'Asia/Qatar', 'Asia/Amman',
@@ -24,6 +34,15 @@ export default function SettingsView({ session, onSessionChange, lang }: Setting
   const [saving, setSaving] = useState(false);
   const [defaultNightPrice, setDefaultNightPrice] = useState<number>(session.tenant.defaultNightPrice ?? 50);
   const [defaultTax, setDefaultTax] = useState<number>(session.tenant.defaultTax ?? 0);
+  const [company, setCompany] = useState<CompanyForm>({
+    companyName: session.tenant.companyName ?? '',
+    companyAddress: session.tenant.companyAddress ?? '',
+    companyPhone: session.tenant.companyPhone ?? '',
+    companyEmail: session.tenant.companyEmail ?? '',
+    companyTaxId: session.tenant.companyTaxId ?? '',
+    companyLogoUrl: session.tenant.companyLogoUrl ?? '',
+    invoiceFooter: session.tenant.invoiceFooter ?? '',
+  });
 
   const handleRoomChange = (index: number, value: string) => {
     const rooms = [...(tenant.rooms || [])];
@@ -54,13 +73,36 @@ export default function SettingsView({ session, onSessionChange, lang }: Setting
         rooms: tenant.rooms,
       });
 
-      // Save default settings
+      // Save default + company settings together. Empty strings clear the field.
       await apolloClient.mutate({
         mutation: UPDATE_TENANT_SETTINGS_MUTATION,
-        variables: { input: { defaultNightPrice, defaultTax } },
+        variables: {
+          input: {
+            defaultNightPrice,
+            defaultTax,
+            companyName: company.companyName.trim(),
+            companyAddress: company.companyAddress.trim(),
+            companyPhone: company.companyPhone.trim(),
+            companyEmail: company.companyEmail.trim(),
+            companyTaxId: company.companyTaxId.trim(),
+            companyLogoUrl: company.companyLogoUrl.trim(),
+            invoiceFooter: company.invoiceFooter.trim(),
+          },
+        },
       });
 
-      const updatedTenant = { ...updated, defaultNightPrice, defaultTax };
+      const updatedTenant: Tenant = {
+        ...updated,
+        defaultNightPrice,
+        defaultTax,
+        companyName: company.companyName.trim() || null,
+        companyAddress: company.companyAddress.trim() || null,
+        companyPhone: company.companyPhone.trim() || null,
+        companyEmail: company.companyEmail.trim() || null,
+        companyTaxId: company.companyTaxId.trim() || null,
+        companyLogoUrl: company.companyLogoUrl.trim() || null,
+        invoiceFooter: company.invoiceFooter.trim() || null,
+      };
       setTenant(updatedTenant);
       onSessionChange({ ...session, tenant: updatedTenant });
     } finally {
@@ -149,6 +191,55 @@ export default function SettingsView({ session, onSessionChange, lang }: Setting
               value={defaultTax}
               onChange={(e) => setDefaultTax(parseFloat(e.target.value) || 0)}
               className="w-full bg-slate-50 border-slate-100 rounded-2xl px-4 py-3 font-black focus:ring-2 focus:ring-emerald-500 transition-all"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Company profile — printed onto invoices */}
+      <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-xl p-10">
+        <div className="mb-8">
+          <h2 className="text-2xl font-black text-slate-900 flex items-center gap-3">
+            <Buildings size={28} className="text-rose-400" />
+            {t(lang, 'settings.company')}
+          </h2>
+          <p className="text-xs text-slate-400 mt-2">{t(lang, 'settings.companyHint')}</p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          {[
+            ['companyName', 'settings.companyName', 'text'],
+            ['companyTaxId', 'settings.companyTaxId', 'text'],
+            ['companyPhone', 'settings.companyPhone', 'tel'],
+            ['companyEmail', 'settings.companyEmail', 'email'],
+            ['companyLogoUrl', 'settings.companyLogoUrl', 'url'],
+          ].map(([key, label, type]) => (
+            <div key={key}>
+              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1 block px-2">{t(lang, label)}</label>
+              <input
+                type={type}
+                value={(company as any)[key]}
+                onChange={(e) => setCompany((c) => ({ ...c, [key]: e.target.value }))}
+                className="w-full bg-slate-50 border-slate-100 rounded-2xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-emerald-500 transition-all"
+              />
+            </div>
+          ))}
+          <div className="md:col-span-2">
+            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1 block px-2">{t(lang, 'settings.companyAddress')}</label>
+            <textarea
+              value={company.companyAddress}
+              onChange={(e) => setCompany((c) => ({ ...c, companyAddress: e.target.value }))}
+              rows={2}
+              className="w-full bg-slate-50 border-slate-100 rounded-2xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-emerald-500 transition-all"
+            />
+          </div>
+          <div className="md:col-span-2">
+            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1 block px-2">{t(lang, 'settings.invoiceFooter')}</label>
+            <textarea
+              value={company.invoiceFooter}
+              onChange={(e) => setCompany((c) => ({ ...c, invoiceFooter: e.target.value }))}
+              rows={2}
+              placeholder={t(lang, 'settings.invoiceFooterPlaceholder')}
+              className="w-full bg-slate-50 border-slate-100 rounded-2xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-emerald-500 transition-all"
             />
           </div>
         </div>

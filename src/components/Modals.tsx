@@ -93,6 +93,7 @@ export function AddBookingModal({ onClose, onAdd, initialDate, initialRoom, room
     guestName: '',
     city: '',
     phone: '',
+    idNumber: '',
     source: '',
     checkIn: initialDate,
     nights: 1,
@@ -116,7 +117,7 @@ export function AddBookingModal({ onClose, onAdd, initialDate, initialRoom, room
       guestNameInputRef.current?.focus();
       return;
     }
-    onAdd({ guestName: f.guestName, city: f.city, phone: f.phone, source: f.source, room: f.room, checkIn: f.checkIn, checkOut, nightPrice: f.nightPrice, deposit: f.deposit });
+    onAdd({ guestName: f.guestName, city: f.city, phone: f.phone, guestIdNumber: f.idNumber || null, source: f.source, room: f.room, checkIn: f.checkIn, checkOut, nightPrice: f.nightPrice, deposit: f.deposit });
   };
 
   return (
@@ -178,6 +179,12 @@ export function AddBookingModal({ onClose, onAdd, initialDate, initialRoom, room
               onChange={(e) => setF({ ...f, phone: e.target.value })}
             />
           </div>
+          <input
+            className="w-full bg-slate-50 border-slate-100 rounded-2xl px-4 py-2.5 text-sm font-bold focus:ring-2 focus:ring-emerald-500 transition-all"
+            placeholder={t(lang, 'booking.idNumber')}
+            value={f.idNumber}
+            onChange={(e) => setF({ ...f, idNumber: e.target.value })}
+          />
           <input
             className="w-full bg-slate-50 border-slate-100 rounded-2xl px-4 py-2.5 text-sm font-bold focus:ring-2 focus:ring-emerald-500 transition-all"
             placeholder={t(lang, 'booking.source')}
@@ -332,6 +339,7 @@ export function BookingDetailsModal({
     guestName: booking.guestName || '',
     city: booking.city || '',
     phone: booking.guestPhone || '',
+    idNumber: (booking as any).guestIdNumber || '',
     source: (booking as any).source || '',
     room: booking.room || '',
     checkIn: booking.checkIn ? booking.checkIn.split('T')[0] : '',
@@ -351,6 +359,7 @@ export function BookingDetailsModal({
       guestName: f.guestName,
       city: f.city,
       guestPhone: f.phone,
+      guestIdNumber: f.idNumber || null,
       source: f.source || undefined,
       room: f.room,
       checkIn: f.checkIn,
@@ -402,6 +411,12 @@ export function BookingDetailsModal({
                 onChange={(e) => setF({ ...f, phone: e.target.value })}
               />
             </div>
+            <input
+              className="w-full bg-slate-50 border-slate-100 rounded-2xl px-4 py-2.5 text-sm font-bold focus:ring-2 focus:ring-emerald-500 transition-all"
+              placeholder={t(lang, 'booking.idNumber')}
+              value={f.idNumber}
+              onChange={(e) => setF({ ...f, idNumber: e.target.value })}
+            />
             <input
               className="w-full bg-slate-50 border-slate-100 rounded-2xl px-4 py-2.5 text-sm font-bold focus:ring-2 focus:ring-emerald-500 transition-all"
               placeholder={t(lang, 'booking.source')}
@@ -543,6 +558,28 @@ export function BookingDetailsModal({
         </div>
 
         <div className="space-y-6 mb-10">
+          {(booking.guestPhone || booking.guestIdNumber || booking.city) && (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 -mt-4">
+              {booking.guestPhone && (
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-300 mb-1">{t(lang, 'booking.phone')}</p>
+                  <p className="font-bold text-slate-700 text-sm">{booking.guestPhone}</p>
+                </div>
+              )}
+              {booking.guestIdNumber && (
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-300 mb-1">{t(lang, 'booking.idNumber').replace(/ \(.*\)$/, '')}</p>
+                  <p className="font-bold text-slate-700 text-sm">{booking.guestIdNumber}</p>
+                </div>
+              )}
+              {booking.city && (
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-300 mb-1">{t(lang, 'booking.city')}</p>
+                  <p className="font-bold text-slate-700 text-sm">{booking.city}</p>
+                </div>
+              )}
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-8 py-6 border-y border-slate-50">
             <div>
               <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-300 mb-2">{t(lang, 'booking.checkIn')}</p>
@@ -634,6 +671,16 @@ export function BookingDetailsModal({
 
 // ---------- INVOICE MODAL ----------
 
+interface CompanyProfile {
+  companyName?: string | null;
+  companyAddress?: string | null;
+  companyPhone?: string | null;
+  companyEmail?: string | null;
+  companyTaxId?: string | null;
+  companyLogoUrl?: string | null;
+  invoiceFooter?: string | null;
+}
+
 interface InvoiceModalProps {
   booking: any;
   tenantName: string;
@@ -642,9 +689,10 @@ interface InvoiceModalProps {
   tz: string;
   dir: 'ltr' | 'rtl';
   onClose: () => void;
+  company?: CompanyProfile;
 }
 
-export function InvoiceModal({ booking, tenantName, currency, lang, tz, dir, onClose }: InvoiceModalProps) {
+export function InvoiceModal({ booking, tenantName, currency, lang, tz, dir, onClose, company }: InvoiceModalProps) {
   const invoiceRef = useRef<HTMLDivElement | null>(null);
   const [generating, setGenerating] = useState(false);
 
@@ -708,8 +756,24 @@ export function InvoiceModal({ booking, tenantName, currency, lang, tz, dir, onC
               </p>
             </div>
             <div className="text-right">
-              <h2 className="text-xl font-black text-slate-900 tracking-tight">{tenantName?.toUpperCase()}</h2>
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Guest Folio</p>
+              {company?.companyLogoUrl && (
+                <img src={company.companyLogoUrl} alt="" className="h-12 ms-auto mb-2 object-contain" crossOrigin="anonymous" />
+              )}
+              <h2 className="text-xl font-black text-slate-900 tracking-tight">{(company?.companyName || tenantName)?.toUpperCase()}</h2>
+              {company?.companyAddress && (
+                <p className="text-xs font-semibold text-slate-500 mt-1 max-w-[200px] ms-auto whitespace-pre-line">{company.companyAddress}</p>
+              )}
+              {(company?.companyPhone || company?.companyEmail) && (
+                <p className="text-xs font-semibold text-slate-500 mt-1">
+                  {company.companyPhone}{company.companyPhone && company.companyEmail && ' · '}{company.companyEmail}
+                </p>
+              )}
+              {company?.companyTaxId && (
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">{t(lang, 'settings.companyTaxId')}: {company.companyTaxId}</p>
+              )}
+              {!company?.companyName && (
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Guest Folio</p>
+              )}
             </div>
           </div>
 
@@ -718,7 +782,12 @@ export function InvoiceModal({ booking, tenantName, currency, lang, tz, dir, onC
               <div className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em] mb-3">{t(lang, 'invoice.guestInfo')}</div>
               <div className="font-black text-2xl text-slate-900 leading-tight mb-1">{booking.guestName}</div>
               <div className="text-sm font-semibold text-slate-500">{booking.city || ''}</div>
-              <div className="text-sm font-bold text-slate-600 mt-2">{booking.guestPhone}</div>
+              {booking.guestPhone && <div className="text-sm font-bold text-slate-600 mt-2">{booking.guestPhone}</div>}
+              {booking.guestIdNumber && (
+                <div className="text-[11px] font-bold text-slate-500 mt-1 uppercase tracking-widest">
+                  ID: {booking.guestIdNumber}
+                </div>
+              )}
             </div>
             <div className="text-right">
               <div className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em] mb-3">{t(lang, 'invoice.roomDetails')}</div>
@@ -762,6 +831,11 @@ export function InvoiceModal({ booking, tenantName, currency, lang, tz, dir, onC
               <span className="text-2xl font-black">{currency} {booking.remaining}</span>
             </div>
           </div>
+          {company?.invoiceFooter && (
+            <div className="mt-10 pt-6 border-t border-slate-100 text-xs font-semibold text-slate-500 whitespace-pre-line leading-relaxed">
+              {company.invoiceFooter}
+            </div>
+          )}
         </div>
         <div className="p-8 bg-slate-50 border-t border-slate-100 flex justify-end gap-3 hide-on-print flex-wrap">
           <button onClick={onClose} className="px-6 py-3 border border-slate-200 rounded-2xl font-bold hover:bg-white transition-all">

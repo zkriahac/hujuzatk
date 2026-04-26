@@ -256,6 +256,7 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
       guestName: newBooking.guestName,
       guestEmail: newBooking.guestEmail || undefined,
       guestPhone: newBooking.phone || newBooking.guestPhone || '',
+      guestIdNumber: newBooking.guestIdNumber || undefined,
       city: newBooking.city || undefined,
       source: newBooking.source || undefined,
       room: newBooking.room,
@@ -633,6 +634,15 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
           tz={tz}
           dir={dir}
           onClose={() => setShowInvoiceModal(false)}
+          company={{
+            companyName: session.tenant.companyName,
+            companyAddress: session.tenant.companyAddress,
+            companyPhone: session.tenant.companyPhone,
+            companyEmail: session.tenant.companyEmail,
+            companyTaxId: session.tenant.companyTaxId,
+            companyLogoUrl: session.tenant.companyLogoUrl,
+            invoiceFooter: session.tenant.invoiceFooter,
+          }}
         />
       )}
 

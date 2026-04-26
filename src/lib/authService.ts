@@ -42,6 +42,14 @@ function convertGraphQLTenantToLocal(graphqlTenant: any): Tenant {
     onboardedAt: graphqlTenant.onboardedAt ?? null,
     plan: graphqlTenant.plan ?? 'trial',
     maxRooms: graphqlTenant.maxRooms ?? 3,
+    // Company profile (used by InvoiceModal). Pulled from settings if present.
+    companyName: graphqlTenant.settings?.companyName ?? null,
+    companyAddress: graphqlTenant.settings?.companyAddress ?? null,
+    companyPhone: graphqlTenant.settings?.companyPhone ?? null,
+    companyEmail: graphqlTenant.settings?.companyEmail ?? null,
+    companyTaxId: graphqlTenant.settings?.companyTaxId ?? null,
+    companyLogoUrl: graphqlTenant.settings?.companyLogoUrl ?? null,
+    invoiceFooter: graphqlTenant.settings?.invoiceFooter ?? null,
   };
 }
 
@@ -77,6 +85,17 @@ export const authService = {
                 plan
                 maxRooms
                 createdAt
+                settings {
+                  defaultNightPrice
+                  defaultTax
+                  companyName
+                  companyAddress
+                  companyPhone
+                  companyEmail
+                  companyTaxId
+                  companyLogoUrl
+                  invoiceFooter
+                }
               }
             }`,
           }),
@@ -163,6 +182,17 @@ export const authService = {
                 plan
                 maxRooms
                 createdAt
+                settings {
+                  defaultNightPrice
+                  defaultTax
+                  companyName
+                  companyAddress
+                  companyPhone
+                  companyEmail
+                  companyTaxId
+                  companyLogoUrl
+                  invoiceFooter
+                }
               }
             }
           }`,
@@ -268,6 +298,17 @@ export const authService = {
                 plan
                 maxRooms
                 createdAt
+                settings {
+                  defaultNightPrice
+                  defaultTax
+                  companyName
+                  companyAddress
+                  companyPhone
+                  companyEmail
+                  companyTaxId
+                  companyLogoUrl
+                  invoiceFooter
+                }
               }
             }
           }`,
@@ -358,7 +399,7 @@ export const authService = {
               maxRooms
               createdAt
               bookingsCount
-              settings { defaultNightPrice defaultTax }
+              settings { defaultNightPrice defaultTax companyName companyAddress companyPhone companyEmail companyTaxId companyLogoUrl invoiceFooter }
             }
           }`,
           variables: { input },

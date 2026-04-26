@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { FileText, Layout, ChartPie, CreditCard, Calendar, Users, Target, FileXls, TrendDown, Scales } from 'phosphor-react';
+import { Layout, ChartPie, CreditCard, Calendar, Users, Target, FileXls, TrendDown, Scales } from 'phosphor-react';
 import { t, type Language } from '../lib/i18n';
 import { apolloClient } from '../lib/apolloClient';
 import { GET_EXPENSES_QUERY } from '../lib/graphql';
@@ -124,45 +124,52 @@ export default function ReportsView({
     XLSX.writeFile(wb, `hujuzatk-report-${(tenantName || 'tenant').replace(/\s+/g, '_')}-${reportStartDate}-${reportEndDate}.xlsx`);
   };
 
+  // Friendly tokens used here:
+  //   pill controls          → rounded-full
+  //   ample whitespace       → p-7/p-8 cards, gap-6/8
+  //   soft pastels (P&L row) → bg-{tone}-50/100, border-{tone}-100
+  //   bold filled (KPI row)  → bg-{tone}-{500/600/900}, text-white
+  //   12-color steps from the Friendly spec drive primary/secondary/danger/success
   return (
-    <div className="space-y-8 pb-12">
-      <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
-        <div className="flex flex-wrap gap-6 items-end">
-          <div className="flex flex-col gap-2 w-full md:w-auto flex-1">
-            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">{t(lang, 'reports.type')}</label>
+    <div className="space-y-7 pb-12">
+      {/* Filter card — pill-shaped controls in one airy white surface */}
+      <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm p-6 sm:p-7">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
+          <div>
+            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2 block">{t(lang, 'reports.type')}</label>
             <select
               value={reportType}
               onChange={(e) => setReportType(e.target.value as 'stay' | 'created')}
-              className="border-slate-100 rounded-2xl px-4 py-2 text-sm font-black bg-slate-50 focus:ring-2 focus:ring-emerald-500 transition-all"
+              className="w-full bg-slate-50 border border-slate-100 rounded-full px-5 py-2.5 pe-10 text-sm font-black focus:ring-2 focus:ring-emerald-500 transition-all"
             >
               <option value="stay">{t(lang, 'reports.stayDate')}</option>
               <option value="created">{t(lang, 'reports.createdDate')}</option>
             </select>
           </div>
-          <div className="flex flex-col gap-2 w-full md:w-auto">
-            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">{t(lang, 'reports.fromDate')}</label>
+          <div>
+            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2 block">{t(lang, 'reports.fromDate')}</label>
             <input
               type="date"
               value={reportStartDate}
               onChange={(e) => setReportStartDate(e.target.value)}
-              className="border-slate-100 rounded-2xl px-4 py-3 text-sm font-black bg-slate-50"
+              className="w-full bg-slate-50 border border-slate-100 rounded-full px-5 py-2.5 text-sm font-black focus:ring-2 focus:ring-emerald-500"
             />
           </div>
-          <div className="flex flex-col gap-2 w-full md:w-auto">
-            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">{t(lang, 'reports.toDate')}</label>
+          <div>
+            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2 block">{t(lang, 'reports.toDate')}</label>
             <input
               type="date"
               value={reportEndDate}
               onChange={(e) => setReportEndDate(e.target.value)}
-              className="border-slate-100 rounded-2xl px-4 py-3 text-sm font-black bg-slate-50"
+              className="w-full bg-slate-50 border border-slate-100 rounded-full px-5 py-2.5 text-sm font-black focus:ring-2 focus:ring-emerald-500"
             />
           </div>
-          <div className="flex flex-col gap-2 w-full md:w-auto">
-            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">{t(lang, 'reports.roomFilter')}</label>
+          <div>
+            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2 block">{t(lang, 'reports.roomFilter')}</label>
             <select
               value={reportRoomFilter}
               onChange={(e) => setReportRoomFilter(e.target.value)}
-              className="border-slate-100 rounded-2xl px-4 py-2 text-sm font-black bg-slate-50"
+              className="w-full bg-slate-50 border border-slate-100 rounded-full px-5 py-2.5 pe-10 text-sm font-black focus:ring-2 focus:ring-emerald-500"
             >
               <option value="ALL">{t(lang, 'reports.allRooms')}</option>
               {rooms.map((r: any) => (
@@ -170,67 +177,57 @@ export default function ReportsView({
               ))}
             </select>
           </div>
-          <div className="w-full md:w-auto flex gap-2">
-            <button
-              onClick={handleExportExcel}
-              className="bg-emerald-600 text-white px-5 py-2.5 rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-emerald-700 transition-all active:scale-95 flex items-center gap-2"
-            >
-              <FileXls size={18} weight="bold" /> {t(lang, 'reports.exportExcel')}
-            </button>
-            <button
-              onClick={() => window.print()}
-              className="bg-slate-900 text-white px-5 py-2.5 rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-slate-800 transition-all active:scale-95 flex items-center gap-2"
-            >
-              <FileText size={18} weight="bold" /> {t(lang, 'reports.print')}
-            </button>
-          </div>
+        </div>
+        <div className="flex justify-end mt-5">
+          <button
+            onClick={handleExportExcel}
+            className="bg-emerald-600 text-white px-6 py-3 rounded-full text-[11px] font-black uppercase tracking-widest hover:bg-emerald-700 transition-all active:scale-95 flex items-center gap-2 shadow-sm"
+          >
+            <FileXls size={18} weight="bold" /> {t(lang, 'reports.exportExcel')}
+          </button>
         </div>
       </div>
 
-      {/* P&L summary row — revenue / expenses / net */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-        <div className="bg-emerald-50 border border-emerald-200 rounded-3xl p-6">
-          <div className="flex items-center gap-2 text-emerald-700 mb-2">
-            <CreditCard size={20} weight="duotone" />
-            <span className="text-[10px] font-black uppercase tracking-widest">{t(lang, 'reports.income')}</span>
-          </div>
-          <div className="text-3xl font-black text-emerald-900 tabular-nums" dir="ltr">
-            {currency} {reportData.totalRevenue.toLocaleString()}
-          </div>
-        </div>
-        <div className="bg-red-50 border border-red-200 rounded-3xl p-6">
-          <div className="flex items-center gap-2 text-red-700 mb-2">
-            <TrendDown size={20} weight="duotone" />
-            <span className="text-[10px] font-black uppercase tracking-widest">{t(lang, 'reports.expenses')}</span>
-          </div>
-          <div className="text-3xl font-black text-red-900 tabular-nums" dir="ltr">
-            {currency} {totalExpenses.toLocaleString()}
-          </div>
-        </div>
-        <div className={`${netIncome >= 0 ? 'bg-blue-50 border-blue-200' : 'bg-amber-50 border-amber-300'} border rounded-3xl p-6`}>
-          <div className={`flex items-center gap-2 ${netIncome >= 0 ? 'text-blue-700' : 'text-amber-700'} mb-2`}>
-            <Scales size={20} weight="duotone" />
-            <span className="text-[10px] font-black uppercase tracking-widest">{t(lang, 'reports.netIncome')}</span>
-          </div>
-          <div className={`text-3xl font-black tabular-nums ${netIncome >= 0 ? 'text-blue-900' : 'text-amber-900'}`} dir="ltr">
-            {currency} {netIncome.toLocaleString()}
-          </div>
-        </div>
+      {/* P&L summary row — soft pastel cards (Friendly: rounded, ample whitespace, low-contrast surfaces with high-contrast figures) */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+        <PastelCard
+          tone="blue"
+          label={t(lang, 'reports.netIncome')}
+          value={`${currency} ${netIncome.toLocaleString()}`}
+          Icon={Scales}
+          isRtl={lang === 'ar'}
+          negative={netIncome < 0}
+        />
+        <PastelCard
+          tone="rose"
+          label={t(lang, 'reports.expenses')}
+          value={`${currency} ${totalExpenses.toLocaleString()}`}
+          Icon={TrendDown}
+          isRtl={lang === 'ar'}
+        />
+        <PastelCard
+          tone="emerald"
+          label={t(lang, 'reports.income')}
+          value={`${currency} ${reportData.totalRevenue.toLocaleString()}`}
+          Icon={CreditCard}
+          isRtl={lang === 'ar'}
+        />
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      {/* KPI row — bold filled cards for headline numbers, white text, faint background icon */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
         {[
-          { bg: 'bg-emerald-600', shadow: 'shadow-emerald-100', Icon: CreditCard, label: t(lang, 'reports.totalRevenue'), value: `${currency} ${reportData.totalRevenue.toLocaleString()}` },
-          { bg: 'bg-blue-600', shadow: 'shadow-blue-100', Icon: Calendar, label: t(lang, 'reports.totalNights'), value: String(reportData.totalNights) },
-          { bg: 'bg-slate-900', shadow: 'shadow-slate-200', Icon: Users, label: t(lang, 'reports.totalBookings'), value: String(reportData.bookingCount) },
-          { bg: 'bg-amber-500', shadow: 'shadow-amber-100', Icon: Target, label: t(lang, 'reports.avgFillRate'), value: `${avgFill.toFixed(1)}%` },
-        ].map(({ bg, shadow, Icon, label, value }) => (
-          <div key={label} className={`${bg} p-8 rounded-[2.5rem] text-white shadow-xl ${shadow} relative overflow-hidden group`}>
-            <div className="absolute top-0 right-0 p-4 opacity-20 transform translate-x-4 -translate-y-4 group-hover:translate-x-0 group-hover:translate-y-0 transition-all">
-              <Icon size={120} weight="duotone" />
+          { bg: 'bg-amber-500',  Icon: Target,    label: t(lang, 'reports.avgFillRate'),    value: `${avgFill.toFixed(1)}%` },
+          { bg: 'bg-slate-900',  Icon: Users,     label: t(lang, 'reports.totalBookings'),  value: String(reportData.bookingCount) },
+          { bg: 'bg-blue-600',   Icon: Calendar,  label: t(lang, 'reports.totalNights'),    value: String(reportData.totalNights) },
+          { bg: 'bg-emerald-600',Icon: CreditCard,label: t(lang, 'reports.totalRevenue'),   value: `${currency} ${reportData.totalRevenue.toLocaleString()}` },
+        ].map(({ bg, Icon, label, value }) => (
+          <div key={label} className={`${bg} p-7 rounded-[2rem] text-white relative overflow-hidden group min-h-[150px] flex flex-col justify-end`}>
+            <div className="absolute -top-4 -right-2 opacity-20 group-hover:opacity-30 transition-opacity">
+              <Icon size={130} weight="duotone" />
             </div>
-            <div className="text-[10px] font-black uppercase tracking-[0.3em] opacity-80 relative z-10">{label}</div>
-            <div className="text-4xl font-black mt-2 tracking-tighter relative z-10">{value}</div>
+            <div className="text-[10px] font-black uppercase tracking-[0.25em] opacity-80 relative z-10">{label}</div>
+            <div className="text-3xl sm:text-4xl font-black mt-1 tracking-tighter relative z-10 tabular-nums" dir="ltr">{value}</div>
           </div>
         ))}
       </div>
@@ -313,6 +310,40 @@ export default function ReportsView({
             </table>
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+// Friendly pastel summary tile — soft surface with a small icon at the corner and a giant number.
+// Tone keys map onto the Friendly palette tokens (primary=rose, secondary=mint, info=blue).
+function PastelCard({
+  tone, label, value, Icon, isRtl, negative,
+}: {
+  tone: 'blue' | 'rose' | 'emerald';
+  label: string;
+  value: string;
+  Icon: any;
+  isRtl: boolean;
+  negative?: boolean;
+}) {
+  const palette = {
+    blue:    { bg: 'bg-blue-50',    border: 'border-blue-100',    label: 'text-blue-600',    value: 'text-blue-700',    icon: 'text-blue-300' },
+    rose:    { bg: 'bg-rose-50',    border: 'border-rose-100',    label: 'text-rose-600',    value: 'text-rose-700',    icon: 'text-rose-300' },
+    emerald: { bg: 'bg-emerald-50', border: 'border-emerald-100', label: 'text-emerald-600', value: 'text-emerald-700', icon: 'text-emerald-300' },
+  }[tone];
+  // Override blue with amber when negative (loss month)
+  const effective = negative
+    ? { bg: 'bg-amber-50', border: 'border-amber-100', label: 'text-amber-600', value: 'text-amber-700', icon: 'text-amber-300' }
+    : palette;
+  return (
+    <div className={`${effective.bg} ${effective.border} border rounded-[2rem] p-6 sm:p-7 relative overflow-hidden min-h-[150px] flex flex-col`}>
+      <div className={`flex items-center gap-2 ${effective.label} mb-1`}>
+        <Icon size={20} weight="duotone" className={effective.icon} />
+        <span className="text-xs font-black uppercase tracking-widest">{label}</span>
+      </div>
+      <div className={`text-3xl sm:text-4xl font-black tabular-nums tracking-tighter ${effective.value} mt-2`} dir="ltr">
+        {value}
       </div>
     </div>
   );
