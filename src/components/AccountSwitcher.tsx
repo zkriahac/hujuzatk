@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ArrowsClockwise, Check, GearSix, Plus, SignOut, X } from 'phosphor-react';
+import { ArrowsClockwise, Check, GearSix, Plus, SignOut, UserGear, X } from 'phosphor-react';
 import { cn } from '../utils/cn';
 import { t, type Language } from '../lib/i18n';
 import { addAccount, getAccounts, removeAccount, setActive, type LinkedAccount } from '../lib/accountStore';
@@ -62,21 +62,19 @@ export default function AccountSwitcher({ lang, isRtl, currentTenantId, session,
     status === 'ACTIVE' ? 'bg-emerald-500' : 'bg-blue-500';
 
   const initial = (session.tenant.name || 'H')[0].toUpperCase();
-
   return (
     <div className="relative" ref={ref}>
       <button
         onClick={() => setOpen(o => !o)}
-        className="flex items-center justify-center w-8 h-8 rounded-full bg-emerald-600 text-white font-black text-sm shrink-0 hover:bg-emerald-700 transition-colors"
+        className="flex items-center justify-center w-8 h-8 rounded-full bg-emerald-600 text-white shrink-0 hover:bg-emerald-700 transition-colors"
         aria-label={t(lang, 'account.switch')}
       >
-        {initial}
+        <UserGear size={18} weight="bold" />
       </button>
 
       {open && (
         <div className={cn(
-          'absolute top-full mt-2 z-100 bg-white rounded-2xl border border-slate-200 shadow-2xl py-2 w-72',
-          isRtl ? 'left-0' : 'right-0',
+          'absolute top-full mt-2 z-100 bg-white rounded-2xl border border-slate-200 shadow-2xl py-2 w-72 start-0',
         )}>
 
           {/* ── Profile card ── */}
