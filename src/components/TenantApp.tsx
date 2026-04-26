@@ -115,7 +115,7 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
   const [reportType, setReportType] = useState<'stay' | 'created'>('stay');
 
   const [listSearchTerm, setListSearchTerm] = useState('');
-  const [listFilter, setListFilter] = useState<ListFilter>('upcoming');
+  const [listFilter, setListFilter] = useState<ListFilter>('all');
   const [visibleListCount, setVisibleListCount] = useState(30);
 
   const generateMonthDays = (year: number, month: number): Date[] => {
@@ -319,7 +319,6 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
         if (effective === 'CANCELED') return false;
         if (listFilter === 'today_checkin')  return b.checkIn.split('T')[0]  === todayStr;
         if (listFilter === 'today_checkout') return b.checkOut.split('T')[0] === todayStr;
-        if (listFilter === 'upcoming') return effective === 'UPCOMING';
         if (listFilter === 'active') return effective === 'ACTIVE';
         if (listFilter === 'past') return effective === 'COMPLETED' || effective === 'NO_SHOW';
         return true;
@@ -417,31 +416,6 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
     window.location.href = '/';
   };
 
-  // Subscription badge — minimal status pill. The expiry date and full plan
-  // breakdown live in the Settings → Plan card; the header just shows whether
-  // the account is active so users can see at a glance.
-  const daysUntilExpiry = session.tenant.validUntil
-    ? Math.ceil((new Date(session.tenant.validUntil).getTime() - Date.now()) / 86400000)
-    : null;
-  const isExpiring = daysUntilExpiry !== null && daysUntilExpiry >= 0 && daysUntilExpiry <= 7;
-  const isExpired = daysUntilExpiry !== null && daysUntilExpiry < 0;
-  const subscriptionBadge = (() => {
-    const status = session.tenant.subscriptionStatus;
-    const label = t(lang, `status.${status.toLowerCase()}`);
-    const color =
-      isExpired ? 'bg-red-100 text-red-700' :
-      isExpiring ? 'bg-amber-100 text-amber-700' :
-      status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-700' :
-      status === 'TRIAL'  ? 'bg-blue-100 text-blue-700' :
-      'bg-slate-100 text-slate-600';
-    const dot = isExpired ? 'bg-red-500' : isExpiring ? 'bg-amber-500' : status === 'ACTIVE' ? 'bg-emerald-500' : 'bg-blue-500';
-    return (
-      <span className={cn('inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-black uppercase mx-2', color)}>
-        <span className={cn('w-1.5 h-1.5 rounded-full', dot)} />
-        <span>{label}</span>
-      </span>
-    );
-  })();
 
   return (
     <div className={cn('bg-slate-50 text-slate-900 font-sans selection:bg-emerald-100', currentView === 'calendar' ? 'fixed inset-0 flex flex-col overflow-hidden' : 'min-h-screen', dir === 'rtl' && 'rtl')} dir={dir}>
@@ -449,13 +423,14 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
         <div className="px-3 sm:px-6 flex justify-between h-full items-center gap-2">
           <div className="flex items-center gap-2 min-w-0">
             <img src="/logo.svg" alt="Logo" className="w-8 h-8 sm:w-9 sm:h-9 shrink-0" />
-            <span className="font-black text-sm tracking-tight truncate max-w-[100px] sm:max-w-none">{session.tenant.name || 'Hujuzatk'}</span>
-            {!session.isAdmin && subscriptionBadge}
             {!session.isAdmin && (
               <AccountSwitcher
                 lang={lang}
                 isRtl={isRtl}
                 currentTenantId={session.tenantId}
+                session={session}
+                onLogout={handleLogout}
+                onNavigate={(v) => setCurrentView(v)}
               />
             )}
           </div>
@@ -476,7 +451,7 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
                   <div className={cn('absolute top-full mt-1 z-100 bg-white rounded-2xl border border-slate-200 shadow-2xl py-1 min-w-[130px]', isRtl ? 'left-0' : 'right-0')}>
                     {(session.isAdmin
                       ? ['admin'] as View[]
-                      : (['calendar', 'list', 'reports', 'expenses', (session.tenant.integrationsEnabled !== false ? 'integrations' : null), 'settings'].filter(Boolean) as View[])
+                      : (['calendar', 'list', 'expenses', 'reports'] as View[])
                     ).map((v) => {
                       const Icon = { calendar: CalendarBlank, list: ListBullets, reports: ChartPie, integrations: ArrowsClockwise, expenses: CurrencyCircleDollar, settings: GearSix, admin: ShieldCheck }[v];
                       return (
@@ -498,12 +473,6 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
                 </>
               )}
             </div>
-            <button
-              onClick={handleLogout}
-              className="text-[10px] sm:text-[11px] font-black uppercase text-slate-400 hover:text-red-600 transition-colors whitespace-nowrap"
-            >
-              {t(lang, 'misc.logout')}
-            </button>
           </div>
         </div>
       </nav>

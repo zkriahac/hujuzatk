@@ -33,6 +33,16 @@ const CREATE_BOOKING = gql`
   }
 `;
 
+const UPDATE_BOOKING = gql`
+  mutation UpdateBooking($id: ID!, $input: UpdateBookingInput!) {
+    updateBooking(id: $id, input: $input) {
+      id tenantId guestName guestEmail guestPhone city room
+      checkIn checkOut nights nightPrice totalPrice tax deposit remaining
+      status source notes createdAt updatedAt
+    }
+  }
+`;
+
 const GET_ALL_TENANTS = gql`
   query GetAllTenants {
     getAllTenants {
@@ -81,16 +91,8 @@ export const dataService = {
   async updateBooking(id: any, updates: any) {
     try {
       const { data } = await apolloClient.mutate({
-        mutation: gql`
-          mutation UpdateBooking($id: ID!, $input: UpdateBookingInput!) {
-            updateBooking(id: $id, input: $input) {
-              id tenantId guestName guestEmail guestPhone city room
-              checkIn checkOut nights nightPrice totalPrice tax deposit remaining
-              status source notes createdAt updatedAt
-            }
-          }
-        `,
-        variables: { id, input: updates }
+        mutation: UPDATE_BOOKING,
+        variables: { id: String(id), input: updates },
       });
       const updated = (data as any)?.updateBooking;
       if (updated) await (db as any).bookings.put(updated);

@@ -7,7 +7,7 @@ export const DEFAULT_ROOMS = [
 ];
 
 export type View = 'calendar' | 'list' | 'reports' | 'integrations' | 'settings' | 'admin' | 'expenses';
-export type ListFilter = 'upcoming' | 'active' | 'past' | 'canceled' | 'today_checkin' | 'today_checkout' | 'all';
+export type ListFilter = 'active' | 'past' | 'canceled' | 'today_checkin' | 'today_checkout' | 'all';
 export type AuthMode = 'login' | 'register';
 
 /** Compute effective booking status from DB status + real dates */

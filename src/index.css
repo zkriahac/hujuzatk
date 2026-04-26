@@ -29,3 +29,26 @@ body {
 select {
   padding-inline-end: 2.5rem;
 }
+
+@media print {
+  html, body {
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  body * { visibility: hidden; }
+
+  .invoice-print-area,
+  .invoice-print-area * { visibility: visible; }
+
+  .invoice-print-area {
+    position: fixed;
+    inset: 0;
+    overflow: visible !important;
+    max-height: none !important;
+    padding: 1.5rem;
+    background: #ffffff;
+  }
+
+  .hide-on-print { display: none !important; }
+}

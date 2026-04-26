@@ -1,7 +1,7 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { format, addDays, parseISO } from 'date-fns';
 import {
-  X, Sparkle, Users, Minus, Plus, CreditCard, FileText,
+  X, Sparkle, Users, Minus, Plus, CreditCard, FileText, Printer,
   PencilSimple, Prohibit, Trash, Check, WarningCircle,
 } from 'phosphor-react';
 import { cn } from '../utils/cn';
@@ -35,42 +35,6 @@ export function useAnchoredPosition(anchor: ModalAnchor) {
     setPos({ top, left });
   }, [anchor]);
   return { ref, pos };
-}
-
-// ---------- html2canvas ↔ Tailwind v4 oklch() workaround ----------
-// Tailwind v4 emits every color token as oklch(). html2canvas's CSS parser
-// crashes on it. Even setting inline rgb() isn't enough because html2canvas
-// also walks document.styleSheets to gather rules — and those still hold the
-// original oklch() declarations.
-//
-// Two-step fix run from the html2canvas onclone hook:
-//   1. For every element in the clone, read its full computed style via
-//      getComputedStyle (browser has already resolved oklch -> rgb here) and
-//      copy ALL set properties back as inline style. After this each element
-//      knows its full styling without needing the stylesheets.
-//   2. Remove every <link rel="stylesheet"> and <style> in the clone so
-//      html2canvas can't try to re-parse them and trip on oklch().
-//
-// This is heavy for huge DOMs but the invoice modal's tree is tiny.
-export function inlineComputedColors(doc: Document) {
-  const win = doc.defaultView || window;
-  const all = doc.querySelectorAll<HTMLElement>('*');
-  all.forEach((el) => {
-    const cs = win.getComputedStyle(el);
-    let inline = '';
-    for (let i = 0; i < cs.length; i++) {
-      const prop = cs.item(i);
-      const val = cs.getPropertyValue(prop);
-      // Skip values that still reference unsupported color functions.
-      if (!val) continue;
-      if (val.includes('oklch(') || val.includes('oklab(') || val.includes('lab(') || val.includes('lch(') || val.startsWith('color(')) continue;
-      inline += `${prop}:${val};`;
-    }
-    el.style.cssText = inline;
-  });
-  // After every element carries its own styling, drop the stylesheets so
-  // html2canvas never tries to parse them.
-  doc.querySelectorAll('link[rel="stylesheet"], style').forEach((s) => s.remove());
 }
 
 // ---------- CONFIRM MODAL ----------
@@ -729,46 +693,6 @@ interface InvoiceModalProps {
 }
 
 export function InvoiceModal({ booking, tenantName, currency, lang, tz, dir, onClose, company }: InvoiceModalProps) {
-  const invoiceRef = useRef<HTMLDivElement | null>(null);
-  const [generating, setGenerating] = useState(false);
-
-  // Real PDF download — preserves the on-screen design via html2pdf.js (lazy-loaded so the
-  // 150 KB library only ships when the user actually clicks Download).
-  //
-  // Tailwind v4 emits all color tokens as oklch(), which html2canvas can't parse.
-  // Workaround: in the html2canvas onclone callback, walk every element in the cloned
-  // document and read its computed color/bg/border via getComputedStyle (the browser
-  // resolves oklch -> rgb at compute time), then write those rgb values back as inline
-  // style. After this, the cloned doc only has rgb() colors, which html2canvas can
-  // happily parse.
-  const downloadPdf = async () => {
-    if (!invoiceRef.current) return;
-    setGenerating(true);
-    try {
-      const html2pdf = (await import('html2pdf.js')).default;
-      const code = booking.bookingNumber != null
-        ? String(booking.bookingNumber).padStart(4, '0')
-        : booking.id.slice(0, 8);
-      await html2pdf()
-        .set({
-          margin: 10,
-          filename: `invoice-${code}-${(booking.guestName || 'guest').replace(/\s+/g, '_')}.pdf`,
-          image: { type: 'jpeg', quality: 0.98 },
-          html2canvas: {
-            scale: 2,
-            useCORS: true,
-            backgroundColor: '#ffffff',
-            onclone: (clonedDoc: Document) => inlineComputedColors(clonedDoc),
-          },
-          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-        })
-        .from(invoiceRef.current)
-        .save();
-    } finally {
-      setGenerating(false);
-    }
-  };
-
   return (
     <div
       className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-[200] p-4"
@@ -790,7 +714,7 @@ export function InvoiceModal({ booking, tenantName, currency, lang, tz, dir, onC
             <X size={20} weight="bold" />
           </button>
         </div>
-        <div ref={invoiceRef} className="p-6 relative overflow-auto max-h-[80vh] bg-white">
+        <div className="p-6 relative overflow-auto max-h-[80vh] bg-white invoice-print-area">
           {booking.status === 'CANCELED' && (
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 border-[12px] border-red-500 text-red-500 font-black text-8xl opacity-10 transform -rotate-12 p-8 rounded-3xl uppercase pointer-events-none">
               {t(lang, 'invoice.canceled')}
@@ -896,12 +820,11 @@ export function InvoiceModal({ booking, tenantName, currency, lang, tz, dir, onC
           </button>
           <button
             type="button"
-            onClick={downloadPdf}
-            disabled={generating}
-            className="px-8 py-3 bg-emerald-600 text-white rounded-2xl font-black shadow-lg shadow-emerald-100 hover:bg-emerald-700 transition-all flex items-center gap-2 disabled:opacity-60"
+            onClick={() => window.print()}
+            className="px-8 py-3 bg-emerald-600 text-white rounded-2xl font-black shadow-lg shadow-emerald-100 hover:bg-emerald-700 transition-all flex items-center gap-2"
           >
-            <FileText size={20} weight="bold" />
-            {generating ? '…' : t(lang, 'invoice.downloadPdf')}
+            <Printer size={20} weight="bold" />
+            {t(lang, 'invoice.print')}
           </button>
         </div>
       </div>

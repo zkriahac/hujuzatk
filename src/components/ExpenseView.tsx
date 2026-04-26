@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { format, startOfMonth, endOfMonth, parseISO } from 'date-fns';
 import {
   CurrencyCircleDollar, Plus, Trash, X, Pencil, Lightning,
-  Drop, Wrench, Package, DotsThree,
+  Drop, Wrench, Package, DotsThree, CaretDown,
 } from 'phosphor-react';
 import { apolloClient } from '../lib/apolloClient';
 import { t, type Language } from '../lib/i18n';
@@ -107,7 +107,6 @@ export default function ExpenseView({ session, lang, tz, currency }: Props) {
           onClick={(e) => { setEditing(null); setModalAnchor({ x: e.clientX, y: e.clientY }); setShowModal(true); }}
           className="bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-black px-5 py-2.5 rounded-2xl flex items-center gap-2"
         >
-          <Plus size={16} weight="bold" />
           {t(lang, 'expenses.add')}
         </button>
       </div>
@@ -126,12 +125,16 @@ export default function ExpenseView({ session, lang, tz, currency }: Props) {
         </div>
         <div className="flex flex-col gap-1">
           <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">{t(lang, 'expenses.room')}</label>
-          <select value={roomFilter} onChange={(e) => setRoomFilter(e.target.value)}
-            className="bg-slate-50 border border-slate-100 rounded-xl px-4 py-2 pe-10 text-sm font-black focus:ring-2 focus:ring-emerald-500">
-            <option value="all">{t(lang, 'expenses.allRooms')}</option>
-            <option value="general">{t(lang, 'expenses.general')}</option>
-            {rooms.map((r: any) => <option key={r.id} value={r.id}>{r.name}</option>)}
-          </select>
+          <div className="relative">
+            <select value={roomFilter} onChange={(e) => setRoomFilter(e.target.value)}
+              className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-2 pe-10 text-sm font-black focus:ring-2 focus:ring-emerald-500"
+              style={{ appearance: 'none', WebkitAppearance: 'none' }}>
+              <option value="all">{t(lang, 'expenses.allRooms')}</option>
+              <option value="general">{t(lang, 'expenses.general')}</option>
+              {rooms.map((r: any) => <option key={r.id} value={r.id}>{r.name}</option>)}
+            </select>
+            <CaretDown size={14} weight="bold" className="pointer-events-none absolute top-1/2 -translate-y-1/2 end-4 text-slate-400" />
+          </div>
         </div>
         <div className="flex-1 text-end">
           <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">{t(lang, 'expenses.totalRange')}</div>
@@ -143,14 +146,14 @@ export default function ExpenseView({ session, lang, tz, currency }: Props) {
 
       {/* Per-room totals strip */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <div className="bg-slate-100 rounded-xl p-3">
-          <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">{t(lang, 'expenses.general')}</p>
-          <p className="text-lg font-black text-slate-800 tabular-nums" dir="ltr">{currency} {(totalsByRoom['general'] || 0).toFixed(2)}</p>
+        <div className="bg-white border border-slate-200 rounded-xl p-3 shadow-sm">
+          <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">{t(lang, 'expenses.general')}</p>
+          <p className="text-lg font-black text-slate-900 tabular-nums" dir="ltr">{currency} {(totalsByRoom['general'] || 0).toFixed(2)}</p>
         </div>
         {rooms.slice(0, 6).map((r: any) => (
-          <div key={r.id} className="bg-slate-50 rounded-xl p-3">
-            <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">{r.name}</p>
-            <p className="text-lg font-black text-slate-800 tabular-nums" dir="ltr">{currency} {(totalsByRoom[r.id] || 0).toFixed(2)}</p>
+          <div key={r.id} className="bg-white border border-slate-200 rounded-xl p-3 shadow-sm">
+            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">{r.name}</p>
+            <p className="text-lg font-black text-slate-900 tabular-nums" dir="ltr">{currency} {(totalsByRoom[r.id] || 0).toFixed(2)}</p>
           </div>
         ))}
       </div>

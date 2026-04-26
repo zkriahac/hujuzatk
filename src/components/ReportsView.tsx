@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Layout, ChartPie, CreditCard, Calendar, Users, Target, FileXls, TrendDown, Scales } from 'phosphor-react';
+import { Layout, ChartPie, CreditCard, Calendar, Users, Target, FileXls, TrendDown, Scales, CaretDown } from 'phosphor-react';
 import { t, type Language } from '../lib/i18n';
 import { apolloClient } from '../lib/apolloClient';
 import { GET_EXPENSES_QUERY } from '../lib/graphql';
@@ -137,14 +137,18 @@ export default function ReportsView({
         <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
           <div>
             <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2 block">{t(lang, 'reports.type')}</label>
-            <select
-              value={reportType}
-              onChange={(e) => setReportType(e.target.value as 'stay' | 'created')}
-              className="w-full bg-slate-50 border border-slate-100 rounded-full px-5 py-2.5 pe-10 text-sm font-black focus:ring-2 focus:ring-emerald-500 transition-all"
-            >
-              <option value="stay">{t(lang, 'reports.stayDate')}</option>
-              <option value="created">{t(lang, 'reports.createdDate')}</option>
-            </select>
+            <div className="relative">
+              <select
+                value={reportType}
+                onChange={(e) => setReportType(e.target.value as 'stay' | 'created')}
+                className="w-full bg-slate-50 border border-slate-100 rounded-full px-5 py-2.5 pe-10 text-sm font-black focus:ring-2 focus:ring-emerald-500 transition-all"
+                style={{ appearance: 'none', WebkitAppearance: 'none' }}
+              >
+                <option value="stay">{t(lang, 'reports.stayDate')}</option>
+                <option value="created">{t(lang, 'reports.createdDate')}</option>
+              </select>
+              <CaretDown size={14} weight="bold" className="pointer-events-none absolute top-1/2 -translate-y-1/2 end-4 text-slate-400" />
+            </div>
           </div>
           <div>
             <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2 block">{t(lang, 'reports.fromDate')}</label>
@@ -166,16 +170,20 @@ export default function ReportsView({
           </div>
           <div>
             <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2 block">{t(lang, 'reports.roomFilter')}</label>
-            <select
-              value={reportRoomFilter}
-              onChange={(e) => setReportRoomFilter(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-100 rounded-full px-5 py-2.5 pe-10 text-sm font-black focus:ring-2 focus:ring-emerald-500"
-            >
-              <option value="ALL">{t(lang, 'reports.allRooms')}</option>
-              {rooms.map((r: any) => (
-                <option key={r.id} value={r.id}>{r.name}</option>
-              ))}
-            </select>
+            <div className="relative">
+              <select
+                value={reportRoomFilter}
+                onChange={(e) => setReportRoomFilter(e.target.value)}
+                className="w-full bg-slate-50 border border-slate-100 rounded-full px-5 py-2.5 pe-10 text-sm font-black focus:ring-2 focus:ring-emerald-500"
+                style={{ appearance: 'none', WebkitAppearance: 'none' }}
+              >
+                <option value="ALL">{t(lang, 'reports.allRooms')}</option>
+                {rooms.map((r: any) => (
+                  <option key={r.id} value={r.id}>{r.name}</option>
+                ))}
+              </select>
+              <CaretDown size={14} weight="bold" className="pointer-events-none absolute top-1/2 -translate-y-1/2 end-4 text-slate-400" />
+            </div>
           </div>
         </div>
         <div className="flex justify-end mt-5">
@@ -204,12 +212,8 @@ export default function ReportsView({
                   Icon={CreditCard} />
       </div>
 
-      {/* KPI row — same pastel variant as the row above so all 7 cards share one design */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
-        <StatCard variant="pastel" tone="emerald"
-                  label={t(lang, 'reports.totalRevenue')}
-                  value={`${currency} ${reportData.totalRevenue.toLocaleString()}`}
-                  Icon={CreditCard} />
+      {/* KPI row */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
         <StatCard variant="pastel" tone="blue"
                   label={t(lang, 'reports.totalNights')}
                   value={String(reportData.totalNights)}

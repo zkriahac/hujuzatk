@@ -49,26 +49,13 @@ const errorLink = onError(({ graphQLErrors, networkError }: any) => {
 const authLink = new ApolloLink((operation, forward) => {
   const token = localStorage.getItem('authToken');
   
-  // DEBUG: Log token status
-  if (!token && operation.operationName !== 'Login' && operation.operationName !== 'Register') {
-    console.warn('⚠️ No auth token for operation:', operation.operationName);
-  }
-
-  // Set authorization header in the context
-  operation.setContext(({ headers = {} }) => {
-    const newHeaders = {
+  operation.setContext(({ headers = {} }) => ({
+    headers: {
       ...headers,
       'content-type': 'application/json',
-    };
-    
-    // Add authorization header if token exists
-    if (token) {
-      newHeaders['authorization'] = `Bearer ${token}`;
-      console.log('✅ Authorization header added');
-    }
-    
-    return { headers: newHeaders };
-  });
+      ...(token ? { authorization: `Bearer ${token}` } : {}),
+    },
+  }));
 
   return forward(operation);
 });

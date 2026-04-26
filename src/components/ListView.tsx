@@ -47,7 +47,7 @@ export default function ListView({
     <div className="space-y-6">
       <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col lg:flex-row gap-6 items-center justify-between">
         <div className="flex gap-1 bg-slate-100 p-1.5 rounded-[1.25rem] w-full lg:w-auto overflow-x-auto">
-          {(['upcoming', 'today_checkin', 'today_checkout', 'active', 'past', 'canceled', 'all'] as ListFilter[]).map((f) => (
+          {(['today_checkin', 'today_checkout', 'active', 'past', 'canceled', 'all'] as ListFilter[]).map((f) => (
             <button
               key={f}
               onClick={() => setListFilter(f)}
