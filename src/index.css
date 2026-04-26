@@ -1,5 +1,13 @@
 @import "tailwindcss";
 
+button, select, a, [role="button"], label[for] {
+  cursor: pointer;
+}
+
+button:disabled, select:disabled {
+  cursor: not-allowed;
+}
+
 html {
   height: 100%;
   overflow: hidden;
