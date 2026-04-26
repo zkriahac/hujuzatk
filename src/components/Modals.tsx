@@ -37,43 +37,40 @@ export function useAnchoredPosition(anchor: ModalAnchor) {
   return { ref, pos };
 }
 
-// ---------- COLOR FALLBACK FOR html2canvas (Tailwind v4 oklch fix) ----------
-// Tailwind v4 outputs every color token as `oklch(...)`. html2canvas parses
-// stylesheets directly and crashes on that function. Walk the cloned document,
-// pull the resolved rgb value out of getComputedStyle for color / bg / border /
-// text-decoration-color / outline-color, and write it back as inline style.
-// After this pass the cloned doc has only rgb() colors, which html2canvas can read.
-const COLOR_PROPS = [
-  'color',
-  'background-color',
-  'border-top-color',
-  'border-right-color',
-  'border-bottom-color',
-  'border-left-color',
-  'outline-color',
-  'text-decoration-color',
-  'fill',
-  'stroke',
-];
+// ---------- html2canvas ↔ Tailwind v4 oklch() workaround ----------
+// Tailwind v4 emits every color token as oklch(). html2canvas's CSS parser
+// crashes on it. Even setting inline rgb() isn't enough because html2canvas
+// also walks document.styleSheets to gather rules — and those still hold the
+// original oklch() declarations.
+//
+// Two-step fix run from the html2canvas onclone hook:
+//   1. For every element in the clone, read its full computed style via
+//      getComputedStyle (browser has already resolved oklch -> rgb here) and
+//      copy ALL set properties back as inline style. After this each element
+//      knows its full styling without needing the stylesheets.
+//   2. Remove every <link rel="stylesheet"> and <style> in the clone so
+//      html2canvas can't try to re-parse them and trip on oklch().
+//
+// This is heavy for huge DOMs but the invoice modal's tree is tiny.
 export function inlineComputedColors(doc: Document) {
   const win = doc.defaultView || window;
   const all = doc.querySelectorAll<HTMLElement>('*');
   all.forEach((el) => {
     const cs = win.getComputedStyle(el);
-    let extra = '';
-    for (const prop of COLOR_PROPS) {
+    let inline = '';
+    for (let i = 0; i < cs.length; i++) {
+      const prop = cs.item(i);
       const val = cs.getPropertyValue(prop);
-      // The browser already resolves oklch -> rgb at compute time, so val is rgb().
-      // We only need to push it back as inline style so html2canvas's CSS parser
-      // sees rgb() instead of the original oklch() declaration.
-      if (val && !val.includes('oklch') && !val.includes('color(')) {
-        extra += `${prop}:${val};`;
-      }
+      // Skip values that still reference unsupported color functions.
+      if (!val) continue;
+      if (val.includes('oklch(') || val.includes('oklab(') || val.includes('lab(') || val.includes('lch(') || val.startsWith('color(')) continue;
+      inline += `${prop}:${val};`;
     }
-    if (extra) {
-      el.style.cssText = (el.style.cssText || '') + ';' + extra;
-    }
+    el.style.cssText = inline;
   });
+  // After every element carries its own styling, drop the stylesheets so
+  // html2canvas never tries to parse them.
+  doc.querySelectorAll('link[rel="stylesheet"], style').forEach((s) => s.remove());
 }
 
 // ---------- CONFIRM MODAL ----------
@@ -772,25 +769,26 @@ export function InvoiceModal({ booking, tenantName, currency, lang, tz, dir, onC
     }
   };
 
-  // Browser-native print fallback (kept for users who prefer printing physically)
-  const printInvoice = () => {
-    if (!invoiceRef.current) return;
-    const content = invoiceRef.current.innerHTML;
-    const win = window.open('', '_blank');
-    if (!win) return;
-    win.document.write(
-      `<html><head><title>Invoice</title><style>body{font-family:sans-serif;padding:20px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ddd;padding:8px;text-align:left}.text-right{text-align:right}.bg-gray-100{background:#f3f4f6}</style></head><body dir="${dir}">${content}</body></html>`
-    );
-    win.document.close();
-    win.print();
-  };
-
   return (
-    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-[200] p-4">
-      <div className="bg-white rounded-3xl max-w-2xl w-full shadow-2xl overflow-hidden">
+    <div
+      className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-[200] p-4"
+      onClick={onClose}
+      dir={dir}
+    >
+      <div
+        className="bg-white rounded-3xl max-w-2xl w-full shadow-2xl overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="p-6 border-b border-slate-100 flex justify-between items-center hide-on-print">
           <h2 className="font-black text-slate-900 uppercase tracking-tight">{t(lang, 'invoice.title')} Preview</h2>
-          <button onClick={onClose} className="h-10 w-10 flex items-center justify-center rounded-full hover:bg-slate-100">×</button>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label={t(lang, 'invoice.close')}
+            className="h-10 w-10 flex items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 hover:text-slate-900 transition-colors"
+          >
+            <X size={20} weight="bold" />
+          </button>
         </div>
         <div ref={invoiceRef} className="p-6 relative overflow-auto max-h-[80vh] bg-white">
           {booking.status === 'CANCELED' && (
@@ -888,14 +886,16 @@ export function InvoiceModal({ booking, tenantName, currency, lang, tz, dir, onC
             </div>
           )}
         </div>
-        <div className="p-8 bg-slate-50 border-t border-slate-100 flex justify-end gap-3 hide-on-print flex-wrap">
-          <button onClick={onClose} className="px-6 py-3 border border-slate-200 rounded-2xl font-bold hover:bg-white transition-all">
+        <div className="p-6 bg-slate-50 border-t border-slate-100 flex justify-end gap-3 hide-on-print flex-wrap">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-6 py-3 border border-slate-200 rounded-2xl font-bold hover:bg-white transition-all"
+          >
             {t(lang, 'invoice.close')}
           </button>
-          <button onClick={printInvoice} className="px-6 py-3 border border-slate-200 rounded-2xl font-bold hover:bg-white transition-all flex items-center gap-2">
-            <FileText size={18} weight="bold" /> {t(lang, 'invoice.print')}
-          </button>
           <button
+            type="button"
             onClick={downloadPdf}
             disabled={generating}
             className="px-8 py-3 bg-emerald-600 text-white rounded-2xl font-black shadow-lg shadow-emerald-100 hover:bg-emerald-700 transition-all flex items-center gap-2 disabled:opacity-60"
