@@ -304,7 +304,7 @@ export const resolvers = {
 					data: {
 						tenantId: context.user.tenantId,
 						bookingNumber,
-						guestName: input.guestName, guestEmail: input.guestEmail, guestPhone: input.guestPhone, city: input.city,
+						guestName: input.guestName, guestEmail: input.guestEmail, guestPhone: input.guestPhone, guestIdNumber: input.guestIdNumber || null, city: input.city,
 						room: input.room, checkIn, checkOut, nightPrice: input.nightPrice, deposit: input.deposit,
 						status: input.status?.toLowerCase() || 'upcoming', source: input.source || null, notes: input.notes,
 						nights, totalPrice, tax, remaining,
@@ -324,6 +324,7 @@ export const resolvers = {
 			if (input.guestName !== undefined) updateData.guestName = input.guestName;
 			if (input.guestEmail !== undefined) updateData.guestEmail = input.guestEmail;
 			if (input.guestPhone !== undefined) updateData.guestPhone = input.guestPhone;
+			if (input.guestIdNumber !== undefined) updateData.guestIdNumber = input.guestIdNumber || null;
 			if (input.city !== undefined) updateData.city = input.city;
 			if (input.room !== undefined) updateData.room = input.room;
 			if (input.notes !== undefined) updateData.notes = input.notes;
@@ -377,7 +378,7 @@ export const resolvers = {
 				const totalPrice = nights * input.nightPrice;
 				const tax = totalPrice * ((tenant.settings?.defaultTax || 0) / 100);
 				const remaining = totalPrice + tax - input.deposit;
-				const booking = await prisma.booking.create({ data: { tenantId: context.user.tenantId, bookingNumber: startNumber + i, guestName: input.guestName, guestEmail: input.guestEmail, guestPhone: input.guestPhone, city: input.city, room: input.room, checkIn, checkOut, nightPrice: input.nightPrice, deposit: input.deposit, status: input.status?.toLowerCase() || 'upcoming', source: input.source || null, notes: input.notes, nights, totalPrice, tax, remaining } });
+				const booking = await prisma.booking.create({ data: { tenantId: context.user.tenantId, bookingNumber: startNumber + i, guestName: input.guestName, guestEmail: input.guestEmail, guestPhone: input.guestPhone, guestIdNumber: input.guestIdNumber || null, city: input.city, room: input.room, checkIn, checkOut, nightPrice: input.nightPrice, deposit: input.deposit, status: input.status?.toLowerCase() || 'upcoming', source: input.source || null, notes: input.notes, nights, totalPrice, tax, remaining } });
 				created.push(normalizeBooking(booking));
 			}
 			return created;
@@ -415,11 +416,36 @@ export const resolvers = {
 			requireAuth(context);
 			if (input.defaultNightPrice !== undefined && input.defaultNightPrice < 0) throw new GraphQLError('Night price cannot be negative', { extensions: { code: 'BAD_USER_INPUT', http: { status: 400 } } });
 			if (input.defaultTax !== undefined && (input.defaultTax < 0 || input.defaultTax > 100)) throw new GraphQLError('Tax must be between 0 and 100', { extensions: { code: 'BAD_USER_INPUT', http: { status: 400 } } });
+			// Build a single patch object so we can spread the same shape into create/update.
+			// "Empty string" is treated as "clear it" for company fields; undefined leaves them.
+			const companyPatch: any = {};
+			(['companyName','companyAddress','companyPhone','companyEmail','companyTaxId','companyLogoUrl','invoiceFooter'] as const).forEach((k) => {
+				if (input[k] !== undefined) companyPatch[k] = input[k] || null;
+			});
+
 			let settings = await prisma.tenantSettings.findUnique({ where: { tenantId: context.user.tenantId } });
 			if (!settings) {
-				settings = await prisma.tenantSettings.create({ data: { tenantId: context.user.tenantId, defaultNightPrice: input.defaultNightPrice || 50, defaultTax: input.defaultTax || 0, notifyOnBooking: input.notifyOnBooking !== undefined ? input.notifyOnBooking : true, notifyOnCancellation: input.notifyOnCancellation !== undefined ? input.notifyOnCancellation : true } });
+				settings = await prisma.tenantSettings.create({
+					data: {
+						tenantId: context.user.tenantId,
+						defaultNightPrice: input.defaultNightPrice || 50,
+						defaultTax: input.defaultTax || 0,
+						notifyOnBooking: input.notifyOnBooking !== undefined ? input.notifyOnBooking : true,
+						notifyOnCancellation: input.notifyOnCancellation !== undefined ? input.notifyOnCancellation : true,
+						...companyPatch,
+					},
+				});
 			} else {
-				settings = await prisma.tenantSettings.update({ where: { tenantId: context.user.tenantId }, data: { ...(input.defaultNightPrice !== undefined && { defaultNightPrice: input.defaultNightPrice }), ...(input.defaultTax !== undefined && { defaultTax: input.defaultTax }), ...(input.notifyOnBooking !== undefined && { notifyOnBooking: input.notifyOnBooking }), ...(input.notifyOnCancellation !== undefined && { notifyOnCancellation: input.notifyOnCancellation }) } });
+				settings = await prisma.tenantSettings.update({
+					where: { tenantId: context.user.tenantId },
+					data: {
+						...(input.defaultNightPrice !== undefined && { defaultNightPrice: input.defaultNightPrice }),
+						...(input.defaultTax !== undefined && { defaultTax: input.defaultTax }),
+						...(input.notifyOnBooking !== undefined && { notifyOnBooking: input.notifyOnBooking }),
+						...(input.notifyOnCancellation !== undefined && { notifyOnCancellation: input.notifyOnCancellation }),
+						...companyPatch,
+					},
+				});
 			}
 			return settings;
 		},

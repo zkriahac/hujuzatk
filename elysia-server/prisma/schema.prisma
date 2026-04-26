@@ -59,15 +59,24 @@ model TenantSettings {
   id                String    @id @default(uuid())
   tenantId          String    @unique
   tenant            Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  
+
   // Display settings
   defaultNightPrice Float    @default(50)
   defaultTax        Float    @default(0) // percentage
-  
+
   // Notification settings
   notifyOnBooking   Boolean   @default(true)
   notifyOnCancellation Boolean @default(true)
-  
+
+  // Company profile — printed/exported on invoices in place of the tenant name when set.
+  companyName       String?
+  companyAddress    String?
+  companyPhone      String?
+  companyEmail      String?
+  companyTaxId      String?
+  companyLogoUrl    String?
+  invoiceFooter     String?  // e.g. bank account, thank-you note
+
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
@@ -85,6 +94,7 @@ model Booking {
   guestName         String
   guestEmail        String?
   guestPhone        String?
+  guestIdNumber     String?   // Civil/national/passport ID — optional, for invoice + records
   city              String?
   
   // Room & dates

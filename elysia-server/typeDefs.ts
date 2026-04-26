@@ -62,6 +62,13 @@ export const typeDefs = `
     defaultTax: Float!
     notifyOnBooking: Boolean!
     notifyOnCancellation: Boolean!
+    companyName: String
+    companyAddress: String
+    companyPhone: String
+    companyEmail: String
+    companyTaxId: String
+    companyLogoUrl: String
+    invoiceFooter: String
     createdAt: DateTime!
     updatedAt: DateTime!
   }
@@ -73,6 +80,7 @@ export const typeDefs = `
     guestName: String!
     guestEmail: String
     guestPhone: String
+    guestIdNumber: String
     city: String
     room: String!
     checkIn: DateTime!
@@ -305,12 +313,20 @@ export const typeDefs = `
     defaultTax: Float
     notifyOnBooking: Boolean
     notifyOnCancellation: Boolean
+    companyName: String
+    companyAddress: String
+    companyPhone: String
+    companyEmail: String
+    companyTaxId: String
+    companyLogoUrl: String
+    invoiceFooter: String
   }
 
   input BookingInput {
     guestName: String!
     guestEmail: String
     guestPhone: String
+    guestIdNumber: String
     city: String
     room: String!
     checkIn: DateTime!
@@ -326,6 +342,7 @@ export const typeDefs = `
     guestName: String
     guestEmail: String
     guestPhone: String
+    guestIdNumber: String
     city: String
     room: String
     checkIn: DateTime
