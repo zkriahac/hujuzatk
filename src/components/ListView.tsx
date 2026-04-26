@@ -94,7 +94,7 @@ export default function ListView({
       </div>
 
       <div
-        className="bg-white rounded-2xl border border-slate-200 shadow-xl overflow-hidden overflow-x-auto max-h-[75vh] scrollbar-hide"
+        className="bg-white rounded-2xl border border-slate-200 shadow-xl overflow-auto max-h-[75vh] scrollbar-hide"
         ref={listContainerRef}
       >
         <table className="w-full text-sm">
