@@ -196,33 +196,33 @@ export default function ReportsView({
         </div>
       </div>
 
-      {/* P&L summary row — soft-pastel variant of StatCard */}
+      {/* P&L row */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-        <StatCard variant="pastel" tone={netIncome < 0 ? 'amber' : 'blue'}
-                  label={t(lang, 'reports.netIncome')}
-                  value={`${currency} ${netIncome.toLocaleString()}`}
-                  Icon={Scales} />
-        <StatCard variant="pastel" tone="rose"
-                  label={t(lang, 'reports.expenses')}
-                  value={`${currency} ${totalExpenses.toLocaleString()}`}
-                  Icon={TrendDown} />
-        <StatCard variant="pastel" tone="emerald"
+        <StatCard variant="bold" tone="emerald"
                   label={t(lang, 'reports.income')}
                   value={`${currency} ${reportData.totalRevenue.toLocaleString()}`}
                   Icon={CreditCard} />
+        <StatCard variant="bold" tone="rose"
+                  label={t(lang, 'reports.expenses')}
+                  value={`${currency} ${totalExpenses.toLocaleString()}`}
+                  Icon={TrendDown} />
+        <StatCard variant="bold" tone={netIncome < 0 ? 'amber' : 'slate'}
+                  label={t(lang, 'reports.netIncome')}
+                  value={`${currency} ${netIncome.toLocaleString()}`}
+                  Icon={Scales} />
       </div>
 
       {/* KPI row */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-        <StatCard variant="pastel" tone="blue"
+        <StatCard variant="bold" tone="blue"
                   label={t(lang, 'reports.totalNights')}
                   value={String(reportData.totalNights)}
                   Icon={Calendar} />
-        <StatCard variant="pastel" tone="indigo"
+        <StatCard variant="bold" tone="indigo"
                   label={t(lang, 'reports.totalBookings')}
                   value={String(reportData.bookingCount)}
                   Icon={Users} />
-        <StatCard variant="pastel" tone="amber"
+        <StatCard variant="bold" tone="amber"
                   label={t(lang, 'reports.avgFillRate')}
                   value={`${avgFill.toFixed(1)}%`}
                   Icon={Target} />
@@ -237,7 +237,7 @@ export default function ReportsView({
           <div className="flex-1 overflow-auto max-h-96 scrollbar-hide">
             <table className="w-full text-sm">
               <thead className="bg-slate-50 sticky top-0 z-10">
-                <tr className="text-[10px] font-black uppercase tracking-widest text-slate-300">
+                <tr className="text-[10px] font-black uppercase tracking-widest">
                   <th className="px-6 py-4 text-start">{t(lang, 'reports.room')}</th>
                   <th className="px-6 py-4 text-end">{t(lang, 'reports.revenue')}</th>
                   <th className="px-6 py-4 text-end">{t(lang, 'reports.expenses')}</th>
@@ -283,7 +283,7 @@ export default function ReportsView({
           <div className="flex-1 overflow-auto max-h-96 scrollbar-hide">
             <table className="w-full text-sm">
               <thead className="bg-slate-50 sticky top-0 z-10">
-                <tr className="text-[10px] font-black uppercase tracking-widest text-slate-300">
+                <tr className="text-[10px] font-black uppercase tracking-widest">
                   <th className="px-8 py-4 text-start">{t(lang, 'reports.month')}</th>
                   <th className="px-8 py-4 text-end">{t(lang, 'reports.revenue')}</th>
                   <th className="px-8 py-4 text-center">{t(lang, 'reports.fillRate')}</th>
@@ -375,15 +375,15 @@ function StatCard({
   }
   const b = TONE_BOLD[tone];
   return (
-    <div className={`${b.bg} rounded-[2rem] p-6 sm:p-7 text-white relative overflow-hidden min-h-[160px] flex flex-col justify-between`}>
-      <div className="absolute -top-3 -end-2 text-white/20 pointer-events-none">
-        <Icon size={120} weight="duotone" />
+    <div className={`${b.bg} rounded-[2rem] p-6 sm:p-8 text-white relative overflow-hidden min-h-[150px] flex flex-col justify-between`}>
+      <div className="absolute -bottom-4 -end-4 text-white/10 pointer-events-none">
+        <Icon size={130} weight="fill" />
       </div>
-      <div className="flex items-center gap-2 text-white/90 relative z-10">
-        <Icon size={18} weight="duotone" />
-        <span className="text-xs font-black uppercase tracking-widest">{label}</span>
+      <div className="flex items-center gap-2 text-white/75 relative z-10">
+        <Icon size={16} weight="bold" />
+        <span className="text-[11px] font-black uppercase tracking-widest">{label}</span>
       </div>
-      <div className="text-3xl sm:text-4xl font-black tabular-nums tracking-tighter relative z-10" dir="ltr">
+      <div className="text-4xl sm:text-5xl font-black tabular-nums tracking-tighter relative z-10 mt-3" dir="ltr">
         {value}
       </div>
     </div>

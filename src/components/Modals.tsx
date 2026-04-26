@@ -49,7 +49,7 @@ function ConfirmModal({ message, onConfirm, onCancel, confirmColor = 'bg-red-500
 }) {
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 backdrop-blur-xs p-4" onClick={onCancel}>
-      <div className="bg-white rounded-3xl shadow-2xl max-w-sm w-full p-8 text-center space-y-6" onClick={e => e.stopPropagation()}>
+      <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-8 text-center space-y-6" onClick={e => e.stopPropagation()}>
         <WarningCircle size={48} weight="fill" className="text-amber-500 mx-auto" />
         <p className="text-sm font-bold text-slate-700">{message}</p>
         <div className="flex gap-3">
@@ -591,7 +591,7 @@ export function BookingDetailsModal({
             </div>
           </div>
 
-          <div className="bg-slate-50 rounded-3xl p-6 space-y-3">
+          <div className="bg-slate-50 rounded-2xl p-6 space-y-3">
             <div className="flex justify-between items-center text-xs font-bold text-slate-400 uppercase tracking-widest">
               <span>{t(lang, 'booking.totalBill')}</span>
               <span className="text-slate-900 font-black text-lg">{currency} {booking.totalPrice}</span>
@@ -700,7 +700,7 @@ export function InvoiceModal({ booking, tenantName, currency, lang, tz, dir, onC
       dir={dir}
     >
       <div
-        className="bg-white rounded-3xl max-w-2xl w-full shadow-2xl overflow-hidden"
+        className="bg-white rounded-2xl max-w-2xl w-full shadow-2xl overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="p-6 border-b border-slate-100 flex justify-between items-center hide-on-print">
@@ -716,7 +716,7 @@ export function InvoiceModal({ booking, tenantName, currency, lang, tz, dir, onC
         </div>
         <div className="p-6 relative overflow-auto max-h-[80vh] bg-white invoice-print-area">
           {booking.status === 'CANCELED' && (
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 border-[12px] border-red-500 text-red-500 font-black text-8xl opacity-10 transform -rotate-12 p-8 rounded-3xl uppercase pointer-events-none">
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 border-[12px] border-red-500 text-red-500 font-black text-8xl opacity-10 transform -rotate-12 p-8 rounded-2xl uppercase pointer-events-none">
               {t(lang, 'invoice.canceled')}
             </div>
           )}

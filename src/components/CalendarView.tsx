@@ -158,7 +158,7 @@ export default function CalendarView({
 
   return (
     <div className="relative h-full">
-      <div className="bg-white sm:rounded-3xl sm:border sm:border-slate-200 sm:shadow-xl overflow-hidden flex flex-col h-full">
+      <div className="bg-white sm:rounded-2xl sm:border sm:border-slate-200 sm:shadow-xl overflow-hidden flex flex-col h-full">
         <div className="overflow-auto flex-1 scrollbar-hide" ref={calendarContainerRef}>
           <table className="border-separate border-spacing-0">
             <thead className="sticky top-0 z-40 bg-slate-50">

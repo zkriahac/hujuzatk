@@ -1,5 +1,5 @@
 import { parseISO, isSameDay, startOfToday } from 'date-fns';
-import { MagnifyingGlass, Users, Eye } from 'phosphor-react';
+import { MagnifyingGlass, Users, Eye, List, ArrowSquareIn, ArrowSquareOut, CheckCircle, Archive, XCircle } from 'phosphor-react';
 import { cn } from '../utils/cn';
 import { t, type Language } from '../lib/i18n';
 import { formatTz } from '../utils/formatTz';
@@ -43,20 +43,31 @@ export default function ListView({
   tz,
 }: ListViewProps) {
   const roomNameMap = Object.fromEntries(rooms.map((r: any) => [r.id, r.name]));
+
+  const FILTER_META: { id: ListFilter; Icon: any; active: string }[] = [
+    { id: 'all',            Icon: List,           active: 'bg-white text-slate-900 shadow-md' },
+    { id: 'today_checkin',  Icon: ArrowSquareIn,  active: 'bg-emerald-500 text-white shadow-sm' },
+    { id: 'today_checkout', Icon: ArrowSquareOut, active: 'bg-blue-500 text-white shadow-sm' },
+    { id: 'active',         Icon: CheckCircle,    active: 'bg-violet-500 text-white shadow-sm' },
+    { id: 'past',           Icon: Archive,        active: 'bg-slate-600 text-white shadow-sm' },
+    { id: 'canceled',       Icon: XCircle,        active: 'bg-rose-500 text-white shadow-sm' },
+  ];
+
   return (
     <div className="space-y-6">
-      <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col lg:flex-row gap-6 items-center justify-between">
+      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col lg:flex-row gap-6 items-center justify-between">
         <div className="flex gap-1 bg-slate-100 p-1.5 rounded-[1.25rem] w-full lg:w-auto overflow-x-auto">
-          {(['today_checkin', 'today_checkout', 'active', 'past', 'canceled', 'all'] as ListFilter[]).map((f) => (
+          {FILTER_META.map(({ id, Icon, active }) => (
             <button
-              key={f}
-              onClick={() => setListFilter(f)}
+              key={id}
+              onClick={() => setListFilter(id)}
               className={cn(
-                'flex-none px-5 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all whitespace-nowrap',
-                listFilter === f ? 'bg-white text-slate-900 shadow-md' : 'text-slate-400 hover:text-slate-600',
+                'flex-none flex items-center gap-1.5 px-4 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all whitespace-nowrap',
+                listFilter === id ? active : 'text-slate-400 hover:text-slate-600',
               )}
             >
-              {t(lang, `list.${f}`)}
+              <Icon size={13} weight="bold" />
+              {t(lang, `list.${id}`)}
             </button>
           ))}
         </div>
@@ -83,7 +94,7 @@ export default function ListView({
       </div>
 
       <div
-        className="bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden overflow-x-auto max-h-[75vh] scrollbar-hide"
+        className="bg-white rounded-2xl border border-slate-200 shadow-xl overflow-hidden overflow-x-auto max-h-[75vh] scrollbar-hide"
         ref={listContainerRef}
       >
         <table className="w-full text-sm">

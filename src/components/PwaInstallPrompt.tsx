@@ -92,7 +92,7 @@ export default function PwaInstallPrompt({ lang, isRtl }: Props) {
   return (
     <div
       className={cn(
-        'fixed bottom-4 z-[120] max-w-sm rounded-3xl bg-white border border-slate-200 shadow-2xl p-4 animate-in slide-in-from-bottom-4 fade-in duration-300',
+        'fixed bottom-4 z-[120] max-w-sm rounded-2xl bg-white border border-slate-200 shadow-2xl p-4 animate-in slide-in-from-bottom-4 fade-in duration-300',
         isRtl ? 'left-4' : 'right-4',
       )}
       dir={isRtl ? 'rtl' : 'ltr'}
