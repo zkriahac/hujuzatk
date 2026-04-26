@@ -37,6 +37,45 @@ export function useAnchoredPosition(anchor: ModalAnchor) {
   return { ref, pos };
 }
 
+// ---------- COLOR FALLBACK FOR html2canvas (Tailwind v4 oklch fix) ----------
+// Tailwind v4 outputs every color token as `oklch(...)`. html2canvas parses
+// stylesheets directly and crashes on that function. Walk the cloned document,
+// pull the resolved rgb value out of getComputedStyle for color / bg / border /
+// text-decoration-color / outline-color, and write it back as inline style.
+// After this pass the cloned doc has only rgb() colors, which html2canvas can read.
+const COLOR_PROPS = [
+  'color',
+  'background-color',
+  'border-top-color',
+  'border-right-color',
+  'border-bottom-color',
+  'border-left-color',
+  'outline-color',
+  'text-decoration-color',
+  'fill',
+  'stroke',
+];
+export function inlineComputedColors(doc: Document) {
+  const win = doc.defaultView || window;
+  const all = doc.querySelectorAll<HTMLElement>('*');
+  all.forEach((el) => {
+    const cs = win.getComputedStyle(el);
+    let extra = '';
+    for (const prop of COLOR_PROPS) {
+      const val = cs.getPropertyValue(prop);
+      // The browser already resolves oklch -> rgb at compute time, so val is rgb().
+      // We only need to push it back as inline style so html2canvas's CSS parser
+      // sees rgb() instead of the original oklch() declaration.
+      if (val && !val.includes('oklch') && !val.includes('color(')) {
+        extra += `${prop}:${val};`;
+      }
+    }
+    if (extra) {
+      el.style.cssText = (el.style.cssText || '') + ';' + extra;
+    }
+  });
+}
+
 // ---------- CONFIRM MODAL ----------
 
 function ConfirmModal({ message, onConfirm, onCancel, confirmColor = 'bg-red-500 hover:bg-red-600', confirmLabel, cancelLabel }: {
@@ -698,6 +737,13 @@ export function InvoiceModal({ booking, tenantName, currency, lang, tz, dir, onC
 
   // Real PDF download — preserves the on-screen design via html2pdf.js (lazy-loaded so the
   // 150 KB library only ships when the user actually clicks Download).
+  //
+  // Tailwind v4 emits all color tokens as oklch(), which html2canvas can't parse.
+  // Workaround: in the html2canvas onclone callback, walk every element in the cloned
+  // document and read its computed color/bg/border via getComputedStyle (the browser
+  // resolves oklch -> rgb at compute time), then write those rgb values back as inline
+  // style. After this, the cloned doc only has rgb() colors, which html2canvas can
+  // happily parse.
   const downloadPdf = async () => {
     if (!invoiceRef.current) return;
     setGenerating(true);
@@ -711,7 +757,12 @@ export function InvoiceModal({ booking, tenantName, currency, lang, tz, dir, onC
           margin: 10,
           filename: `invoice-${code}-${(booking.guestName || 'guest').replace(/\s+/g, '_')}.pdf`,
           image: { type: 'jpeg', quality: 0.98 },
-          html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
+          html2canvas: {
+            scale: 2,
+            useCORS: true,
+            backgroundColor: '#ffffff',
+            onclone: (clonedDoc: Document) => inlineComputedColors(clonedDoc),
+          },
           jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
         })
         .from(invoiceRef.current)
