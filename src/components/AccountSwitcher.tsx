@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { CaretDown, Check, Plus, SignOut, X } from 'phosphor-react';
+import { Check, Plus, SignOut, X, UsersThree } from 'phosphor-react';
 import { cn } from '../utils/cn';
 import { t, type Language } from '../lib/i18n';
 import { addAccount, getAccounts, removeAccount, setActive, type LinkedAccount } from '../lib/accountStore';
@@ -10,10 +10,9 @@ interface Props {
   lang: Language;
   isRtl: boolean;
   currentTenantId: string | null;
-  currentName: string;
 }
 
-export default function AccountSwitcher({ lang, isRtl, currentTenantId, currentName }: Props) {
+export default function AccountSwitcher({ lang, isRtl, currentTenantId }: Props) {
   const [open, setOpen] = useState(false);
   const [accounts, setAccounts] = useState<LinkedAccount[]>([]);
   const [showAdd, setShowAdd] = useState(false);
@@ -43,13 +42,14 @@ export default function AccountSwitcher({ lang, isRtl, currentTenantId, currentN
 
   return (
     <div className="relative" ref={ref}>
+      {/* Icon-only trigger so the nav stays stable between hydration states (no name flash) */}
       <button
         onClick={() => setOpen(o => !o)}
-        className="flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-100 text-slate-700 text-[10px] font-black uppercase tracking-tight hover:bg-slate-200 transition-colors"
+        className="flex items-center justify-center w-8 h-8 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900 transition-colors"
         title={t(lang, 'account.switch')}
+        aria-label={t(lang, 'account.switch')}
       >
-        <span className="max-w-[80px] truncate">{currentName}</span>
-        <CaretDown size={10} weight="bold" className={cn('transition-transform', open && 'rotate-180')} />
+        <UsersThree size={16} weight="bold" />
       </button>
 
       {open && (

@@ -21,3 +21,11 @@ body {
 [dir="rtl"] * {
   font-family: 'Cairo', sans-serif;
 }
+
+/* Native <select> elements draw their chevron at the inline-end edge.
+   Without explicit padding, the chevron sits flush against the border —
+   give every select a 2.5rem padding-end so the arrow has breathing room.
+   Individual components can still override with utility classes if needed. */
+select {
+  padding-inline-end: 2.5rem;
+}

@@ -188,48 +188,40 @@ export default function ReportsView({
         </div>
       </div>
 
-      {/* P&L summary row — soft pastel cards (Friendly: rounded, ample whitespace, low-contrast surfaces with high-contrast figures) */}
+      {/* P&L summary row — soft-pastel variant of StatCard */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-        <PastelCard
-          tone="blue"
-          label={t(lang, 'reports.netIncome')}
-          value={`${currency} ${netIncome.toLocaleString()}`}
-          Icon={Scales}
-          isRtl={lang === 'ar'}
-          negative={netIncome < 0}
-        />
-        <PastelCard
-          tone="rose"
-          label={t(lang, 'reports.expenses')}
-          value={`${currency} ${totalExpenses.toLocaleString()}`}
-          Icon={TrendDown}
-          isRtl={lang === 'ar'}
-        />
-        <PastelCard
-          tone="emerald"
-          label={t(lang, 'reports.income')}
-          value={`${currency} ${reportData.totalRevenue.toLocaleString()}`}
-          Icon={CreditCard}
-          isRtl={lang === 'ar'}
-        />
+        <StatCard variant="pastel" tone={netIncome < 0 ? 'amber' : 'blue'}
+                  label={t(lang, 'reports.netIncome')}
+                  value={`${currency} ${netIncome.toLocaleString()}`}
+                  Icon={Scales} />
+        <StatCard variant="pastel" tone="rose"
+                  label={t(lang, 'reports.expenses')}
+                  value={`${currency} ${totalExpenses.toLocaleString()}`}
+                  Icon={TrendDown} />
+        <StatCard variant="pastel" tone="emerald"
+                  label={t(lang, 'reports.income')}
+                  value={`${currency} ${reportData.totalRevenue.toLocaleString()}`}
+                  Icon={CreditCard} />
       </div>
 
-      {/* KPI row — bold filled cards for headline numbers, white text, faint background icon */}
+      {/* KPI row — bold-filled variant of the same StatCard */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
-        {[
-          { bg: 'bg-amber-500',  Icon: Target,    label: t(lang, 'reports.avgFillRate'),    value: `${avgFill.toFixed(1)}%` },
-          { bg: 'bg-slate-900',  Icon: Users,     label: t(lang, 'reports.totalBookings'),  value: String(reportData.bookingCount) },
-          { bg: 'bg-blue-600',   Icon: Calendar,  label: t(lang, 'reports.totalNights'),    value: String(reportData.totalNights) },
-          { bg: 'bg-emerald-600',Icon: CreditCard,label: t(lang, 'reports.totalRevenue'),   value: `${currency} ${reportData.totalRevenue.toLocaleString()}` },
-        ].map(({ bg, Icon, label, value }) => (
-          <div key={label} className={`${bg} p-7 rounded-[2rem] text-white relative overflow-hidden group min-h-[150px] flex flex-col justify-end`}>
-            <div className="absolute -top-4 -right-2 opacity-20 group-hover:opacity-30 transition-opacity">
-              <Icon size={130} weight="duotone" />
-            </div>
-            <div className="text-[10px] font-black uppercase tracking-[0.25em] opacity-80 relative z-10">{label}</div>
-            <div className="text-3xl sm:text-4xl font-black mt-1 tracking-tighter relative z-10 tabular-nums" dir="ltr">{value}</div>
-          </div>
-        ))}
+        <StatCard variant="bold" tone="emerald"
+                  label={t(lang, 'reports.totalRevenue')}
+                  value={`${currency} ${reportData.totalRevenue.toLocaleString()}`}
+                  Icon={CreditCard} />
+        <StatCard variant="bold" tone="blue"
+                  label={t(lang, 'reports.totalNights')}
+                  value={String(reportData.totalNights)}
+                  Icon={Calendar} />
+        <StatCard variant="bold" tone="slate"
+                  label={t(lang, 'reports.totalBookings')}
+                  value={String(reportData.bookingCount)}
+                  Icon={Users} />
+        <StatCard variant="bold" tone="amber"
+                  label={t(lang, 'reports.avgFillRate')}
+                  value={`${avgFill.toFixed(1)}%`}
+                  Icon={Target} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -315,34 +307,70 @@ export default function ReportsView({
   );
 }
 
-// Friendly pastel summary tile — soft surface with a small icon at the corner and a giant number.
-// Tone keys map onto the Friendly palette tokens (primary=rose, secondary=mint, info=blue).
-function PastelCard({
-  tone, label, value, Icon, isRtl, negative,
+// Unified stat card. Same anatomy across the entire reports page:
+//   - rounded-[2rem] surface, fixed min-height, ample padding
+//   - small icon + uppercase label aligned at top
+//   - giant tabular number aligned at bottom
+//   - oversized faint icon watermark in the corner
+// `variant` only swaps the surface treatment (soft pastel vs bold filled);
+// the layout is identical so the row of pastel + the row of bold reads as
+// one design language.
+type StatTone = 'blue' | 'rose' | 'emerald' | 'amber' | 'slate';
+type StatVariant = 'pastel' | 'bold';
+
+const TONE_PASTEL: Record<StatTone, { bg: string; border: string; label: string; value: string; watermark: string }> = {
+  blue:    { bg: 'bg-blue-50',    border: 'border-blue-100',    label: 'text-blue-600',    value: 'text-blue-700',    watermark: 'text-blue-200' },
+  rose:    { bg: 'bg-rose-50',    border: 'border-rose-100',    label: 'text-rose-600',    value: 'text-rose-700',    watermark: 'text-rose-200' },
+  emerald: { bg: 'bg-emerald-50', border: 'border-emerald-100', label: 'text-emerald-600', value: 'text-emerald-700', watermark: 'text-emerald-200' },
+  amber:   { bg: 'bg-amber-50',   border: 'border-amber-100',   label: 'text-amber-600',   value: 'text-amber-700',   watermark: 'text-amber-200' },
+  slate:   { bg: 'bg-slate-50',   border: 'border-slate-100',   label: 'text-slate-600',   value: 'text-slate-700',   watermark: 'text-slate-200' },
+};
+
+const TONE_BOLD: Record<StatTone, { bg: string }> = {
+  blue:    { bg: 'bg-blue-600' },
+  rose:    { bg: 'bg-rose-600' },
+  emerald: { bg: 'bg-emerald-600' },
+  amber:   { bg: 'bg-amber-500' },
+  slate:   { bg: 'bg-slate-900' },
+};
+
+function StatCard({
+  variant, tone, label, value, Icon,
 }: {
-  tone: 'blue' | 'rose' | 'emerald';
+  variant: StatVariant;
+  tone: StatTone;
   label: string;
   value: string;
   Icon: any;
-  isRtl: boolean;
-  negative?: boolean;
 }) {
-  const palette = {
-    blue:    { bg: 'bg-blue-50',    border: 'border-blue-100',    label: 'text-blue-600',    value: 'text-blue-700',    icon: 'text-blue-300' },
-    rose:    { bg: 'bg-rose-50',    border: 'border-rose-100',    label: 'text-rose-600',    value: 'text-rose-700',    icon: 'text-rose-300' },
-    emerald: { bg: 'bg-emerald-50', border: 'border-emerald-100', label: 'text-emerald-600', value: 'text-emerald-700', icon: 'text-emerald-300' },
-  }[tone];
-  // Override blue with amber when negative (loss month)
-  const effective = negative
-    ? { bg: 'bg-amber-50', border: 'border-amber-100', label: 'text-amber-600', value: 'text-amber-700', icon: 'text-amber-300' }
-    : palette;
+  if (variant === 'pastel') {
+    const p = TONE_PASTEL[tone];
+    return (
+      <div className={`${p.bg} ${p.border} border rounded-[2rem] p-6 sm:p-7 relative overflow-hidden min-h-[160px] flex flex-col justify-between`}>
+        <div className={`absolute -top-3 -end-2 ${p.watermark} opacity-50 pointer-events-none`}>
+          <Icon size={120} weight="duotone" />
+        </div>
+        <div className={`flex items-center gap-2 ${p.label} relative z-10`}>
+          <Icon size={18} weight="duotone" />
+          <span className="text-xs font-black uppercase tracking-widest">{label}</span>
+        </div>
+        <div className={`text-3xl sm:text-4xl font-black tabular-nums tracking-tighter ${p.value} relative z-10`} dir="ltr">
+          {value}
+        </div>
+      </div>
+    );
+  }
+  const b = TONE_BOLD[tone];
   return (
-    <div className={`${effective.bg} ${effective.border} border rounded-[2rem] p-6 sm:p-7 relative overflow-hidden min-h-[150px] flex flex-col`}>
-      <div className={`flex items-center gap-2 ${effective.label} mb-1`}>
-        <Icon size={20} weight="duotone" className={effective.icon} />
+    <div className={`${b.bg} rounded-[2rem] p-6 sm:p-7 text-white relative overflow-hidden min-h-[160px] flex flex-col justify-between`}>
+      <div className="absolute -top-3 -end-2 text-white/20 pointer-events-none">
+        <Icon size={120} weight="duotone" />
+      </div>
+      <div className="flex items-center gap-2 text-white/90 relative z-10">
+        <Icon size={18} weight="duotone" />
         <span className="text-xs font-black uppercase tracking-widest">{label}</span>
       </div>
-      <div className={`text-3xl sm:text-4xl font-black tabular-nums tracking-tighter ${effective.value} mt-2`} dir="ltr">
+      <div className="text-3xl sm:text-4xl font-black tabular-nums tracking-tighter relative z-10" dir="ltr">
         {value}
       </div>
     </div>

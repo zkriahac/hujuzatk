@@ -46,6 +46,10 @@ export const translations: Record<Language, Record<string, string>> = {
     'account.addAccountSub': 'Sign in to a second property — your current account stays linked.',
     'account.linkAndStay': 'Link account',
     'account.staysActiveNote': 'After linking, your current session stays active. Switch via the dropdown.',
+    'pwa.title': 'Install the app',
+    'pwa.body': 'Add Hujuzatk to your home screen — works offline, opens instantly, no app store needed.',
+    'pwa.install': 'Install now',
+    'pwa.dismiss': 'Dismiss',
     'nav.admin': 'Admin',
 
     // Auth
@@ -328,6 +332,10 @@ export const translations: Record<Language, Record<string, string>> = {
     'account.addAccountSub': 'سجّل الدخول إلى عقار آخر — يبقى حسابك الحالي مرتبطاً.',
     'account.linkAndStay': 'ربط الحساب',
     'account.staysActiveNote': 'بعد الربط، تبقى جلستك الحالية نشطة. بدّل من القائمة.',
+    'pwa.title': 'ثبّت التطبيق',
+    'pwa.body': 'أضف حجوزاتك إلى شاشتك الرئيسية — يعمل بدون إنترنت ويفتح فوراً، بدون متجر تطبيقات.',
+    'pwa.install': 'تثبيت الآن',
+    'pwa.dismiss': 'إغلاق',
     'nav.admin': 'الإدارة',
 
     // Auth
@@ -610,6 +618,10 @@ export const translations: Record<Language, Record<string, string>> = {
     'account.addAccountSub': 'İkinci bir mülke giriş yapın — mevcut hesabınız bağlı kalır.',
     'account.linkAndStay': 'Hesabı bağla',
     'account.staysActiveNote': 'Bağladıktan sonra mevcut oturumunuz aktif kalır. Açılır menüden geçiş yapın.',
+    'pwa.title': 'Uygulamayı yükle',
+    'pwa.body': "Hujuzatk'ı ana ekranınıza ekleyin — çevrimdışı çalışır, anında açılır, mağaza gerekmez.",
+    'pwa.install': 'Şimdi yükle',
+    'pwa.dismiss': 'Kapat',
     'nav.admin': 'Yönetim',
 
     // Auth

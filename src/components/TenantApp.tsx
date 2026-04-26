@@ -18,6 +18,7 @@ import AdminView from './AdminView';
 import IntegrationsView from './IntegrationsView';
 import ExpenseView from './ExpenseView';
 import AccountSwitcher from './AccountSwitcher';
+import PwaInstallPrompt from './PwaInstallPrompt';
 import OnboardingTour, { type OnboardingStep } from './OnboardingTour';
 import { apolloClient } from '../lib/apolloClient';
 import { COMPLETE_ONBOARDING_MUTATION } from '../lib/graphql';
@@ -461,7 +462,6 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
                 lang={lang}
                 isRtl={isRtl}
                 currentTenantId={session.tenantId}
-                currentName={session.tenant.name}
               />
             )}
           </div>
@@ -645,6 +645,8 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
           }}
         />
       )}
+
+      <PwaInstallPrompt lang={lang} isRtl={isRtl} />
 
       {showTour && (
         <OnboardingTour
