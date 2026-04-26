@@ -137,7 +137,7 @@ export function AddBookingModal({ onClose, onAdd, initialDate, initialRoom, room
         dir={lang === 'ar' ? 'rtl' : 'ltr'}
         style={anchorPos ? { position: 'absolute', top: anchorPos.top, left: anchorPos.left } : undefined}
         className={cn(
-          'relative bg-white rounded-[2.5rem] max-w-lg w-full p-6 sm:p-10 shadow-3xl max-h-[95vh] overflow-y-auto',
+          'relative bg-white rounded-[2.5rem] max-w-lg w-full p-6 sm:p-5 shadow-3xl max-h-[95vh] overflow-y-auto',
           anchorPos && 'max-w-[min(32rem,calc(100vw-2rem))]',
         )}
       >
@@ -384,7 +384,7 @@ export function BookingDetailsModal({
           onClick={(e) => e.stopPropagation()}
           dir={lang === 'ar' ? 'rtl' : 'ltr'}
           style={anchorPos ? { position: 'absolute', top: anchorPos.top, left: anchorPos.left } : undefined}
-          className={cn('relative bg-white rounded-[2.5rem] max-w-lg w-full p-6 sm:p-10 shadow-3xl max-h-[95vh] overflow-y-auto', anchorPos && 'max-w-[min(32rem,calc(100vw-2rem))]')}
+          className={cn('relative bg-white rounded-[2.5rem] max-w-lg w-full p-6 sm:p-5 shadow-3xl max-h-[95vh] overflow-y-auto', anchorPos && 'max-w-[min(32rem,calc(100vw-2rem))]')}
         >
           <button type="button" onClick={() => setEditMode(false)} className="absolute top-4 end-4 p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all">
             <X size={20} weight="bold" />
@@ -533,7 +533,7 @@ export function BookingDetailsModal({
         onClick={(e) => e.stopPropagation()}
         dir={lang === 'ar' ? 'rtl' : 'ltr'}
         style={anchorPos ? { position: 'absolute', top: anchorPos.top, left: anchorPos.left } : undefined}
-        className={cn('relative bg-white rounded-[2.5rem] max-w-sm w-full p-10 shadow-3xl', anchorPos && 'max-w-[min(24rem,calc(100vw-2rem))]')}
+        className={cn('relative bg-white rounded-[2.5rem] max-w-sm w-full p-5 shadow-3xl', anchorPos && 'max-w-[min(24rem,calc(100vw-2rem))]')}
       >
         <button type="button" onClick={onClose} className="absolute top-5 end-5 p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all">
           <X size={20} weight="bold" />
@@ -741,7 +741,7 @@ export function InvoiceModal({ booking, tenantName, currency, lang, tz, dir, onC
           <h2 className="font-black text-slate-900 uppercase tracking-tight">{t(lang, 'invoice.title')} Preview</h2>
           <button onClick={onClose} className="h-10 w-10 flex items-center justify-center rounded-full hover:bg-slate-100">×</button>
         </div>
-        <div ref={invoiceRef} className="p-12 relative overflow-auto max-h-[80vh] bg-white">
+        <div ref={invoiceRef} className="p-6 relative overflow-auto max-h-[80vh] bg-white">
           {booking.status === 'CANCELED' && (
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 border-[12px] border-red-500 text-red-500 font-black text-8xl opacity-10 transform -rotate-12 p-8 rounded-3xl uppercase pointer-events-none">
               {t(lang, 'invoice.canceled')}

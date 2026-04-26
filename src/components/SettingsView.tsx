@@ -112,7 +112,7 @@ export default function SettingsView({ session, onSessionChange, lang }: Setting
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 pb-20">
-      <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-xl p-10">
+      <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-xl p-5">
         <h2 className="text-2xl font-black text-slate-900 mb-8 flex items-center gap-3">
           <Globe size={28} className="text-emerald-500" />
           {t(lang, 'settings.title')}
@@ -160,7 +160,7 @@ export default function SettingsView({ session, onSessionChange, lang }: Setting
         </div>
       </div>
 
-      <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-xl p-10">
+      <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-xl p-5">
         <h2 className="text-2xl font-black text-slate-900 mb-8 flex items-center gap-3">
           <CurrencyDollar size={28} className="text-amber-500" />
           {t(lang, 'settings.defaults')}
@@ -197,7 +197,7 @@ export default function SettingsView({ session, onSessionChange, lang }: Setting
       </div>
 
       {/* Company profile — printed onto invoices */}
-      <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-xl p-10">
+      <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-xl p-5">
         <div className="mb-8">
           <h2 className="text-2xl font-black text-slate-900 flex items-center gap-3">
             <Buildings size={28} className="text-rose-400" />
@@ -245,7 +245,7 @@ export default function SettingsView({ session, onSessionChange, lang }: Setting
         </div>
       </div>
 
-      <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-xl p-10">
+      <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-xl p-5">
         <div className="flex justify-between items-center mb-8 flex-wrap gap-3">
           <h2 className="text-2xl font-black text-slate-900 flex items-center gap-3">
             <Layout size={28} className="text-blue-500" />

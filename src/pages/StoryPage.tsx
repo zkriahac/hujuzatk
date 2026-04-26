@@ -459,7 +459,7 @@ function VoicesScene({ reduced }: { reduced: boolean }) {
     <section
       id="scene-voices"
       ref={ref}
-      className="relative flex min-h-[140vh] flex-col items-center justify-center gap-10 px-6 py-32"
+      className="relative flex min-h-[140vh] flex-col items-center justify-center gap-5 px-6 py-32"
     >
       <div className="max-w-xl text-center">
         <p className="mb-4 text-[11px] uppercase tracking-[0.3em] text-emerald-300/70">

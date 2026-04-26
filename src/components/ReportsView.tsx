@@ -204,21 +204,21 @@ export default function ReportsView({
                   Icon={CreditCard} />
       </div>
 
-      {/* KPI row — bold-filled variant of the same StatCard */}
+      {/* KPI row — same pastel variant as the row above so all 7 cards share one design */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
-        <StatCard variant="bold" tone="emerald"
+        <StatCard variant="pastel" tone="emerald"
                   label={t(lang, 'reports.totalRevenue')}
                   value={`${currency} ${reportData.totalRevenue.toLocaleString()}`}
                   Icon={CreditCard} />
-        <StatCard variant="bold" tone="blue"
+        <StatCard variant="pastel" tone="blue"
                   label={t(lang, 'reports.totalNights')}
                   value={String(reportData.totalNights)}
                   Icon={Calendar} />
-        <StatCard variant="bold" tone="slate"
+        <StatCard variant="pastel" tone="slate"
                   label={t(lang, 'reports.totalBookings')}
                   value={String(reportData.bookingCount)}
                   Icon={Users} />
-        <StatCard variant="bold" tone="amber"
+        <StatCard variant="pastel" tone="amber"
                   label={t(lang, 'reports.avgFillRate')}
                   value={`${avgFill.toFixed(1)}%`}
                   Icon={Target} />
