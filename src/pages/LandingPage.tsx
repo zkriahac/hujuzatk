@@ -879,7 +879,7 @@ export function LandingPage() {
             </h1>
             <p className="mx-auto mt-8 max-w-2xl text-lg font-medium leading-relaxed text-slate-600 sm:text-xl">{c.hero.sub}</p>
             <div className="mx-auto mt-12 max-w-2xl">
-              <div className="group relative flex flex-col gap-3 rounded-[2rem] bg-white p-3 shadow-2xl shadow-slate-200 ring-1 ring-slate-200 sm:flex-row">
+              <div className="group relative flex flex-col gap-3 rounded-2xl bg-white p-3 shadow-2xl shadow-slate-200 ring-1 ring-slate-200 sm:flex-row">
                 <div className="relative flex-grow">
                   <div className={cn('absolute inset-y-0 flex items-center pointer-events-none text-slate-400 group-focus-within:text-emerald-500 transition-colors', lang === 'ar' ? 'right-5' : 'left-5')}>
                     <Buildings size={20} />
@@ -1048,7 +1048,7 @@ export function LandingPage() {
                   <div
                     key={plan.id}
                     className={cn(
-                      'relative rounded-[2rem] border p-2 bg-white shadow-xl transition-all',
+                      'relative rounded-2xl border p-2 bg-white shadow-xl transition-all',
                       plan.recommended ? 'border-emerald-400 ring-2 ring-emerald-500 lg:scale-[1.02]' : 'border-slate-200'
                     )}
                   >

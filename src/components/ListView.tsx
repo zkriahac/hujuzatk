@@ -56,7 +56,7 @@ export default function ListView({
   return (
     <div className="space-y-6">
       <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col lg:flex-row gap-6 items-center justify-between">
-        <div className="flex gap-1 bg-slate-100 p-1.5 rounded-[1.25rem] w-full lg:w-auto overflow-x-auto">
+        <div className="flex gap-1 bg-slate-100 p-1.5 rounded-2xl w-full lg:w-auto overflow-x-auto">
           {FILTER_META.map(({ id, Icon, active }) => (
             <button
               key={id}

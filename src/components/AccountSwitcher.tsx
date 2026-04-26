@@ -179,7 +179,7 @@ function SwitchAccountModal({
       dir={isRtl ? 'rtl' : 'ltr'}
     >
       <div
-        className="bg-white rounded-[2rem] shadow-2xl max-w-sm w-full overflow-hidden"
+        className="bg-white rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -278,7 +278,7 @@ function AddAccountModal({ lang, isRtl, onClose, onAdded }: { lang: Language; is
 
   return (
     <div className="fixed inset-0 z-[200] bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4" onClick={onClose} dir={isRtl ? 'rtl' : 'ltr'}>
-      <form onSubmit={handleSubmit} onClick={(e) => e.stopPropagation()} className="bg-white rounded-[2rem] shadow-2xl max-w-sm w-full p-6 relative">
+      <form onSubmit={handleSubmit} onClick={(e) => e.stopPropagation()} className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 relative">
         <button type="button" onClick={onClose} className={cn('absolute top-4 text-slate-400 hover:text-slate-700', isRtl ? 'left-4' : 'right-4')}>
           <X size={18} weight="bold" />
         </button>

@@ -92,7 +92,7 @@ export default function PromoPopup({ lang, strings, onStart }: Props) {
       aria-modal="true"
       dir={isRtl ? 'rtl' : 'ltr'}
     >
-      <div className="bg-white rounded-[2rem] shadow-2xl max-w-lg w-full p-7 relative">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-7 relative">
         {/* Close */}
         <button
           onClick={handleClose}

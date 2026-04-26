@@ -145,7 +145,7 @@ export default function SettingsView({ session, onSessionChange, lang }: Setting
   return (
     <div className="max-w-4xl mx-auto space-y-8 pb-20">
       {/* Plan card — what they're on, what's included, when it expires */}
-      <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-xl p-6 sm:p-7">
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-xl p-6 sm:p-7">
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
@@ -207,7 +207,7 @@ export default function SettingsView({ session, onSessionChange, lang }: Setting
         </div>
       </div>
 
-      <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-xl p-5">
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-xl p-5">
         <h2 className="text-2xl font-black text-slate-900 mb-8 flex items-center gap-3">
           <Globe size={28} className="text-emerald-500" />
           {t(lang, 'settings.title')}
@@ -255,7 +255,7 @@ export default function SettingsView({ session, onSessionChange, lang }: Setting
         </div>
       </div>
 
-      <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-xl p-5">
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-xl p-5">
         <h2 className="text-2xl font-black text-slate-900 mb-8 flex items-center gap-3">
           <CurrencyDollar size={28} className="text-amber-500" />
           {t(lang, 'settings.defaults')}
@@ -292,7 +292,7 @@ export default function SettingsView({ session, onSessionChange, lang }: Setting
       </div>
 
       {/* Company profile — printed onto invoices */}
-      <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-xl p-5">
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-xl p-5">
         <div className="mb-8">
           <h2 className="text-2xl font-black text-slate-900 flex items-center gap-3">
             <Buildings size={28} className="text-rose-400" />
@@ -340,7 +340,7 @@ export default function SettingsView({ session, onSessionChange, lang }: Setting
         </div>
       </div>
 
-      <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-xl p-5">
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-xl p-5">
         <div className="flex justify-between items-center mb-8 flex-wrap gap-3">
           <h2 className="text-2xl font-black text-slate-900 flex items-center gap-3">
             <Layout size={28} className="text-blue-500" />
@@ -375,7 +375,7 @@ export default function SettingsView({ session, onSessionChange, lang }: Setting
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
           {(tenant.rooms || []).map((room, idx) => (
             <div key={room.id} className="flex flex-col gap-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-slate-300 block px-2">{room.name}</label>
+              <label className="text-[10px] font-black uppercase tracking-widest block px-2">{room.name}</label>
               <div className="flex gap-2">
                 <input
                   value={room.name}
@@ -398,7 +398,7 @@ export default function SettingsView({ session, onSessionChange, lang }: Setting
         <button
           onClick={handleSave}
           disabled={saving}
-          className="bg-emerald-600 text-white px-20 py-5 rounded-[2rem] text-xl font-black shadow-2xl shadow-emerald-100 hover:bg-emerald-700 hover:shadow-emerald-200 transition-all active:scale-95 disabled:opacity-60"
+          className="bg-emerald-600 text-white px-20 py-5 rounded-2xl text-xl font-black shadow-2xl shadow-emerald-100 hover:bg-emerald-700 hover:shadow-emerald-200 transition-all active:scale-95 disabled:opacity-60"
         >
           {saving ? t(lang, 'settings.saving') : t(lang, 'settings.save')}
         </button>

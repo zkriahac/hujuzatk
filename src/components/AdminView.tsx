@@ -119,7 +119,7 @@ function DefaultsView({ lang }: { lang: Language }) {
 
   return (
     <div className="max-w-2xl mx-auto space-y-8 pb-20">
-      <div className="bg-slate-900 rounded-[2.5rem] border border-slate-800 p-5">
+      <div className="bg-slate-900 rounded-2xl border border-slate-800 p-5">
         <h2 className="text-xl font-black text-emerald-400 mb-1">New Tenant Defaults</h2>
         <p className="text-xs text-slate-500 mb-8">Applied automatically when a new workspace registers.</p>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
@@ -536,7 +536,7 @@ export default function AdminView({ lang, tz }: AdminViewProps) {
               {t(lang, 'admin.refresh')}
             </button>
           </div>
-          <div className="bg-slate-900 rounded-[2.5rem] border border-slate-800 overflow-hidden shadow-2xl">
+          <div className="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden shadow-2xl">
             <div className="overflow-auto max-h-[75vh] scrollbar-hide">
               <table className="w-full text-sm">
                 <thead className="bg-slate-950/80 sticky top-0 z-10">

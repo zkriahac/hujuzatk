@@ -137,7 +137,7 @@ export function AddBookingModal({ onClose, onAdd, initialDate, initialRoom, room
         dir={lang === 'ar' ? 'rtl' : 'ltr'}
         style={anchorPos ? { position: 'absolute', top: anchorPos.top, left: anchorPos.left } : undefined}
         className={cn(
-          'relative bg-white rounded-[2.5rem] max-w-lg w-full p-6 sm:p-5 shadow-3xl max-h-[95vh] overflow-y-auto',
+          'relative bg-white rounded-2xl max-w-lg w-full p-6 sm:p-5 shadow-3xl max-h-[95vh] overflow-y-auto',
           anchorPos && 'max-w-[min(32rem,calc(100vw-2rem))]',
         )}
       >
@@ -384,7 +384,7 @@ export function BookingDetailsModal({
           onClick={(e) => e.stopPropagation()}
           dir={lang === 'ar' ? 'rtl' : 'ltr'}
           style={anchorPos ? { position: 'absolute', top: anchorPos.top, left: anchorPos.left } : undefined}
-          className={cn('relative bg-white rounded-[2.5rem] max-w-lg w-full p-6 sm:p-5 shadow-3xl max-h-[95vh] overflow-y-auto', anchorPos && 'max-w-[min(32rem,calc(100vw-2rem))]')}
+          className={cn('relative bg-white rounded-2xl max-w-lg w-full p-6 sm:p-5 shadow-3xl max-h-[95vh] overflow-y-auto', anchorPos && 'max-w-[min(32rem,calc(100vw-2rem))]')}
         >
           <button type="button" onClick={() => setEditMode(false)} className="absolute top-4 end-4 p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all">
             <X size={20} weight="bold" />
@@ -533,7 +533,7 @@ export function BookingDetailsModal({
         onClick={(e) => e.stopPropagation()}
         dir={lang === 'ar' ? 'rtl' : 'ltr'}
         style={anchorPos ? { position: 'absolute', top: anchorPos.top, left: anchorPos.left } : undefined}
-        className={cn('relative bg-white rounded-[2.5rem] max-w-sm w-full p-5 shadow-3xl', anchorPos && 'max-w-[min(24rem,calc(100vw-2rem))]')}
+        className={cn('relative bg-white rounded-2xl max-w-sm w-full p-5 shadow-3xl', anchorPos && 'max-w-[min(24rem,calc(100vw-2rem))]')}
       >
         <button type="button" onClick={onClose} className="absolute top-5 end-5 p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all">
           <X size={20} weight="bold" />

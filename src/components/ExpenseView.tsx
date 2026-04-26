@@ -301,7 +301,7 @@ function ExpenseModal({ existing, rooms, lang, currency, anchor, onClose, onSave
         ref={ref as any}
         onClick={(e) => e.stopPropagation()}
         style={pos ? { position: 'absolute', top: pos.top, left: pos.left } : undefined}
-        className={cn('bg-white rounded-[2rem] shadow-2xl max-w-md w-full p-7 relative', pos && 'max-w-[min(28rem,calc(100vw-2rem))]')}
+        className={cn('bg-white rounded-2xl shadow-2xl max-w-md w-full p-7 relative', pos && 'max-w-[min(28rem,calc(100vw-2rem))]')}
       >
         <button onClick={onClose} className={cn('absolute top-4', isRtl ? 'left-4' : 'right-4', 'text-slate-400 hover:text-slate-700')}>
           <X size={20} weight="bold" />

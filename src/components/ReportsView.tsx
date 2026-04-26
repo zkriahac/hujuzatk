@@ -133,7 +133,7 @@ export default function ReportsView({
   return (
     <div className="space-y-7 pb-12">
       {/* Filter card — pill-shaped controls in one airy white surface */}
-      <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm p-6 sm:p-7">
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 sm:p-7">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
           <div>
             <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2 block">{t(lang, 'reports.type')}</label>
@@ -229,7 +229,7 @@ export default function ReportsView({
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-xl overflow-hidden flex flex-col">
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-xl overflow-hidden flex flex-col">
           <div className="px-8 py-6 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
             <span className="font-black uppercase tracking-widest text-slate-500 text-xs">{t(lang, 'reports.roomPerformance')}</span>
             <Layout size={20} className="text-slate-300" />
@@ -275,7 +275,7 @@ export default function ReportsView({
           </div>
         </div>
 
-        <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-xl overflow-hidden flex flex-col">
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-xl overflow-hidden flex flex-col">
           <div className="px-8 py-6 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
             <span className="font-black uppercase tracking-widest text-slate-500 text-xs">{t(lang, 'reports.monthlyFillRate')}</span>
             <ChartPie size={20} className="text-slate-300" />
@@ -319,7 +319,7 @@ export default function ReportsView({
 }
 
 // Unified stat card. Same anatomy across the entire reports page:
-//   - rounded-[2rem] surface, fixed min-height, ample padding
+//   - rounded-2xl surface, fixed min-height, ample padding
 //   - small icon + uppercase label aligned at top
 //   - giant tabular number aligned at bottom
 //   - oversized faint icon watermark in the corner
@@ -359,7 +359,7 @@ function StatCard({
   if (variant === 'pastel') {
     const p = TONE_PASTEL[tone];
     return (
-      <div className={`${p.bg} ${p.border} border rounded-[2rem] p-6 sm:p-7 relative overflow-hidden min-h-[160px] flex flex-col justify-between`}>
+      <div className={`${p.bg} ${p.border} border rounded-2xl p-6 sm:p-7 relative overflow-hidden min-h-[160px] flex flex-col justify-between`}>
         <div className={`absolute -top-3 -end-2 ${p.watermark} opacity-50 pointer-events-none`}>
           <Icon size={120} weight="duotone" />
         </div>
@@ -375,7 +375,7 @@ function StatCard({
   }
   const b = TONE_BOLD[tone];
   return (
-    <div className={`${b.bg} rounded-[2rem] p-6 sm:p-8 text-white relative overflow-hidden min-h-[150px] flex flex-col justify-between`}>
+    <div className={`${b.bg} rounded-2xl p-6 sm:p-8 text-white relative overflow-hidden min-h-[150px] flex flex-col justify-between`}>
       <div className="absolute -bottom-4 -end-4 text-white/10 pointer-events-none">
         <Icon size={130} weight="fill" />
       </div>

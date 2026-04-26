@@ -63,7 +63,7 @@ export default function IntegrationsView({ session, lang, onNavigateToSettings }
   if (session.tenant.integrationsEnabled === false) {
     return (
       <div className="max-w-2xl mx-auto py-16 text-center" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
-        <div className="bg-white rounded-[2rem] border border-slate-200 shadow-xl p-5 space-y-4">
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-xl p-5 space-y-4">
           <WarningCircle size={40} weight="duotone" className="text-amber-500 mx-auto" />
           <h2 className="text-xl font-black text-slate-800">{t(lang, 'integrations.disabledTitle')}</h2>
           <p className="text-sm text-slate-500 leading-relaxed">{t(lang, 'integrations.disabledBody')}</p>
@@ -154,7 +154,7 @@ export default function IntegrationsView({ session, lang, onNavigateToSettings }
   if (rooms.length === 0) {
     return (
       <div className="max-w-2xl mx-auto py-16 text-center" dir={isRtl ? 'rtl' : 'ltr'}>
-        <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-xl p-5 space-y-5">
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-xl p-5 space-y-5">
           <GearSix size={40} weight="duotone" className="text-emerald-500 mx-auto" />
           <h2 className="text-xl font-black text-slate-800">{t(lang, 'integrations.noRoomsTitle')}</h2>
           <p className="text-sm text-slate-500 leading-relaxed max-w-md mx-auto">{t(lang, 'integrations.noRoomsBody')}</p>
@@ -204,7 +204,7 @@ export default function IntegrationsView({ session, lang, onNavigateToSettings }
 
       {/* Matrix */}
       {!loading && (
-        <div className="bg-white rounded-[2rem] border border-slate-200 shadow-xl overflow-hidden">
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-xl overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-slate-50 border-b border-slate-200">
@@ -393,7 +393,7 @@ function IntegrationModal(props: {
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-[2rem] shadow-2xl max-w-md w-full p-7 relative"
+        className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-7 relative"
         onClick={(e) => e.stopPropagation()}
       >
         <button
