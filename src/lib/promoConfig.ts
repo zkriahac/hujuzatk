@@ -10,17 +10,23 @@ export const PROMO_END = '2026-12-31';
 
 export const PLAN_BASIC = {
   id: 'basic',
-  oldPrice: 40,
-  newPrice: 35,
+  oldPrice: 50,
+  newPrice: 40,
 } as const;
 
 export const PLAN_PRO = {
   id: 'pro',
-  oldPrice: 65,
-  newPrice: 58,
+  oldPrice: 100,
+  newPrice: 90,
 } as const;
 
-export const PROMO_RATE_PCT = 15; // ~15% off (rounded for display)
+export const PLAN_ENTERPRISE = {
+  id: 'enterprise',
+  oldPrice: 150,
+  newPrice: 140,
+} as const;
+
+export const PROMO_RATE_PCT = 20; // up to 20% off
 
 export const CURRENCY_SYMBOL = '$';
 
