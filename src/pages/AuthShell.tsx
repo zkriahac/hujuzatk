@@ -340,15 +340,12 @@ export function WorkspaceShell({ username }: WorkspaceShellProps) {
   }, []);
 
   if (authLoading) {
+    // Bare spinner — no branded header. Avoids the visible swap from the
+    // "Hujuzatk · Workspace: foo" header to TenantApp's clean header
+    // when session hydration finishes.
     return (
-      <div className="min-h-screen flex flex-col bg-gray-50">
-        <WorkspaceHeader username={username} />
-        <div className="flex-1 flex items-center justify-center text-gray-700">
-          <div className="text-center space-y-2">
-            <div className="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto" />
-            <p className="text-sm font-medium">{t(lang, 'auth.loading')}</p>
-          </div>
-        </div>
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
