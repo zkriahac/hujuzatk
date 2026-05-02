@@ -31,7 +31,7 @@ const content = {
       cta2: 'Watch video',
       trust: 'Trusted by chalet owners, guesthouses, and serviced-apartment operators',
     },
-    logos: { intro: 'Integrates with major platforms', items: ['Airbnb', 'Booking.com', 'Gathern', 'iCal', 'Expedia', 'VRBO'] },
+    logos: { intro: 'Integrates with major platforms', items: ['Airbnb', 'Booking.com', 'Gathern', 'iCal'] },
     features: {
       eyebrow: 'Powerful features',
       title: 'Everything you need in one place',
