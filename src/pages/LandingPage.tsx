@@ -1,464 +1,1035 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
-  Calendar, FileText, Globe, ChartPie, DeviceMobile, Database,
-  ArrowRight, Buildings, Check, Star, ShieldCheck, Sparkle,
-  List, X, CaretDown, ArrowsClockwise, Receipt, CaretLeft, CaretRight,
+  Calendar, FileText, Globe, ChartBar, DeviceMobile, Receipt,
+  ArrowRight, Check, Sparkle, List, X, Play, Pause,
+  ArrowsClockwise, Wallet,
 } from 'phosphor-react';
 import { authService } from '../lib/authService';
 import { trackCTA, trackWorkspaceSearch } from '../lib/analytics';
-import { cn } from '../utils/cn';
 import PromoPopup from '../components/PromoPopup';
 import {
   isPromoActive, PROMO_DISMISS_KEY, PROMO_DISMISS_COOLDOWN_DAYS,
-  PLAN_BASIC, PLAN_PRO, CURRENCY_SYMBOL,
+  CURRENCY_SYMBOL,
 } from '../lib/promoConfig';
 
 type Lang = 'en' | 'ar' | 'tr';
 
+// =====================================================================
+// i18n content
+// =====================================================================
 const content = {
   en: {
     dir: 'ltr' as const,
-    nav: { features: 'Features', pricing: 'Pricing', login: 'Log in', startTrial: 'Start Free Trial' },
+    nav: { features: 'Features', pricing: 'Pricing', login: 'Sign in', signup: 'Start free' },
     hero: {
-      badge: 'The Next Gen PMS is here',
-      headline: 'Booking Management',
-      italic: 'Simplified.',
-      sub: 'Scale your hotel, apartment business, or vacation rentals with our lightning-fast 5-year booking calendar, automated invoicing, and deep financial analytics.',
-      placeholder: 'Enter your hotel or workspace name...',
-      cta: 'Get Started',
-      pills: ['14-Day Free Trial', 'No Credit Card', 'Instant Setup'],
+      eyebrow: 'The smartest booking OS for the Arab world',
+      title1: 'Booking management,',
+      mark: 'made simpler',
+      subtitle: 'Scale your hotel, apartments, or short-term rentals with our blazing-fast calendar, automatic invoicing, financial analytics, and channel sync.',
+      cta: 'Start 14-day free trial',
+      cta2: 'Watch video',
+      trust: 'Trusted by chalet owners, guesthouses, and serviced-apartment operators',
     },
+    logos: { intro: 'Integrates with major platforms', items: ['Airbnb', 'Booking.com', 'Gathern', 'iCal', 'Expedia', 'VRBO'] },
     features: {
-      heading: 'Built for speed. Designed for growth.',
-      sub: 'Everything we built focuses on one thing: making your booking management operation as invisible as possible so you can focus on your guests.',
-      items: [
-        { title: 'Infinite 5-Year Calendar', desc: 'Our proprietary virtualized grid lets you scroll through 5 years of bookings without a single stutter. Plan peak seasons years in advance.' },
-        { title: 'Smart Invoicing', desc: 'Automated calculation of nights, discounts, and deposits. Generate clean, printable PDF invoices in English or Arabic instantly.' },
-        { title: 'Native Arabic & RTL', desc: 'Not just a translation, but a complete localized experience. Perfect RTL layouts with OMR and regional date formats built-in.' },
-        { title: 'Financial Intelligence', desc: 'Advanced reporting on Stay Date vs Creation Date. Visualize fill rates, revenue per room, and identify your most profitable channels.' },
-        { title: 'Installable Mobile App', desc: 'Install Hujuzatk to your phone\'s home screen in one tap — works offline, sends push notifications, no App Store or Play Store download needed.' },
-        { title: 'Auto-Sync External Bookings', desc: 'Nightly + on-demand iCal sync from Airbnb, Gathern, and Booking.com. New reservations appear in your calendar automatically — no copy-paste.' },
-        { title: 'Enterprise Scaling', desc: 'Start locally with high-speed Dexie DB and upgrade to PostgreSQL (Supabase) in seconds. Your data, your control.' },
-        { title: 'Expense Tracking', desc: 'Log property expenses by room or category — maintenance, cleaning, utilities, and more. Monthly and annual breakdowns sit alongside your revenue so you always know your real margin.' },
-      ],
+      eyebrow: 'Powerful features',
+      title: 'Everything you need in one place',
+      subtitle: 'From calendar management to financial intelligence, Hujuzatk brings every property tool into one fast app.',
     },
-    trust: {
-      badge: 'Bank-Grade Security',
-      heading: 'Your data is safe, private, and always yours.',
-      sub: 'Hujuzatk uses multi-tenant isolation. This means every hotel\'s data is mathematically separated from others. No leaks, no performance crosstalk, just pure reliability.',
-      uptime: 'Uptime SLA', latency: 'Latency Local',
-      testimonialsHeading: 'Trusted by real property managers',
-      testimonials: [
-        {
-          quote: 'Hujuzatk transformed the way we manage our properties. The 5-year calendar and Arabic RTL support made it perfect for our team. We cut booking errors by 80% in the first month.',
-          author: 'Vista Company',
-          role: 'Property Management — Saudi Arabia',
-          phone: '+966 54 615 2888',
-          initials: 'V',
-        },
-        {
-          quote: 'As a booking manager handling multiple properties, I needed a tool that keeps up with my pace. Hujuzatk\'s speed and smart invoicing save me hours every week.',
-          author: 'Muhammad Orfan',
-          role: 'Booking Manager — Saudi Arabia',
-          phone: '+966 54 763 3923',
-          initials: 'M',
-        },
-        {
-          quote: 'Running a hotel in Makkah means high traffic and zero margin for error. Hujuzatk handles our peak seasons flawlessly. The automated invoicing alone was worth the switch.',
-          author: 'Sada Makka Hotel',
-          role: 'Hotel Management — Makkah, Saudi Arabia',
-          phone: '+966 56 527 3054',
-          initials: 'S',
-        },
-      ],
+    f: [
+      { tag: '01', title: 'Infinite 3-year calendar', desc: 'Our optimized grid lets you scroll through 3 years of bookings with zero lag. Plan peak seasons years ahead.', color: 'green' },
+      { tag: '02', title: 'Smart invoicing', desc: 'Automatic calculation of nights, discounts, and deposits. Generate clean printable invoices in Arabic or English instantly.', color: 'amber' },
+      { tag: '03', title: 'Full Arabic & RTL support', desc: 'Not just a translation — a fully localized experience. Pixel-perfect RTL layouts with regional date formats and currencies built in.', color: 'blue' },
+      { tag: '04', title: 'Financial intelligence', desc: 'Advanced reports by stay date or booking date. Visualize occupancy rates and revenue per room at a glance.', color: 'green' },
+      { tag: '05', title: 'Installable mobile app', desc: 'Pin Hujuzatk to your home screen with one tap — works offline, sends push notifications, no App Store or Play Store needed.', color: 'purple' },
+      { tag: '06', title: 'Automatic channel sync', desc: 'Nightly and on-demand sync for Airbnb, Gathern, and Booking.com calendars. New bookings appear automatically — no copy-paste.', color: 'coral' },
+      { tag: '07', title: 'Expense tracking', desc: 'Log property expenses by room or category — maintenance, cleaning, utilities. Monthly and yearly reports reveal your true margin.', color: 'amber' },
+    ],
+    badges: {
+      cal:    { title: '3-year calendar', sub: 'Scroll instantly, no lag' },
+      inv:    { title: 'Smart invoicing', sub: '5 nights × OMR 250 = OMR 1,250' },
+      sync:   { title: 'Airbnb sync', sub: 'Synced 12s ago' },
+      rev:    { title: 'Monthly revenue', big: 'OMR 28,450', delta: '↑ 18% vs last month' },
+      rtl:    { title: 'Arabic & RTL', sub: 'Truly localized' },
+      install:{ title: 'Add to home screen', sub: 'No app store needed' },
+    },
+    testimonial: {
+      quote: 'I used to spend hours copying bookings between Airbnb and my spreadsheet. With Hujuzatk, sync is automatic — I save 10+ hours every week.',
+      name: 'Ahmed Al-Abdali',
+      role: 'Owner of 8 chalets — Riyadh',
     },
     pricing: {
-      heading: 'Simple, honest pricing.',
-      sub: 'Choose the plan that fits — both include a 14-day free trial.',
-      perYear: '/Year',
-      recommended: 'RECOMMENDED',
-      save: 'SAVE 15%',
-      was: 'Was',
-      note: 'Cancel anytime. No lock-in contracts.',
-      plans: [
-        {
-          id: 'trial',
-          name: 'Trial',
-          price: 0,
-          priceLabel: 'Free for 14 days',
-          tagline: 'Try every core feature',
-          features: ['3 Rooms', 'Unlimited Bookings', 'Reports', 'Expense Tracking', 'Multi-Language (AR/EN/TR)', 'Installable App', '5-Year Calendar'],
-          cta: 'Start Free Trial',
-          recommended: false,
-        },
-        {
-          id: 'basic',
-          name: 'Basic',
-          price: 40,
-          oldPrice: 50,
-          tagline: 'Perfect for small properties — no channel sync',
-          features: ['30 Rooms', 'Full Reporting Suite', 'Expense Tracking', 'Multi-Language (AR/EN/TR)', 'Installable App', '5-Year Calendar'],
-          cta: 'Start Free Trial',
-          recommended: false,
-        },
-        {
-          id: 'pro',
-          name: 'Pro',
-          price: 90,
-          oldPrice: 100,
-          tagline: 'Basic + automatic channel sync',
-          features: ['20 Rooms', 'Auto-Sync Airbnb', 'Auto-Sync Gathern', 'Auto-Sync Booking.com', 'Nightly automated sync', 'Priority support'],
-          cta: 'Start Free Trial',
-          recommended: true,
-        },
-        {
-          id: 'enterprise',
-          name: 'Enterprise',
-          price: 140,
-          oldPrice: 150,
-          tagline: '50 rooms + channel sync + dedicated support',
-          features: ['50 Rooms', 'All Pro features', 'Dedicated WhatsApp support', 'Custom onboarding', 'SLA-backed uptime'],
-          cta: 'Contact Sales',
-          recommended: false,
-        },
-      ],
+      eyebrow: 'Simple pricing',
+      title: 'A plan for every size of business',
+      subtitle: 'Start free. Scale as you grow. No hidden fees.',
+      perYear: '/yr',
+      was: 'was',
+      save: '15% OFF',
+      recommended: 'MOST POPULAR',
+      note: 'Cancel anytime. No long-term contracts.',
       promo: {
         title: 'Year-End Promo',
-        subtitle: 'Both plans discounted until end of 2026 — start now and lock in your rate.',
-        placeholder: 'Enter your workspace name…',
-        cta: 'Start my workspace',
+        subtitle: 'All plans discounted until end of 2026 — start now and lock in your rate.',
       },
+      plans: [
+        {
+          id: 'trial', name: 'Trial', price: 0, priceLabel: 'Free for 14 days',
+          tagline: 'Try every core feature',
+          features: ['3 Rooms', 'Unlimited Bookings', 'Reports', 'Expense Tracking', 'Multi-Language (AR/EN/TR)', 'Installable App', '3-Year Calendar'],
+          cta: 'Start Free Trial', recommended: false,
+        },
+        {
+          id: 'basic', name: 'Basic', price: 40, oldPrice: 50,
+          tagline: 'Perfect for small properties — no channel sync',
+          features: ['10 Rooms', 'Full Reporting Suite', 'Expense Tracking', 'Multi-Language (AR/EN/TR)', 'Installable App', '3-Year Calendar'],
+          cta: 'Start Free Trial', recommended: false,
+        },
+        {
+          id: 'pro', name: 'Pro', price: 90, oldPrice: 100,
+          tagline: 'Basic + automatic channel sync',
+          features: ['30 Rooms', 'Auto-Sync Airbnb', 'Auto-Sync Gathern', 'Auto-Sync Booking.com', 'Nightly automated sync', 'Priority support'],
+          cta: 'Start Free Trial', recommended: true,
+        },
+        {
+          id: 'enterprise', name: 'Enterprise', price: 140, oldPrice: 150,
+          tagline: 'Unlimited rooms + dedicated support',
+          features: ['Unlimited Rooms', 'All Pro features', 'Dedicated WhatsApp support', 'Custom onboarding', 'SLA-backed uptime'],
+          cta: 'Contact Sales', recommended: false,
+        },
+      ],
+    },
+    cta: {
+      title: 'Ready to simplify your bookings?',
+      desc: 'Start a 14-day free trial. No credit card required.',
+      button: 'Get started',
+      button2: 'Talk to us',
     },
     footer: {
       tagline: 'The world\'s most intuitive Booking Management System for modern hosts and professional property managers.',
-      legal: 'Legal', support: 'Support', privacy: 'Privacy', terms: 'Terms',
+      product: 'Product', company: 'Company', legal: 'Legal', support: 'Support',
+      productLinks: ['Features', 'Pricing', 'Integrations', 'Mobile app'],
+      companyLinks: ['About', 'Story', 'Contact'],
+      legalLinks: ['Privacy', 'Terms'],
       whatsapp: 'WhatsApp Support',
       rights: `© ${new Date().getFullYear()} Hujuzatk PMS. All rights reserved.`,
-      location: 'Istanbul | Turkiye | International',
+      location: 'Istanbul · Türkiye · Worldwide',
     },
-    screenshots: {
-      heading: 'Every tool you need. One screen away.',
-      sub: 'From calendar to invoice in 3 clicks — designed for speed, clarity, and total control.',
-      stats: { occ: 'Occupancy', rev: 'Revenue', bk: 'Bookings' },
-      labels: {
-        calendar: 'Booking Calendar',
-        settings: 'Settings',
-        reports: 'Financial Reports',
-        list: 'Reservations List',
-        expense: 'Expense Tracking',
-      },
-      captions: {
-        calendar: '5-year grid — scroll years in seconds',
-        settings: 'Set Rooms and Local ',
-        reports: 'Revenue, occupancy & fill-rate at a glance',
-        list: 'Smart filters · search · status badges',
-        expense: 'Log costs by room or category — know your real margin',
-      },
-    },
+    video: { playing: 'playing', step: (i: number, n: number) => `Step ${i} / ${n}` },
+    workspaceCheck: 'Have a workspace? Enter its name:',
+    workspacePh: 'your-workspace',
+    open: 'Open',
   },
+
   ar: {
     dir: 'rtl' as const,
-    nav: { features: 'المميزات', pricing: 'الأسعار', login: 'دخول', startTrial: 'جرب مجانا' },
+    nav: { features: 'المميزات', pricing: 'الأسعار', login: 'تسجيل الدخول', signup: 'ابدأ مجاناً' },
     hero: {
-      badge: 'جيل جديد من إدارة الحجوزات',
-      headline: 'إدارة الحجوزات',
-      italic: 'أصبحت أبسط.',
-      sub: 'وسّع نطاق فندقك أو شققك أو إيجاراتك السياحية مع تقويمنا الفائق السرعة لـ 5 سنوات، والفوترة التلقائية، والتحليلات المالية المتعمقة.',
-      placeholder: 'أدخل اسم الفندق أو مساحة العمل...',
-      cta: 'ابدأ الآن',
-      pills: ['14 يوم مجاني', 'بدون بطاقة ائتمان', 'إعداد فوري'],
+      eyebrow: 'نظام إدارة الحجوزات الأذكى للعالم العربي',
+      title1: 'إدارة الحجوزات',
+      mark: 'أصبحت أبسط',
+      subtitle: 'وسّع نطاق فندقك أو شققك أو إيجاراتك السياحية مع تقويمنا الفائق السرعة، والفوترة التلقائية، والتحليلات المالية، والربط مع مواقع الحجوزات.',
+      cta: 'تجربة 14 يوم مجاناً',
+      cta2: 'شاهد الفيديو',
+      trust: 'موثوق من ملاك الشاليهات والاستراحات والشقق المخدومة',
     },
+    logos: { intro: 'نتكامل مع المنصات الكبرى', items: ['Airbnb', 'Booking.com', 'جاذبين', 'iCal', 'Expedia', 'VRBO'] },
     features: {
-      heading: 'مبني للسرعة. مصمم للنمو.',
-      sub: 'كل ما بنيناه يركز على شيء واحد: جعل إدارة عقاراتك غير مرئية قدر الإمكان حتى تتمكن من التركيز على ضيوفك.',
-      items: [
-        { title: 'تقويم 5 سنوات لا نهائي', desc: 'شبكتنا المُحسَّنة تتيح لك التمرير خلال 5 سنوات من الحجوزات دون أي تأخير. خطط لمواسم الذروة سنوات مسبقاً.' },
-        { title: 'فوترة ذكية', desc: 'حساب تلقائي للليالي والخصومات والعربون. أنشئ فواتير نظيفة وقابلة للطباعة باللغة العربية أو الإنجليزية فوراً.' },
-        { title: 'دعم كامل للعربية وRTL', desc: 'ليس مجرد ترجمة، بل تجربة محلية كاملة. تخطيطات RTL مثالية مع تنسيقات تواريخ إقليمية وOMR مدمجة.' },
-        { title: 'ذكاء مالي', desc: 'تقارير متقدمة حسب تاريخ الإقامة أو تاريخ الإنشاء. تصور معدلات الإشغال والإيرادات لكل غرفة.' },
-        { title: 'تطبيق جوال قابل للتثبيت', desc: 'ثبّت حجوزاتك على شاشتك الرئيسية بنقرة واحدة — يعمل بدون إنترنت، ويرسل إشعارات، بدون الحاجة لتحميل من App Store أو Play Store.' },
-        { title: 'مزامنة تلقائية للحجوزات الخارجية', desc: 'مزامنة ليلية وعند الطلب لتقويم Airbnb وجاذبين وBooking.com. الحجوزات الجديدة تظهر تلقائياً في تقويمك — دون أي نسخ ولصق.' },
-        { title: 'قابلية توسع المؤسسات', desc: 'ابدأ محلياً مع Dexie DB عالية السرعة وانتقل إلى PostgreSQL في ثوانٍ. بياناتك، تحكمك.' },
-        { title: 'تتبع المصروفات', desc: 'سجّل نفقات العقار حسب الغرفة أو الفئة — صيانة، تنظيف، مرافق، وأكثر. تقارير شهرية وسنوية تُظهر مصروفاتك جنباً إلى جنب مع إيراداتك حتى تعرف هامش ربحك الحقيقي.' },
-      ],
+      eyebrow: 'مميزات قوية',
+      title: 'كل ما تحتاجه في مكان واحد',
+      subtitle: 'من إدارة التقويم إلى التحليلات المالية، حجوزاتك تجمع كل أدوات إدارة العقار في تطبيق واحد سريع.',
     },
-    trust: {
-      badge: 'أمان على مستوى البنوك',
-      heading: 'بياناتك آمنة وخاصة وملكك دائماً.',
-      sub: 'حجوزاتك يستخدم العزل متعدد المستأجرين. هذا يعني أن بيانات كل فندق مفصولة رياضياً عن غيره. لا تسريبات، لا تداخل في الأداء، فقط موثوقية خالصة.',
-      uptime: 'ضمان وقت التشغيل', latency: 'زمن الاستجابة المحلي',
-      testimonialsHeading: 'موثوق من قبل مديري عقارات حقيقيين',
-      testimonials: [
-        {
-          quote: 'حجوزاتك غيّر طريقة إدارتنا للعقارات بالكامل. تقويم 5 سنوات ودعم اللغة العربية جعله مثالياً لفريقنا. قلّصنا أخطاء الحجز بنسبة 80% في الشهر الأول.',
-          author: 'شركة فيستا',
-          role: 'إدارة عقارات — المملكة العربية السعودية',
-          phone: '+966 54 615 2888',
-          initials: 'ف',
-        },
-        {
-          quote: 'كمدير حجوزات أتعامل مع عقارات متعددة، كنت بحاجة لأداة تواكب وتيرتي. سرعة حجوزاتك والفوترة الذكية توفر لي ساعات كل أسبوع.',
-          author: 'محمد عرفان',
-          role: 'مدير حجوزات — المملكة العربية السعودية',
-          phone: '+966 54 763 3923',
-          initials: 'م',
-        },
-        {
-          quote: 'إدارة فندق في مكة المكرمة تعني ضغطاً عالياً وهامش خطأ صفري. حجوزاتك يتعامل مع مواسم الذروة بكفاءة تامة. الفوترة التلقائية وحدها كانت تستحق التحول.',
-          author: 'فندق صدى مكة',
-          role: 'إدارة فندقية — مكة المكرمة، المملكة العربية السعودية',
-          phone: '+966 56 527 3054',
-          initials: 'ص',
-        },
-      ],
+    f: [
+      { tag: '٠١', title: 'تقويم 3 سنوات لا نهائي', desc: 'شبكتنا المُحسَّنة تتيح لك التمرير خلال 3 سنوات من الحجوزات دون أي تأخير. خطط لمواسم الذروة سنوات مسبقاً.', color: 'green' },
+      { tag: '٠٢', title: 'فوترة ذكية', desc: 'حساب تلقائي للليالي والخصومات والعربون. أنشئ فواتير نظيفة وقابلة للطباعة باللغة العربية أو الإنجليزية فوراً.', color: 'amber' },
+      { tag: '٠٣', title: 'دعم كامل للعربية وRTL', desc: 'ليس مجرد ترجمة، بل تجربة محلية كاملة. تخطيطات RTL مثالية مع تنسيقات تواريخ إقليمية وعملات مدمجة.', color: 'blue' },
+      { tag: '٠٤', title: 'ذكاء مالي', desc: 'تقارير متقدمة حسب تاريخ الإقامة أو تاريخ الإنشاء. تصور معدلات الإشغال والإيرادات لكل غرفة.', color: 'green' },
+      { tag: '٠٥', title: 'تطبيق جوال قابل للتثبيت', desc: 'ثبّت حجوزاتك على شاشتك الرئيسية بنقرة واحدة — يعمل بدون إنترنت، ويرسل إشعارات، بدون الحاجة لتحميل من المتاجر.', color: 'purple' },
+      { tag: '٠٦', title: 'مزامنة تلقائية للقنوات', desc: 'مزامنة ليلية وعند الطلب لتقويم Airbnb وجاذبين وBooking.com. الحجوزات الجديدة تظهر تلقائياً — دون أي نسخ ولصق.', color: 'coral' },
+      { tag: '٠٧', title: 'تتبع المصروفات', desc: 'سجّل نفقات العقار حسب الغرفة أو الفئة — صيانة، تنظيف، مرافق. تقارير شهرية وسنوية تكشف هامش الربح الحقيقي.', color: 'amber' },
+    ],
+    badges: {
+      cal:    { title: 'تقويم 3 سنوات', sub: 'تمرير فوري بدون تأخير' },
+      inv:    { title: 'فوترة ذكية', sub: '5 ليالٍ × ﷼ 250 = ﷼ 1,250' },
+      sync:   { title: 'مزامنة Airbnb', sub: 'متزامن منذ 12 ث' },
+      rev:    { title: 'إيرادات الشهر', big: '﷼ 28,450', delta: '↑ 18% عن الشهر السابق' },
+      rtl:    { title: 'عربية و RTL', sub: 'تجربة محلية كاملة' },
+      install:{ title: 'ثبّت على الشاشة', sub: 'بدون متجر تطبيقات' },
+    },
+    testimonial: {
+      quote: 'كنت أقضي ساعات أنسخ الحجوزات بين Airbnb وجدولي. مع حجوزاتك، تتم المزامنة تلقائياً — وفّرت أكثر من 10 ساعات أسبوعياً.',
+      name: 'أحمد العبدلي',
+      role: 'مالك 8 شاليهات — الرياض',
     },
     pricing: {
-      heading: 'أسعار بسيطة وصريحة.',
-      sub: 'اختر الخطة المناسبة — كلاهما يشمل تجربة مجانية لمدة 14 يوم.',
+      eyebrow: 'أسعار بسيطة',
+      title: 'خطة لكل حجم نشاط',
+      subtitle: 'ابدأ مجاناً. ارتقِ كلما نمت. لا توجد رسوم خفية.',
       perYear: '/سنة',
-      recommended: 'موصى به',
-      save: 'خصم 15%',
       was: 'كان',
+      save: 'خصم 15%',
+      recommended: 'الأكثر شعبية',
       note: 'إلغاء في أي وقت. لا عقود ملزمة.',
-      plans: [
-        {
-          id: 'trial',
-          name: 'تجريبي',
-          price: 0,
-          priceLabel: 'مجاناً 14 يوماً',
-          tagline: 'جرب كل الميزات الأساسية',
-          features: ['3 غرف', 'حجوزات غير محدودة', 'تقارير', 'تتبع المصروفات', 'متعدد اللغات (AR/EN/TR)', 'تطبيق قابل للتثبيت', 'تقويم 5 سنوات'],
-          cta: 'ابدأ التجربة المجانية',
-          recommended: false,
-        },
-        {
-          id: 'basic',
-          name: 'أساسي',
-          price: 40,
-          oldPrice: 50,
-          tagline: 'مثالي للعقارات الصغيرة — بدون مزامنة القنوات',
-          features: ['30 غرفة', 'مجموعة تقارير كاملة', 'تتبع المصروفات', 'متعدد اللغات (AR/EN/TR)', 'تطبيق قابل للتثبيت', 'تقويم 5 سنوات'],
-          cta: 'ابدأ التجربة المجانية',
-          recommended: false,
-        },
-        {
-          id: 'pro',
-          name: 'المحترف',
-          price: 90,
-          oldPrice: 100,
-          tagline: 'الأساسي + مزامنة القنوات التلقائية',
-          features: ['20 غرفة', 'مزامنة Airbnb تلقائية', 'مزامنة جاذبين تلقائية', 'مزامنة Booking.com تلقائية', 'مزامنة ليلية مجدولة', 'دعم أولوية'],
-          cta: 'ابدأ التجربة المجانية',
-          recommended: true,
-        },
-        {
-          id: 'enterprise',
-          name: 'مؤسسات',
-          price: 140,
-          oldPrice: 150,
-          tagline: '50 غرفة + مزامنة القنوات + دعم مخصص',
-          features: ['50 غرفة', 'كل ميزات المحترف', 'دعم واتساب مخصص', 'إعداد مخصص', 'ضمان الأداء'],
-          cta: 'تواصل مع المبيعات',
-          recommended: false,
-        },
-      ],
       promo: {
         title: 'عرض نهاية العام',
-        subtitle: 'الخطتان مخفضتان حتى نهاية 2026 — اشترك الآن واحجز سعرك.',
-        placeholder: 'أدخل اسم مساحة العمل…',
-        cta: 'ابدأ مساحة عملي',
+        subtitle: 'جميع الخطط مخفضة حتى نهاية 2026 — اشترك الآن واحجز سعرك.',
       },
+      plans: [
+        {
+          id: 'trial', name: 'تجريبي', price: 0, priceLabel: 'مجاناً 14 يوماً',
+          tagline: 'جرب كل الميزات الأساسية',
+          features: ['3 غرف', 'حجوزات غير محدودة', 'تقارير', 'تتبع المصروفات', 'متعدد اللغات (AR/EN/TR)', 'تطبيق قابل للتثبيت', 'تقويم 3 سنوات'],
+          cta: 'ابدأ التجربة المجانية', recommended: false,
+        },
+        {
+          id: 'basic', name: 'أساسي', price: 40, oldPrice: 50,
+          tagline: 'مثالي للعقارات الصغيرة — بدون مزامنة القنوات',
+          features: ['10 غرف', 'مجموعة تقارير كاملة', 'تتبع المصروفات', 'متعدد اللغات (AR/EN/TR)', 'تطبيق قابل للتثبيت', 'تقويم 3 سنوات'],
+          cta: 'ابدأ التجربة المجانية', recommended: false,
+        },
+        {
+          id: 'pro', name: 'المحترف', price: 90, oldPrice: 100,
+          tagline: 'الأساسي + مزامنة القنوات التلقائية',
+          features: ['30 غرفة', 'مزامنة Airbnb تلقائية', 'مزامنة جاذبين تلقائية', 'مزامنة Booking.com تلقائية', 'مزامنة ليلية مجدولة', 'دعم أولوية'],
+          cta: 'ابدأ التجربة المجانية', recommended: true,
+        },
+        {
+          id: 'enterprise', name: 'مؤسسات', price: 140, oldPrice: 150,
+          tagline: 'غرف غير محدودة + دعم مخصص',
+          features: ['غرف غير محدودة', 'كل ميزات المحترف', 'دعم واتساب مخصص', 'إعداد مخصص', 'ضمان الأداء'],
+          cta: 'تواصل مع المبيعات', recommended: false,
+        },
+      ],
+    },
+    cta: {
+      title: 'جاهز لتبسيط حجوزاتك؟',
+      desc: 'ابدأ تجربة 14 يوم مجاناً. لا حاجة لبطاقة ائتمان.',
+      button: 'ابدأ الآن',
+      button2: 'تحدث معنا',
     },
     footer: {
       tagline: 'نظام إدارة الحجوزات الأكثر سهولة في العالم للمضيفين المعاصرين ومديري الحجوزات المحترفين.',
-      legal: 'قانوني', support: 'الدعم', privacy: 'الخصوصية', terms: 'الشروط',
+      product: 'المنتج', company: 'الشركة', legal: 'قانوني', support: 'الدعم',
+      productLinks: ['المميزات', 'الأسعار', 'تكاملات', 'تطبيق الجوال'],
+      companyLinks: ['من نحن', 'قصتنا', 'تواصل'],
+      legalLinks: ['الخصوصية', 'الشروط'],
       whatsapp: 'دعم واتساب',
       rights: `© ${new Date().getFullYear()} حجوزاتك PMS. جميع الحقوق محفوظة.`,
-      location: 'إسطنبول | تركيا | دولي',
+      location: 'إسطنبول · تركيا · دولي',
     },
-    screenshots: {
-      heading: 'كل الأدوات التي تحتاجها. في شاشة واحدة.',
-      sub: 'من التقويم إلى الفاتورة في 3 نقرات — مصمم للسرعة والوضوح والتحكم الكامل.',
-      stats: { occ: 'الإشغال', rev: 'الإيرادات', bk: 'الحجوزات' },
-      labels: {
-        calendar: 'تقويم الحجوزات',
-        settings: 'اعدادات',
-        reports: 'التقارير المالية',
-        list: 'قائمة الحجوزات',
-        expense: 'تتبع المصروفات',
-      },
-      captions: {
-        calendar: 'شبكة 5 سنوات — تصفح السنوات في ثوانٍ',
-        settings: 'ضبط الإعدادات الضرورية',
-        reports: 'الإيرادات والإشغال ومعدل الإشغال في لمحة',
-        list: 'فلاتر ذكية · بحث · شارات الحالة',
-        expense: 'سجّل التكاليف حسب الغرفة أو الفئة — اعرف هامشك الحقيقي',
-      },
-    },
+    video: { playing: 'تشغيل', step: (i: number, n: number) => `الخطوة ${i} / ${n}` },
+    workspaceCheck: 'لديك مساحة عمل؟ أدخل اسمها:',
+    workspacePh: 'مساحة-العمل',
+    open: 'فتح',
   },
+
   tr: {
     dir: 'ltr' as const,
-    nav: { features: 'Özellikler', pricing: 'Fiyatlar', login: 'Giriş Yap', startTrial: 'Ücretsiz Dene' },
+    nav: { features: 'Özellikler', pricing: 'Fiyatlar', login: 'Giriş Yap', signup: 'Ücretsiz Başla' },
     hero: {
-      badge: 'Yeni Nesil PMS Burada',
-      headline: 'Rezervasyon Yönetimi',
-      italic: 'Basitleştirildi.',
-      sub: 'Otel, apart veya kiralık tatil mülklerinizi ultra hızlı 5 yıllık takvim, otomatik faturalama ve finansal analizlerle büyütün.',
-      placeholder: 'Otel veya çalışma alanı adınızı girin...',
-      cta: 'Başla',
-      pills: ['14 Gün Ücretsiz', 'Kredi Kartı Gerekmez', 'Anında Kurulum'],
+      eyebrow: 'Arap dünyası için en akıllı rezervasyon sistemi',
+      title1: 'Rezervasyon yönetimi,',
+      mark: 'çok daha basit',
+      subtitle: 'Otelinizi, dairelerinizi veya kısa süreli kiralamalarınızı hızlı takvimimiz, otomatik faturalandırma, finansal analitik ve kanal senkronizasyonu ile büyütün.',
+      cta: '14 günlük ücretsiz deneme',
+      cta2: 'Videoyu izle',
+      trust: 'Şale sahipleri, pansiyon işletmecileri ve hizmet daireleri tarafından tercih edildi',
     },
+    logos: { intro: 'Büyük platformlarla entegre çalışır', items: ['Airbnb', 'Booking.com', 'Gathern', 'iCal', 'Expedia', 'VRBO'] },
     features: {
-      heading: 'Hız için inşa edildi. Büyüme için tasarlandı.',
-      sub: 'Her şey tek bir amaca odaklanıyor: mülk yönetiminizi olabildiğince görünmez kılmak, böylece misafirlerinize odaklanabilirsiniz.',
-      items: [
-        { title: 'Sonsuz 5 Yıllık Takvim', desc: 'Özel sanallaştırılmış ızgaramız, 5 yıllık rezervasyonları takılmadan kaydırmanızı sağlar. Yoğun sezonları yıllar öncesinden planlayın.' },
-        { title: 'Akıllı Faturalama', desc: 'Gece, indirim ve depozito otomatik hesaplanır. İngilizce veya Türkçe temiz, yazdırılabilir PDF faturalar anında oluşturun.' },
-        { title: 'Çoklu Dil Desteği', desc: 'İngilizce, Arapça ve Türkçe tam destek. RTL düzenleri ve bölgesel tarih formatları dahil.' },
-        { title: 'Finansal Zeka', desc: 'Konaklama ve oluşturma tarihine göre gelişmiş raporlama. Doluluk oranları, oda başına gelir ve en kârlı kanalları görselleştirin.' },
-        { title: 'Telefona Kurulabilir', desc: "Hujuzatk'ı tek dokunuşla ana ekrana ekleyin — çevrimdışı çalışır, bildirim gönderir, App Store veya Play Store indirmeye gerek yok." },
-        { title: 'Harici Rezervasyonları Otomatik Senkronize Et', desc: "Airbnb, Gathern ve Booking.com'dan gecelik ve talep üzerine iCal senkronizasyonu. Yeni rezervasyonlar otomatik olarak takviminizde belirir — kopyala-yapıştır yok." },
-        { title: 'Kurumsal Ölçeklendirme', desc: 'Yerel yüksek hızlı Dexie DB ile başlayın, saniyeler içinde PostgreSQL\'e geçin. Verileriniz, kontrolünüz.' },
-        { title: 'Gider Takibi', desc: 'Mülk giderlerini oda veya kategoriye göre kaydedin — bakım, temizlik, faturalar ve daha fazlası. Aylık ve yıllık özetler gelirinizin yanında göründüğünde gerçek kâr marjınızı her zaman bilirsiniz.' },
-      ],
+      eyebrow: 'Güçlü özellikler',
+      title: 'İhtiyacınız olan her şey tek yerde',
+      subtitle: 'Takvim yönetiminden finansal zekaya kadar, Hujuzatk her mülk aracını tek bir hızlı uygulamaya getiriyor.',
     },
-    trust: {
-      badge: 'Banka Düzeyinde Güvenlik',
-      heading: 'Verileriniz güvende, gizli ve her zaman sizin.',
-      sub: 'Hujuzatk çok kiracılı izolasyon kullanır. Her otelin verileri matematiksel olarak diğerlerinden ayrılır. Sızıntı yok, performans çakışması yok, sadece güvenilirlik.',
-      uptime: 'Çalışma Süresi SLA', latency: 'Yerel Gecikme',
-      testimonialsHeading: 'Gerçek mülk yöneticileri tarafından güveniliyor',
-      testimonials: [
-        {
-          quote: 'Hujuzatk mülk yönetimimizi tamamen dönüştürdü. 5 yıllık takvim ve Arapça RTL desteği ekibimiz için mükemmel oldu. İlk ayda rezervasyon hatalarını %80 azalttık.',
-          author: 'Vista Company',
-          role: 'Mülk Yönetimi — Suudi Arabistan',
-          phone: '+966 54 615 2888',
-          initials: 'V',
-        },
-        {
-          quote: 'Birden fazla mülkü yöneten bir rezervasyon müdürü olarak, hızıma ayak uyduran bir araca ihtiyacım vardı. Hujuzatk\'ın hızı ve akıllı faturalaması bana her hafta saatler kazandırıyor.',
-          author: 'Muhammad Orfan',
-          role: 'Rezervasyon Müdürü — Suudi Arabistan',
-          phone: '+966 54 763 3923',
-          initials: 'M',
-        },
-        {
-          quote: 'Mekke\'de otel yönetmek yüksek trafik ve sıfır hata payı demektir. Hujuzatk yoğun sezonlarımızı kusursuz yönetiyor. Otomatik faturalama tek başına geçişe değerdi.',
-          author: 'Sada Makka Hotel',
-          role: 'Otel Yönetimi — Mekke, Suudi Arabistan',
-          phone: '+966 56 527 3054',
-          initials: 'S',
-        },
-      ],
+    f: [
+      { tag: '01', title: 'Sonsuz 3 yıllık takvim', desc: 'Optimize edilmiş ızgaramız 3 yıllık rezervasyonları sıfır gecikmeyle kaydırmanıza olanak tanır. Yoğun sezonları yıllar öncesinden planlayın.', color: 'green' },
+      { tag: '02', title: 'Akıllı faturalandırma', desc: 'Geceler, indirimler ve depozitolar otomatik hesaplanır. Arapça veya İngilizce temiz yazdırılabilir faturalar anında oluşturun.', color: 'amber' },
+      { tag: '03', title: 'Tam Arapça ve RTL desteği', desc: 'Sadece çeviri değil — tamamen yerelleştirilmiş bir deneyim. Bölgesel tarih biçimleri ve para birimleriyle piksel mükemmel RTL düzenleri.', color: 'blue' },
+      { tag: '04', title: 'Finansal zeka', desc: 'Konaklama tarihine veya rezervasyon tarihine göre gelişmiş raporlar. Doluluk oranlarını ve oda başına geliri bir bakışta görselleştirin.', color: 'green' },
+      { tag: '05', title: 'Kurulabilir mobil uygulama', desc: 'Hujuzatk\'ı tek dokunuşla ana ekrana sabitleyin — çevrimdışı çalışır, bildirim gönderir, App Store veya Play Store gerekmez.', color: 'purple' },
+      { tag: '06', title: 'Otomatik kanal senkronizasyonu', desc: 'Airbnb, Gathern ve Booking.com takvimleri için gecelik ve isteğe bağlı senkronizasyon. Yeni rezervasyonlar otomatik olarak görünür.', color: 'coral' },
+      { tag: '07', title: 'Gider takibi', desc: 'Mülk giderlerini odaya veya kategoriye göre kaydedin — bakım, temizlik, faturalar. Aylık ve yıllık raporlar gerçek marjınızı ortaya çıkarır.', color: 'amber' },
+    ],
+    badges: {
+      cal:    { title: '3 yıllık takvim', sub: 'Anında kaydırma' },
+      inv:    { title: 'Akıllı faturalandırma', sub: '5 gece × ₺ 250 = ₺ 1,250' },
+      sync:   { title: 'Airbnb senkron', sub: '12 sn önce senkronize' },
+      rev:    { title: 'Aylık gelir', big: '₺ 28,450', delta: '↑ %18 geçen aya göre' },
+      rtl:    { title: 'Arapça & RTL', sub: 'Gerçekten yerelleştirilmiş' },
+      install:{ title: 'Ana ekrana ekle', sub: 'Uygulama mağazası gerekmez' },
+    },
+    testimonial: {
+      quote: 'Airbnb ile elektronik tabloyu eşitlemek için saatler harcardım. Hujuzatk ile senkronizasyon otomatik — haftada 10+ saat tasarruf ediyorum.',
+      name: 'Ahmed Al-Abdali',
+      role: '8 şale sahibi — Riyad',
     },
     pricing: {
-      heading: 'Basit, dürüst fiyatlandırma.',
-      sub: 'Size uygun planı seçin — her ikisi de 14 günlük ücretsiz deneme içerir.',
-      perYear: '/Yıl',
-      recommended: 'ÖNERİLEN',
-      save: '%15 İNDİRİM',
+      eyebrow: 'Basit fiyatlandırma',
+      title: 'Her işletme boyutuna uygun bir plan',
+      subtitle: 'Ücretsiz başlayın. Büyüdükçe ölçeklendirin. Gizli ücretler yok.',
+      perYear: '/yıl',
       was: 'Eski',
-      note: 'İstediğiniz zaman iptal edin. Sözleşme yok.',
-      plans: [
-        {
-          id: 'trial',
-          name: 'Deneme',
-          price: 0,
-          priceLabel: '14 gün ücretsiz',
-          tagline: 'Tüm temel özellikleri deneyin',
-          features: ['3 Oda', 'Sınırsız Rezervasyon', 'Raporlar', 'Gider Takibi', 'Çoklu Dil (AR/EN/TR)', 'Kurulabilir Uygulama', '5 Yıllık Takvim'],
-          cta: 'Ücretsiz Denemeye Başla',
-          recommended: false,
-        },
-        {
-          id: 'basic',
-          name: 'Temel',
-          price: 40,
-          oldPrice: 50,
-          tagline: 'Küçük mülkler için ideal — kanal senkronu yok',
-          features: ['30 Oda', 'Tam Raporlama', 'Gider Takibi', 'Çoklu Dil (AR/EN/TR)', 'Kurulabilir Uygulama', '5 Yıllık Takvim'],
-          cta: 'Ücretsiz Denemeye Başla',
-          recommended: false,
-        },
-        {
-          id: 'pro',
-          name: 'Pro',
-          price: 90,
-          oldPrice: 100,
-          tagline: 'Temel + otomatik kanal senkronu',
-          features: ['20 Oda', 'Airbnb Otomatik Senkron', 'Gathern Otomatik Senkron', 'Booking.com Otomatik Senkron', 'Gecelik otomatik senkron', 'Öncelikli destek'],
-          cta: 'Ücretsiz Denemeye Başla',
-          recommended: true,
-        },
-        {
-          id: 'enterprise',
-          name: 'Kurumsal',
-          price: 140,
-          oldPrice: 150,
-          tagline: '50 oda + kanal senkronu + özel destek',
-          features: ['50 Oda', 'Tüm Pro özellikleri', 'Özel WhatsApp desteği', 'Özel kurulum', 'SLA destekli çalışma süresi'],
-          cta: 'Satışla İletişime Geç',
-          recommended: false,
-        },
-      ],
+      save: '%15 İNDİRİM',
+      recommended: 'EN POPÜLER',
+      note: 'İstediğiniz zaman iptal edin. Uzun vadeli sözleşmeler yok.',
       promo: {
         title: 'Yıl Sonu Kampanyası',
-        subtitle: '2026 yılı sonuna kadar her iki plan da indirimli — hemen başlayın, fiyatınızı kilitleyin.',
-        placeholder: 'Çalışma alanı adını girin…',
-        cta: 'Çalışma alanımı başlat',
+        subtitle: '2026 yılı sonuna kadar tüm planlar indirimli — hemen başlayın, fiyatınızı kilitleyin.',
       },
+      plans: [
+        {
+          id: 'trial', name: 'Deneme', price: 0, priceLabel: '14 gün ücretsiz',
+          tagline: 'Tüm temel özellikleri deneyin',
+          features: ['3 Oda', 'Sınırsız Rezervasyon', 'Raporlar', 'Gider Takibi', 'Çoklu Dil (AR/EN/TR)', 'Kurulabilir Uygulama', '3 Yıllık Takvim'],
+          cta: 'Ücretsiz Denemeye Başla', recommended: false,
+        },
+        {
+          id: 'basic', name: 'Temel', price: 40, oldPrice: 50,
+          tagline: 'Küçük mülkler için ideal — kanal senkronu yok',
+          features: ['10 Oda', 'Tam Raporlama', 'Gider Takibi', 'Çoklu Dil (AR/EN/TR)', 'Kurulabilir Uygulama', '3 Yıllık Takvim'],
+          cta: 'Ücretsiz Denemeye Başla', recommended: false,
+        },
+        {
+          id: 'pro', name: 'Pro', price: 90, oldPrice: 100,
+          tagline: 'Temel + otomatik kanal senkronu',
+          features: ['30 Oda', 'Airbnb Otomatik Senkron', 'Gathern Otomatik Senkron', 'Booking.com Otomatik Senkron', 'Gecelik otomatik senkron', 'Öncelikli destek'],
+          cta: 'Ücretsiz Denemeye Başla', recommended: true,
+        },
+        {
+          id: 'enterprise', name: 'Kurumsal', price: 140, oldPrice: 150,
+          tagline: 'Sınırsız oda + özel destek',
+          features: ['Sınırsız Oda', 'Tüm Pro özellikleri', 'Özel WhatsApp desteği', 'Özel kurulum', 'SLA destekli çalışma süresi'],
+          cta: 'Satışla İletişime Geç', recommended: false,
+        },
+      ],
+    },
+    cta: {
+      title: 'Rezervasyonlarınızı basitleştirmeye hazır mısınız?',
+      desc: '14 günlük ücretsiz denemeye başlayın. Kredi kartı gerekmez.',
+      button: 'Hemen başlayın',
+      button2: 'Bizimle konuşun',
     },
     footer: {
       tagline: 'Modern ev sahipleri ve profesyonel mülk yöneticileri için dünyanın en sezgisel Rezervasyon Yönetim Sistemi.',
-      legal: 'Yasal', support: 'Destek', privacy: 'Gizlilik', terms: 'Şartlar',
+      product: 'Ürün', company: 'Şirket', legal: 'Yasal', support: 'Destek',
+      productLinks: ['Özellikler', 'Fiyatlar', 'Entegrasyonlar', 'Mobil uygulama'],
+      companyLinks: ['Hakkımızda', 'Hikayemiz', 'İletişim'],
+      legalLinks: ['Gizlilik', 'Şartlar'],
       whatsapp: 'WhatsApp Destek',
       rights: `© ${new Date().getFullYear()} Hujuzatk PMS. Tüm hakları saklıdır.`,
-      location: 'İstanbul | Türkiye | Uluslararası',
+      location: 'İstanbul · Türkiye · Uluslararası',
     },
-    screenshots: {
-      heading: 'İhtiyacınız olan her araç. Tek ekran uzağınızda.',
-      sub: 'Takvimden faturaya 3 tıklamada — hız, netlik ve tam kontrol için tasarlandı.',
-      stats: { occ: 'Doluluk', rev: 'Gelir', bk: 'Rezervasyon' },
-      labels: {
-        calendar: 'Rezervasyon Takvimi',
-        settings: 'Ayarlar',
-        reports: 'Finansal Raporlar',
-        list: 'Rezervasyon Listesi',
-        expense: 'Gider Takibi',
-      },
-      captions: {
-        calendar: '5 yıllık ızgara — saniyeler içinde yılları kaydırın',
-        settings: 'Oda ve yerel ayarları yapılandırın',
-        reports: 'Gelir, doluluk ve doluluk oranı bir bakışta',
-        list: 'Akıllı filtreler · arama · durum rozetleri',
-        expense: 'Oda veya kategoriye göre maliyet kaydedin — gerçek marjınızı bilin',
-      },
-    },
+    video: { playing: 'oynatılıyor', step: (i: number, n: number) => `Adım ${i} / ${n}` },
+    workspaceCheck: 'Çalışma alanınız var mı? Adını girin:',
+    workspacePh: 'calisma-alaniniz',
+    open: 'Aç',
   },
 };
 
-// Order matches features.items array: Calendar, Invoicing, Arabic+RTL, Financial, Installable, AutoSync, Enterprise, Expenses
-const FEATURE_ICONS = [Calendar, FileText, Globe, ChartPie, DeviceMobile, ArrowsClockwise, Database, Receipt];
+// =====================================================================
+// Reusable building blocks
+// =====================================================================
 
-// -------- SEO helpers --------
+function HZLogo({ size = 36, mono = false, color }: { size?: number; mono?: boolean; color?: string }) {
+  const c = color || 'var(--ink-900)';
+  return (
+    <div className="inline-flex items-center gap-2.5">
+      <svg width={size} height={size} viewBox="0 0 40 40" fill="none">
+        <rect x="2" y="2" width="36" height="36" rx="11" fill={mono ? c : 'var(--brand-green)'} />
+        <path d="M11 14 C 11 12, 13 11, 15 11 L 27 11 C 29 11, 30 12.5, 30 14.5 C 30 19, 28 24, 23 27 C 19.5 29, 14 29, 11 27"
+          stroke="#fff" strokeWidth="2.4" strokeLinecap="round" fill="none" />
+        <circle cx="14" cy="22" r="1.6" fill="#fff" />
+      </svg>
+      <span style={{ fontWeight: 700, fontSize: size * 0.6, color: c, letterSpacing: '-0.02em' }}>hujuzatk</span>
+    </div>
+  );
+}
 
-function setMetaName(name: string, content: string) {
+function HZUnderline({ color = 'var(--brand-green)' }: { color?: string }) {
+  return (
+    <svg viewBox="0 0 220 14" preserveAspectRatio="none">
+      <path d="M3 9 C 60 3, 130 3, 217 7" stroke={color} strokeWidth="4" strokeLinecap="round" fill="none" opacity="0.65" />
+    </svg>
+  );
+}
+
+function PhoneFrame({ children }: { children: React.ReactNode }) {
+  return (
+    <div
+      className="relative"
+      style={{
+        width: 320, borderRadius: 44, background: '#0F1A33', padding: 10,
+        boxShadow: '0 50px 80px -30px rgba(11,27,58,.35), 0 16px 32px -16px rgba(11,27,58,.18)',
+      }}
+    >
+      <div
+        className="absolute"
+        style={{
+          top: 14, left: '50%', transform: 'translateX(-50%)',
+          width: 90, height: 24, background: '#0F1A33', borderRadius: 14, zIndex: 3,
+        }}
+      />
+      <div style={{ borderRadius: 36, background: 'var(--bg)', overflow: 'hidden', position: 'relative', height: 660 }}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+// Phone-screen calendar mock (Arabic) — used inside the hero phone
+function CalendarScreenMock() {
+  const dates = [
+    { d: '27', m: 'مارس' }, { d: '28', m: 'مارس' }, { d: '29', m: 'مارس' },
+    { d: '30', m: 'مارس' }, { d: '31', m: 'مارس' }, { d: '01', m: 'أبريل' },
+    { d: '02', m: 'أبريل' }, { d: '03', m: 'أبريل' }, { d: '04', m: 'أبريل' },
+    { d: '05', m: 'أبريل' }, { d: '06', m: 'أبريل' },
+  ];
+  const rooms = [
+    { name: 'R 4', tone: 'blue' }, { name: 'B 1', tone: 'neutral' },
+    { name: 'B 2', tone: 'neutral' }, { name: 'B 3', tone: 'green' },
+  ];
+  const colorMap: Record<string, { bg: string; text: string; border: string }> = {
+    blue:    { bg: 'var(--accent-blue-soft)',  text: 'var(--accent-blue)',  border: 'rgba(59,130,246,.45)' },
+    green:   { bg: 'var(--brand-green-soft)',  text: 'var(--brand-green-deep)', border: 'rgba(14,159,110,.45)' },
+    neutral: { bg: 'transparent',              text: 'var(--ink-700)',      border: 'var(--border)' },
+  };
+
+  const Block = ({ name, col, startRow, span, tone }: { name: string; col: number; startRow: number; span: number; tone: keyof typeof colorMap }) => {
+    const t = colorMap[tone];
+    const colW = `calc((100% - 44px) / 4)`;
+    return (
+      <div
+        className="absolute flex items-center justify-center font-bold"
+        style={{
+          top: startRow * 44 + 4,
+          insetInlineStart: `calc(44px + ${col - 1} * ${colW} + 4px)`,
+          width: `calc(${colW} - 8px)`,
+          height: span * 44 - 8,
+          background: t.bg, border: `1.5px solid ${t.border}`, borderRadius: 8,
+          color: t.text, fontSize: 12,
+        }}
+      >
+        {name}
+      </div>
+    );
+  };
+
+  return (
+    <div dir="rtl" style={{ height: '100%', background: '#fff', fontFamily: 'var(--font-ar)' }}>
+      <div className="flex justify-between items-center" style={{ padding: '16px 14px 8px' }}>
+        <div className="flex gap-2">
+          <div className="flex items-center justify-center" style={{
+            width: 36, height: 36, borderRadius: 10, background: 'var(--brand-green-tint)', color: 'var(--brand-green-deep)',
+          }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <circle cx="12" cy="8" r="3.5" stroke="currentColor" strokeWidth="1.8" />
+              <path d="M5 20c0-3.5 3-6.5 7-6.5s7 3 7 6.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+            </svg>
+          </div>
+          <div className="flex items-center gap-1.5 font-semibold" style={{
+            background: 'var(--brand-green-tint)', borderRadius: 10, padding: '0 12px',
+            color: 'var(--brand-green-deep)', fontSize: 13,
+          }}>
+            التقويم
+          </div>
+        </div>
+        <div className="flex items-center justify-center text-white" style={{ width: 36, height: 36, borderRadius: '50%', background: 'var(--ink-900)' }}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+        </div>
+      </div>
+      <div className="grid" style={{ gridTemplateColumns: '44px repeat(4, 1fr)', borderTop: '1px solid var(--border)' }}>
+        <div className="flex items-center justify-center" style={{ padding: '8px 0', borderInlineStart: '1px solid var(--border)' }}>
+          <Calendar size={14} style={{ color: 'var(--ink-500)' }} />
+        </div>
+        {rooms.map((r, i) => (
+          <div key={i} className="text-center font-bold" style={{
+            padding: '10px 0', fontSize: 12,
+            color: colorMap[r.tone].text,
+            background: r.tone === 'green' ? 'rgba(14,159,110,.06)' : r.tone === 'blue' ? 'rgba(59,130,246,.06)' : 'transparent',
+            borderInlineStart: '1px solid var(--border)',
+          }}>{r.name}</div>
+        ))}
+      </div>
+      <div className="relative" style={{ height: 530, overflow: 'hidden' }}>
+        <div className="grid" style={{ gridTemplateColumns: '44px repeat(4, 1fr)', gridAutoRows: '44px' }}>
+          {dates.map((d, di) => (
+            <div key={di} className="contents">
+              <div className="flex flex-col items-center justify-center font-bold" style={{
+                fontSize: 11, color: 'var(--accent-coral)', lineHeight: 1.1,
+                borderTop: '1px solid var(--border-soft)', borderInlineStart: '1px solid var(--border)',
+              }}>
+                <span style={{ fontSize: 11 }}>{d.d}</span>
+                <span style={{ fontSize: 9, opacity: 0.85 }}>{d.m}</span>
+              </div>
+              {rooms.map((_, ri) => (
+                <div key={ri} style={{ borderTop: '1px solid var(--border-soft)', borderInlineStart: '1px solid var(--border-soft)' }} />
+              ))}
+            </div>
+          ))}
+        </div>
+        <Block name="Ahmed" col={1} startRow={0} span={3} tone="blue" />
+        <Block name="Ali" col={3} startRow={1} span={4} tone="green" />
+        <Block name="أحمد" col={1} startRow={5} span={5} tone="blue" />
+      </div>
+    </div>
+  );
+}
+
+// =====================================================================
+// Floating BadgeChip (around hero phone)
+// =====================================================================
+type BadgeProps = {
+  wrapStyle: React.CSSProperties;
+  rot?: number;
+  floatAnim?: 'hzFloatA' | 'hzFloatB' | 'hzFloatC';
+  delay?: string;
+  accent: string;
+  accentBg: string;
+  icon: React.ReactNode;
+  title: string;
+  sub?: string;
+  big?: string;
+  delta?: string;
+  statusDot?: boolean;
+};
+function BadgeChip({ wrapStyle, rot = 0, floatAnim = 'hzFloatA', delay = '0s', accent, accentBg, icon, title, sub, big, delta, statusDot }: BadgeProps) {
+  return (
+    <div
+      className="absolute"
+      style={{
+        ['--rot' as any]: `${rot}deg`,
+        transform: `rotate(${rot}deg)`,
+        animation: `${floatAnim} 6s ease-in-out infinite`,
+        animationDelay: delay,
+        ...wrapStyle,
+      }}
+    >
+      <div style={{
+        background: 'rgba(255,255,255,0.98)',
+        border: '1px solid var(--border)',
+        borderRadius: 16,
+        padding: '12px 16px',
+        boxShadow: '0 20px 40px -12px rgba(11,27,58,0.16), 0 4px 12px -4px rgba(11,27,58,0.08)',
+        minWidth: 200, maxWidth: 280,
+      }}>
+        <div className="flex items-center gap-3">
+          <div className="grid place-items-center shrink-0" style={{
+            width: 40, height: 40, borderRadius: 12, background: accentBg, color: accent,
+          }}>
+            {icon}
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-1.5">
+              <div className="font-bold" style={{ fontSize: 13, color: 'var(--ink-900)' }}>{title}</div>
+              {statusDot && <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--brand-green)', flexShrink: 0, animation: 'hzPulse 1.8s ease-in-out infinite' }} />}
+            </div>
+            {big && <div className="font-extrabold" style={{ fontSize: 20, color: 'var(--ink-900)', letterSpacing: '-0.02em', marginTop: 2 }}>{big}</div>}
+            {sub && <div style={{ fontSize: 11, color: 'var(--ink-500)', marginTop: 2 }}>{sub}</div>}
+            {delta && <div className="font-bold" style={{ fontSize: 11, color: accent, marginTop: 4 }}>{delta}</div>}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// =====================================================================
+// Holographic feature visuals
+// =====================================================================
+
+function CalendarHolo({ lang }: { lang: Lang }) {
+  return (
+    <div style={{ position: 'relative', width: 220, height: 160 }}>
+      {[
+        { y: '2024', t: lang === 'ar' ? 'مارس' : lang === 'tr' ? 'Mar' : 'Mar', n: '27', rot: -8, x: 0, y2: 30, z: 1, dim: 0.55 },
+        { y: '2025', t: lang === 'ar' ? 'مارس' : lang === 'tr' ? 'Mar' : 'Mar', n: '27', rot: -3, x: 30, y2: 15, z: 2, dim: 0.8 },
+        { y: '2026', t: lang === 'ar' ? 'مارس' : lang === 'tr' ? 'Mar' : 'Mar', n: '27', rot: 4, x: 60, y2: 0, z: 3, dim: 1 },
+      ].map((c, i) => (
+        <div key={i} style={{
+          position: 'absolute', insetInlineStart: c.x, top: c.y2, zIndex: c.z,
+          width: 110, height: 130, background: '#fff',
+          borderRadius: 16, padding: 14,
+          boxShadow: '0 8px 24px -8px rgba(11,27,58,0.18)',
+          transform: `rotate(${c.rot}deg)`,
+          opacity: c.dim,
+          border: '1px solid var(--border)',
+          textAlign: 'center',
+        }}>
+          <div style={{ fontSize: 9, color: 'var(--accent-coral)', fontWeight: 700, marginBottom: 4 }}>{c.y}</div>
+          <div style={{ fontSize: 11, color: 'var(--ink-500)', fontWeight: 600 }}>{c.t}</div>
+          <div style={{ fontSize: 38, fontWeight: 800, color: 'var(--ink-900)', lineHeight: 1, marginTop: 8, letterSpacing: '-0.04em' }}>{c.n}</div>
+          <div style={{ marginTop: 10, height: 4, borderRadius: 2, background: 'var(--brand-green)', opacity: 0.4 }} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function InvoiceHolo({ lang }: { lang: Lang }) {
+  const isAr = lang === 'ar';
+  return (
+    <div style={{
+      transform: 'rotate(-6deg)', width: 200, background: '#fff',
+      borderRadius: 12, padding: 16,
+      boxShadow: '0 18px 36px -10px rgba(11,27,58,0.2)',
+      border: '1px solid var(--border)', direction: isAr ? 'rtl' : 'ltr',
+    }}>
+      <div className="flex justify-between items-center" style={{ marginBottom: 10 }}>
+        <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--ink-900)' }}>{isAr ? 'فاتورة #2451' : lang === 'tr' ? 'Fatura #2451' : 'Invoice #2451'}</span>
+        <div className="grid place-items-center" style={{ width: 22, height: 22, borderRadius: 6, background: 'var(--accent-amber-soft)', color: 'var(--accent-amber)' }}>
+          <Receipt size={14} />
+        </div>
+      </div>
+      {[
+        { l: isAr ? '5 ليالٍ × ﷼ 250' : lang === 'tr' ? '5 gece × ₺ 250' : '5 nights × OMR 250', v: isAr ? '﷼ 1,250' : lang === 'tr' ? '₺ 1,250' : 'OMR 1,250' },
+        { l: isAr ? 'خصم 10%' : lang === 'tr' ? 'İndirim %10' : 'Discount 10%', v: isAr ? '−﷼ 125' : lang === 'tr' ? '−₺ 125' : '−OMR 125', muted: true },
+        { l: isAr ? 'ضريبة 5%' : lang === 'tr' ? 'Vergi %5' : 'Tax 5%', v: isAr ? '﷼ 56' : lang === 'tr' ? '₺ 56' : 'OMR 56', muted: true },
+      ].map((r, i) => (
+        <div key={i} className="flex justify-between" style={{ fontSize: 10, color: r.muted ? 'var(--ink-300)' : 'var(--ink-900)', padding: '3px 0' }}>
+          <span>{r.l}</span><span>{r.v}</span>
+        </div>
+      ))}
+      <div style={{ height: 1, background: 'var(--border)', margin: '6px 0' }} />
+      <div className="flex justify-between" style={{ fontSize: 12, fontWeight: 800, color: 'var(--ink-900)' }}>
+        <span>{isAr ? 'الإجمالي' : lang === 'tr' ? 'Toplam' : 'Total'}</span>
+        <span>{isAr ? '﷼ 1,181' : lang === 'tr' ? '₺ 1,181' : 'OMR 1,181'}</span>
+      </div>
+    </div>
+  );
+}
+
+function RtlHolo({ lang }: { lang: Lang }) {
+  return (
+    <div style={{ position: 'relative', width: 220, height: 160 }}>
+      <div style={{
+        position: 'absolute', insetInlineStart: 10, top: 20, zIndex: 1,
+        width: 110, height: 90, background: '#fff', borderRadius: 12, padding: 12,
+        boxShadow: '0 10px 24px -8px rgba(11,27,58,0.18)',
+        border: '1px solid var(--border)', transform: 'rotate(-6deg)', direction: 'ltr',
+      }}>
+        <div style={{ fontSize: 9, color: 'var(--ink-300)', marginBottom: 6, fontWeight: 700, letterSpacing: '0.08em' }}>EN · LTR</div>
+        <div style={{ height: 6, width: '70%', background: 'var(--ink-900)', borderRadius: 3, marginBottom: 5 }} />
+        <div style={{ height: 4, width: '90%', background: 'var(--border)', borderRadius: 2, marginBottom: 4 }} />
+        <div style={{ height: 4, width: '60%', background: 'var(--border)', borderRadius: 2 }} />
+      </div>
+      <div style={{
+        position: 'absolute', insetInlineEnd: 10, top: 30, zIndex: 2,
+        width: 130, height: 100, background: '#fff', borderRadius: 12, padding: 12,
+        boxShadow: '0 12px 28px -8px rgba(11,27,58,0.22)',
+        border: `2px solid var(--accent-blue)`, transform: 'rotate(5deg)', direction: 'rtl',
+      }}>
+        <div style={{ fontSize: 9, color: 'var(--accent-blue)', marginBottom: 6, fontWeight: 700, letterSpacing: '0.04em' }}>عربي · RTL</div>
+        <div className="h-display" style={{ fontSize: 24, fontWeight: 800, color: 'var(--ink-900)', lineHeight: 1, fontFamily: 'var(--font-ar)' }}>حجوزاتك</div>
+        <div style={{ marginTop: 6, height: 4, width: '60%', background: 'var(--border)', borderRadius: 2, marginInlineStart: 'auto' }} />
+        <div style={{ marginTop: 4, height: 4, width: '80%', background: 'var(--border)', borderRadius: 2, marginInlineStart: 'auto' }} />
+      </div>
+      {/* Tag for tr */}
+      {lang === 'tr' && (
+        <div style={{
+          position: 'absolute', insetInlineStart: 70, bottom: 20, zIndex: 3,
+          width: 100, background: '#fff', borderRadius: 10, padding: 8,
+          boxShadow: '0 12px 28px -8px rgba(11,27,58,0.22)',
+          border: `2px solid var(--accent-coral)`, transform: 'rotate(-3deg)',
+        }}>
+          <div style={{ fontSize: 9, color: 'var(--accent-coral)', fontWeight: 700, letterSpacing: '0.06em' }}>TR · LTR</div>
+          <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--ink-900)', marginTop: 2 }}>Hujuzatk</div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ReportsHolo({ lang }: { lang: Lang }) {
+  const bars = [40, 65, 50, 80, 95, 70, 100];
+  const isAr = lang === 'ar';
+  return (
+    <div className="flex gap-4 items-center justify-center">
+      <div style={{
+        width: 220, background: '#fff', borderRadius: 14, padding: 16,
+        boxShadow: '0 18px 40px -12px rgba(11,27,58,0.22)',
+        border: '1px solid var(--border)', transform: 'rotate(-4deg)',
+        direction: isAr ? 'rtl' : 'ltr',
+      }}>
+        <div className="flex justify-between items-center" style={{ marginBottom: 10 }}>
+          <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--ink-500)' }}>{isAr ? 'الإيرادات' : lang === 'tr' ? 'Gelir' : 'Revenue'}</span>
+          <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--brand-green-deep)', background: 'var(--brand-green-tint)', padding: '2px 6px', borderRadius: 4 }}>↑ 18%</span>
+        </div>
+        <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--ink-900)', letterSpacing: '-0.02em', marginBottom: 12 }}>
+          {isAr ? '﷼ 28,450' : lang === 'tr' ? '₺ 28,450' : 'OMR 28,450'}
+        </div>
+        <div className="flex items-end" style={{ gap: 5, height: 60 }}>
+          {bars.map((h, i) => (
+            <div key={i} style={{
+              flex: 1, height: `${h}%`,
+              background: i === 6 ? 'var(--brand-green)' : 'var(--brand-green-tint)',
+              borderRadius: 3, transformOrigin: 'bottom',
+              animation: `hzGrowBar .6s cubic-bezier(.2,.7,.2,1) both`,
+              animationDelay: `${i * 80}ms`,
+            }} />
+          ))}
+        </div>
+      </div>
+      <div style={{
+        width: 90, background: '#fff', borderRadius: 12, padding: 12,
+        boxShadow: '0 14px 28px -8px rgba(11,27,58,0.18)',
+        border: '1px solid var(--border)', transform: 'rotate(6deg)', textAlign: 'center',
+      }}>
+        <div style={{ fontSize: 9, color: 'var(--ink-500)', fontWeight: 700, marginBottom: 6 }}>{isAr ? 'إشغال' : lang === 'tr' ? 'Doluluk' : 'Occupancy'}</div>
+        <div style={{ position: 'relative', width: 56, height: 56, margin: '0 auto' }}>
+          <svg viewBox="0 0 36 36" style={{ width: '100%', height: '100%' }}>
+            <circle cx="18" cy="18" r="15" fill="none" stroke="var(--border)" strokeWidth="3" />
+            <circle cx="18" cy="18" r="15" fill="none" stroke="var(--brand-green)" strokeWidth="3"
+              strokeDasharray="76 100" strokeDashoffset="0" transform="rotate(-90 18 18)" strokeLinecap="round" />
+          </svg>
+          <div className="absolute inset-0 grid place-items-center" style={{ fontSize: 13, fontWeight: 800, color: 'var(--ink-900)' }}>76%</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function InstallHolo({ lang }: { lang: Lang }) {
+  return (
+    <div style={{ position: 'relative', width: 240, height: 180 }}>
+      <div style={{
+        position: 'absolute', inset: 0, insetInlineEnd: 30,
+        background: 'linear-gradient(135deg, #1B2A55 0%, #0B1B3A 100%)',
+        borderRadius: 22, padding: 16, transform: 'rotate(-5deg)',
+        boxShadow: '0 20px 40px -12px rgba(11,27,58,0.4)',
+      }}>
+        <div className="flex justify-between" style={{ color: 'rgba(255,255,255,0.7)', fontSize: 8, fontWeight: 700, marginBottom: 18 }}>
+          <span>9:41</span><span>●●●●●</span>
+        </div>
+        <div className="grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
+          {[0,1,2,3,4,5,6,7].map(i => (
+            <div key={i} className="grid place-items-center" style={{
+              width: 32, height: 32, borderRadius: 8,
+              background: i === 0 ? 'var(--accent-purple)' : `rgba(255,255,255,${0.08 + (i % 3) * 0.04})`,
+            }}>
+              {i === 0 && <span style={{ color: '#fff', fontWeight: 800, fontSize: 14 }}>ح</span>}
+            </div>
+          ))}
+        </div>
+        <div className="absolute" style={{ insetInlineStart: 16, bottom: 14, fontSize: 8, color: 'rgba(255,255,255,0.7)', fontWeight: 600 }}>
+          {lang === 'ar' ? 'حجوزاتك' : 'hujuzatk'}
+        </div>
+      </div>
+      <div className="absolute flex items-center gap-2" style={{
+        insetInlineEnd: -10, bottom: -10,
+        background: '#fff', borderRadius: 14, padding: 10,
+        boxShadow: '0 16px 32px -10px rgba(11,27,58,0.25)',
+        border: '1px solid var(--border)', transform: 'rotate(4deg)',
+      }}>
+        <div className="grid place-items-center" style={{ width: 32, height: 32, borderRadius: 8, background: 'var(--accent-purple)', color: '#fff', fontWeight: 800, fontSize: 14 }}>ح</div>
+        <div>
+          <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--ink-900)' }}>{lang === 'ar' ? 'تثبيت' : lang === 'tr' ? 'Kur' : 'Install'}</div>
+          <div style={{ fontSize: 8, color: 'var(--ink-500)' }}>{lang === 'ar' ? 'بدون متجر' : lang === 'tr' ? 'Mağazasız' : 'No app store'}</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ChannelsHolo({ lang }: { lang: Lang }) {
+  const channels = [
+    { t: 'Airbnb',  color: 'var(--accent-coral)', rot: -8, x: 0,   y: 20 },
+    { t: 'Booking', color: 'var(--accent-blue)',  rot:  4, x: 70,  y: 0 },
+    { t: lang === 'ar' ? 'جاذبين' : 'Gathern', color: 'var(--brand-green)', rot: -3, x: 140, y: 30 },
+  ];
+  return (
+    <div style={{ position: 'relative', width: 240, height: 160 }}>
+      <svg viewBox="0 0 240 160" style={{ position: 'absolute', inset: 0, opacity: 0.5 }}>
+        <path d="M30 100 Q 120 30 210 100" stroke="var(--brand-green)" strokeWidth="1.5" fill="none" strokeDasharray="3 4">
+          <animate attributeName="stroke-dashoffset" from="0" to="-14" dur="1.4s" repeatCount="indefinite" />
+        </path>
+      </svg>
+      {channels.map((c, i) => (
+        <div key={i} style={{
+          position: 'absolute', insetInlineStart: c.x, top: c.y,
+          width: 84, padding: '10px 12px',
+          background: '#fff', borderRadius: 12,
+          border: '1px solid var(--border)',
+          boxShadow: '0 12px 28px -8px rgba(11,27,58,0.18)',
+          transform: `rotate(${c.rot}deg)`,
+          textAlign: 'center',
+        }}>
+          <div className="grid place-items-center" style={{
+            width: 28, height: 28, borderRadius: 8, margin: '0 auto 6px',
+            background: c.color, color: '#fff', fontSize: 13, fontWeight: 800,
+          }}>{c.t.charAt(0)}</div>
+          <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--ink-900)' }}>{c.t}</div>
+          <div style={{ fontSize: 8, color: 'var(--brand-green-deep)', fontWeight: 700, marginTop: 2 }}>● {lang === 'ar' ? 'متزامن' : lang === 'tr' ? 'senkron' : 'synced'}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ExpensesHolo({ lang }: { lang: Lang }) {
+  const items = [
+    { l: lang === 'ar' ? 'صيانة'  : lang === 'tr' ? 'Bakım'   : 'Maintenance', v: lang === 'ar' ? '﷼ 420' : lang === 'tr' ? '₺ 420' : 'OMR 420', c: 'var(--accent-amber)' },
+    { l: lang === 'ar' ? 'تنظيف'  : lang === 'tr' ? 'Temizlik': 'Cleaning',    v: lang === 'ar' ? '﷼ 180' : lang === 'tr' ? '₺ 180' : 'OMR 180', c: 'var(--accent-blue)'  },
+    { l: lang === 'ar' ? 'كهرباء' : lang === 'tr' ? 'Faturalar': 'Utilities',  v: lang === 'ar' ? '﷼ 95'  : lang === 'tr' ? '₺ 95'  : 'OMR 95',  c: 'var(--accent-purple)' },
+  ];
+  return (
+    <div style={{ position: 'relative', width: 240, height: 170 }}>
+      {items.map((it, i) => (
+        <div key={i} className="flex items-center gap-2.5" style={{
+          position: 'absolute',
+          insetInlineStart: i * 28, top: i * 22,
+          zIndex: 3 - i, width: 180,
+          background: '#fff', borderRadius: 12,
+          padding: '12px 14px',
+          boxShadow: '0 14px 28px -8px rgba(11,27,58,0.18)',
+          border: '1px solid var(--border)',
+          transform: `rotate(${i === 0 ? -6 : i === 1 ? 0 : 5}deg)`,
+          direction: lang === 'ar' ? 'rtl' : 'ltr',
+        }}>
+          <div className="grid place-items-center" style={{ width: 28, height: 28, borderRadius: 8, background: `${it.c}22`, color: it.c }}>
+            <Wallet size={14} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div style={{ fontSize: 10, color: 'var(--ink-500)', fontWeight: 600 }}>{it.l}</div>
+            <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--ink-900)', letterSpacing: '-0.01em' }}>{it.v}</div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+const COLOR_MAP: Record<string, { bg: string; fg: string }> = {
+  green:  { bg: 'var(--brand-green-tint)', fg: 'var(--brand-green-deep)' },
+  amber:  { bg: 'var(--accent-amber-soft)', fg: 'var(--accent-amber)' },
+  blue:   { bg: 'var(--accent-blue-soft)',  fg: 'var(--accent-blue)' },
+  purple: { bg: 'var(--accent-purple-soft)',fg: 'var(--accent-purple)' },
+  coral:  { bg: 'var(--accent-coral-soft)', fg: 'var(--accent-coral)' },
+};
+
+function FeatureCard({
+  span, item, lang, wide, children, idx = 0,
+}: {
+  span: number;
+  item: { tag: string; title: string; desc: string; color: string };
+  lang: Lang;
+  wide?: boolean;
+  children: React.ReactNode;
+  idx?: number;
+}) {
+  const c = COLOR_MAP[item.color] ?? COLOR_MAP.green;
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((e) => { if (e.isIntersecting) { el.setAttribute('data-reveal', 'on'); io.unobserve(el); } });
+    }, { threshold: 0.15 });
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+  return (
+    <div
+      ref={ref}
+      className="hz-reveal hz-card-hover relative overflow-hidden flex flex-col"
+      style={{
+        gridColumn: `span ${span}`,
+        background: '#fff',
+        border: '1px solid var(--border)',
+        borderRadius: 24,
+        padding: 32,
+        direction: lang === 'ar' ? 'rtl' : 'ltr',
+        minHeight: wide ? 360 : 380,
+        transitionDelay: `${(idx % 3) * 80}ms`,
+      }}
+    >
+      <div className="relative grid place-items-center mb-5" style={{
+        height: wide ? 180 : 200, borderRadius: 16,
+        background: `linear-gradient(135deg, ${c.bg} 0%, rgba(255,255,255,0.4) 100%)`,
+        overflow: 'hidden',
+      }}>
+        <div style={{
+          position: 'absolute', inset: 0,
+          background: `radial-gradient(ellipse at 30% 30%, ${c.bg} 0%, transparent 60%), radial-gradient(ellipse at 70% 80%, rgba(255,255,255,0.5) 0%, transparent 50%)`,
+          mixBlendMode: 'screen',
+        }} />
+        <div className="relative w-full h-full grid place-items-center" style={{ zIndex: 1 }}>
+          {children}
+        </div>
+      </div>
+      <div className="inline-flex self-start items-center gap-2" style={{
+        background: c.bg, color: c.fg, padding: '5px 12px', borderRadius: 999,
+        fontSize: 11, fontWeight: 700, marginBottom: 12,
+      }}>{item.tag}</div>
+      <h3 className="m-0 mb-2.5" style={{ fontSize: 20, fontWeight: 700, color: 'var(--ink-900)', lineHeight: 1.3 }}>{item.title}</h3>
+      <p className="m-0" style={{ fontSize: 14, color: 'var(--ink-500)', lineHeight: 1.6 }}>{item.desc}</p>
+    </div>
+  );
+}
+
+// =====================================================================
+// VideoModal — cycles real product screenshots
+// =====================================================================
+function VideoModal({ open, onClose, lang }: { open: boolean; onClose: () => void; lang: Lang }) {
+  const FRAMES = [
+    { src: '/screenshots/calendar.png',  labelEn: 'Calendar',     labelAr: 'التقويم',     labelTr: 'Takvim' },
+    { src: '/screenshots/reports.png',   labelEn: 'Reports',      labelAr: 'التقارير',    labelTr: 'Raporlar' },
+    { src: '/screenshots/list.png',      labelEn: 'Bookings',     labelAr: 'الحجوزات',    labelTr: 'Rezervasyonlar' },
+    { src: '/screenshots/expense.png',   labelEn: 'Expenses',     labelAr: 'المصروفات',   labelTr: 'Giderler' },
+    { src: '/screenshots/settings.png',  labelEn: 'Settings',     labelAr: 'الإعدادات',   labelTr: 'Ayarlar' },
+  ];
+  const FRAME_MS = 2500;
+  const [idx, setIdx] = useState(0);
+  const [playing, setPlaying] = useState(true);
+
+  useEffect(() => {
+    if (!open) { setIdx(0); setPlaying(true); return; }
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', onKey);
+    document.body.style.overflow = 'hidden';
+    return () => { window.removeEventListener('keydown', onKey); document.body.style.overflow = ''; };
+  }, [open, onClose]);
+
+  useEffect(() => {
+    if (!open || !playing) return;
+    const id = setTimeout(() => setIdx(i => (i + 1) % FRAMES.length), FRAME_MS);
+    return () => clearTimeout(id);
+  }, [open, playing, idx, FRAMES.length]);
+
+  if (!open) return null;
+  const frame = FRAMES[idx];
+  const label = lang === 'ar' ? frame.labelAr : lang === 'tr' ? frame.labelTr : frame.labelEn;
+  const progress = ((idx + 1) / FRAMES.length) * 100;
+  const t = content[lang];
+
+  return (
+    <div
+      onClick={onClose}
+      className="fixed inset-0 z-[200] flex items-center justify-center"
+      style={{ background: 'rgba(8,15,32,0.78)', backdropFilter: 'blur(8px)', padding: 24, animation: 'hzFadeIn .25s ease both' }}
+      role="dialog" aria-modal="true"
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="relative w-full"
+        style={{ background: 'var(--ink-900)', borderRadius: 28, padding: 16, maxWidth: 1100, boxShadow: '0 60px 120px -20px rgba(0,0,0,.6)' }}
+      >
+        <button
+          onClick={onClose}
+          aria-label="Close"
+          className="absolute z-10 grid place-items-center text-white"
+          style={{ top: 24, insetInlineEnd: 24, width: 36, height: 36, borderRadius: '50%', background: 'rgba(255,255,255,0.12)', fontSize: 18 }}
+        >
+          ×
+        </button>
+
+        {/* Window chrome */}
+        <div className="flex items-center" style={{ gap: 8, padding: '6px 10px 12px' }}>
+          <span style={{ width: 12, height: 12, borderRadius: '50%', background: '#FF5F57' }} />
+          <span style={{ width: 12, height: 12, borderRadius: '50%', background: '#FFBD2E' }} />
+          <span style={{ width: 12, height: 12, borderRadius: '50%', background: '#28C840' }} />
+          <div className="flex-1 text-center" style={{
+            marginInline: 16, padding: '5px 14px',
+            background: 'rgba(255,255,255,0.08)', borderRadius: 8,
+            fontSize: 11, color: 'rgba(255,255,255,0.6)', fontFamily: 'ui-monospace, monospace',
+          }}>
+            ● {t.video.playing} · hujuzatk.app/{frame.labelEn.toLowerCase()}
+          </div>
+        </div>
+
+        {/* Stage */}
+        <div className="relative grid place-items-center" style={{
+          background: 'linear-gradient(160deg, #14224d 0%, #0B1B3A 100%)',
+          borderRadius: 18, overflow: 'hidden',
+          aspectRatio: '16 / 10',
+        }}>
+          <div className="relative" style={{
+            height: '94%', aspectRatio: '9 / 19.5',
+            background: '#000', borderRadius: 32, padding: 6,
+            boxShadow: '0 40px 80px -20px rgba(0,0,0,.5), inset 0 0 0 2px rgba(255,255,255,0.08)',
+            animation: 'hzFadeIn .5s ease both',
+          }}>
+            <div className="w-full h-full relative" style={{ borderRadius: 28, overflow: 'hidden', background: '#fff' }}>
+              {FRAMES.map((f, i) => (
+                <div key={i} className="absolute inset-0 grid place-items-center" style={{
+                  opacity: i === idx ? 1 : 0, transition: 'opacity .55s ease', background: '#fff',
+                }}>
+                  <img src={f.src} alt="" style={{
+                    width: '100%', height: '100%', objectFit: 'contain', objectPosition: 'center',
+                    animation: i === idx && playing ? 'hzKenBurns 6s ease-in-out infinite alternate' : 'none',
+                  }} />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Step caption */}
+          <div className="absolute" style={{ insetInlineStart: 32, top: 32, color: '#fff' }}>
+            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.18em', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', marginBottom: 8 }}>
+              {t.video.step(idx + 1, FRAMES.length)}
+            </div>
+            <div className="h-display" style={{ fontSize: 32, fontWeight: 700, lineHeight: 1.15 }}>{label}</div>
+          </div>
+
+          {/* Soft glow */}
+          <div className="absolute pointer-events-none" style={{
+            inset: -100,
+            background: 'radial-gradient(circle at 50% 60%, rgba(14,159,110,0.16), transparent 60%)',
+          }} />
+        </div>
+
+        {/* Controls */}
+        <div className="flex items-center" style={{ gap: 14, padding: '14px 6px 6px' }}>
+          <button
+            onClick={() => setPlaying((p) => !p)}
+            className="grid place-items-center text-white"
+            style={{ width: 36, height: 36, borderRadius: '50%', background: 'rgba(255,255,255,0.12)' }}
+          >
+            {playing ? <Pause size={14} weight="fill" /> : <Play size={14} weight="fill" />}
+          </button>
+          <div className="flex-1 relative" style={{ height: 4, background: 'rgba(255,255,255,0.12)', borderRadius: 2, overflow: 'hidden' }}>
+            <div style={{
+              position: 'absolute', insetInlineStart: 0, top: 0, height: '100%',
+              width: `${progress}%`, background: 'var(--brand-green)', transition: 'width .4s ease',
+            }} />
+          </div>
+          <div className="flex" style={{ gap: 6 }}>
+            {FRAMES.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => setIdx(i)}
+                aria-label={`Frame ${i + 1}`}
+                style={{
+                  width: 8, height: 8, borderRadius: '50%',
+                  background: i === idx ? 'var(--brand-green)' : 'rgba(255,255,255,0.25)',
+                  border: 'none', padding: 0,
+                }}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// =====================================================================
+// SEO helpers (preserved)
+// =====================================================================
+
+function setMetaName(name: string, c: string) {
   let el = document.querySelector<HTMLMetaElement>(`meta[name="${name}"]`);
   if (!el) { el = document.createElement('meta'); el.setAttribute('name', name); document.head.appendChild(el); }
-  el.setAttribute('content', content);
+  el.setAttribute('content', c);
 }
-function setMetaProp(property: string, content: string) {
+function setMetaProp(property: string, c: string) {
   let el = document.querySelector<HTMLMetaElement>(`meta[property="${property}"]`);
   if (!el) { el = document.createElement('meta'); el.setAttribute('property', property); document.head.appendChild(el); }
-  el.setAttribute('content', content);
+  el.setAttribute('content', c);
 }
-function setLinkRel(rel: string, href: string, extra?: Record<string, string>) {
+function setLinkRel(rel: string, href: string) {
   let el = document.querySelector<HTMLLinkElement>(`link[rel="${rel}"]`);
   if (!el) { el = document.createElement('link'); el.setAttribute('rel', rel); document.head.appendChild(el); }
   el.setAttribute('href', href);
-  if (extra) Object.entries(extra).forEach(([k, v]) => el!.setAttribute(k, v));
 }
 function setJsonLD(id: string, data: object) {
   let el = document.querySelector<HTMLScriptElement>(`script[data-ld="${id}"]`);
@@ -468,52 +1039,27 @@ function setJsonLD(id: string, data: object) {
 
 function applySEO(lang: Lang) {
   const isAr = lang === 'ar';
-
   const title = isAr
     ? 'حجوزاتك PMS – نظام إدارة الفنادق والحجوزات | برنامج الحجوزات العربي'
     : 'Hujuzatk PMS – Hotel & Property Management System | Free 14-Day Trial';
-
   const description = isAr
-    ? 'حجوزاتك هو نظام إدارة الفنادق والحجوزات الأحدث جيلاً. تقويم حجوزات 5 سنوات، فوترة تلقائية، تحليلات مالية متعمقة، دعم عربي كامل RTL. جرّب مجاناً 14 يوم بدون بطاقة ائتمان.'
-    : 'Hujuzatk is the next-gen Hotel & Property Management System for hotels, apartments, and vacation rentals. 5-year calendar, automated PDF invoicing, financial analytics, native Arabic RTL. Start free 14-day trial.';
-
-  const keywords = isAr
-    ? 'نظام إدارة الفنادق, برنامج إدارة الحجوزات, نظام الحجوزات الفندقية, PMS عربي, نظام إدارة الشقق الفندقية, برنامج حجز الغرف, نظام إدارة الإيجارات, برنامج فندقي عمان, نظام PMS الخليج, إدارة الحجوزات بالعربية, برنامج فواتير فندقية, نظام إشغال الفنادق, برنامج حجوزات سياحية, إدارة الفنادق السعودية, نظام فندقي الإمارات, برنامج إدارة الشقق المفروشة'
-    : 'hotel management software, property management system, PMS software, hotel booking software, vacation rental management, apartment management system, hotel reservation system, Arabic hotel PMS, hotel software Oman, property management UAE, Saudi Arabia hotel software, Middle East PMS, hospitality management software, hotel invoicing software, 5-year booking calendar, occupancy tracking software, room booking system, hotel analytics software, PWA hotel app';
-
+    ? 'حجوزاتك هو نظام إدارة الفنادق والحجوزات الأحدث جيلاً. تقويم حجوزات 3 سنوات، فوترة تلقائية، تحليلات مالية متعمقة، دعم عربي كامل RTL. جرّب مجاناً 14 يوم بدون بطاقة ائتمان.'
+    : 'Hujuzatk is the next-gen Hotel & Property Management System. 3-year calendar, automated PDF invoicing, financial analytics, native Arabic RTL. Start free 14-day trial.';
   document.title = title;
   document.documentElement.lang = lang;
   document.documentElement.dir = isAr ? 'rtl' : 'ltr';
-
   setMetaName('description', description);
-  setMetaName('keywords', keywords);
-  setMetaName('author', 'Hujuzatk');
-  setMetaName('robots', 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1');
-
-  // Open Graph
   setMetaProp('og:title', title);
   setMetaProp('og:description', description);
   setMetaProp('og:locale', isAr ? 'ar_AR' : 'en_US');
-  setMetaProp('og:locale:alternate', isAr ? 'en_US' : 'ar_AR');
   setMetaProp('og:type', 'website');
   setMetaProp('og:url', 'https://hujuzatk.com');
-  setMetaProp('og:site_name', 'Hujuzatk PMS');
   setMetaProp('og:image', 'https://hujuzatk.com/og-image.png');
-  setMetaProp('og:image:width', '1200');
-  setMetaProp('og:image:height', '630');
-  setMetaProp('og:image:alt', isAr ? 'حجوزاتك – لوحة تحكم إدارة الفندق' : 'Hujuzatk PMS – Hotel Management Dashboard');
-
-  // Twitter
   setMetaName('twitter:card', 'summary_large_image');
   setMetaName('twitter:title', title);
   setMetaName('twitter:description', description);
   setMetaName('twitter:image', 'https://hujuzatk.com/og-image.png');
-  setMetaName('twitter:site', '@hujuzatk');
-
-  // Canonical & hreflang
   setLinkRel('canonical', 'https://hujuzatk.com');
-
-  // JSON-LD: SoftwareApplication
   setJsonLD('software', {
     '@context': 'https://schema.org',
     '@type': 'SoftwareApplication',
@@ -523,63 +1069,20 @@ function applySEO(lang: Lang) {
     applicationCategory: 'BusinessApplication',
     applicationSubCategory: 'Hotel Management Software',
     operatingSystem: 'Web, Android, iOS (PWA)',
-    inLanguage: ['en', 'ar'],
+    inLanguage: ['en', 'ar', 'tr'],
     offers: {
       '@type': 'AggregateOffer',
-      lowPrice: '40',
-      highPrice: '140',
-      priceCurrency: 'USD',
-      offerCount: '4',
+      lowPrice: '40', highPrice: '140',
+      priceCurrency: 'USD', offerCount: '4',
       priceValidUntil: '2026-12-31',
       availability: 'https://schema.org/InStock',
-      description: isAr
-        ? 'الخطة الأساسية 40$/سنة (30 غرفة، بدون مزامنة)، المحترف 90$/سنة (20 غرفة + مزامنة)، المؤسسات 140$/سنة (50 غرفة + مزامنة). تجربة مجانية 14 يوم.'
-        : 'Basic $40/year (30 rooms, no sync), Pro $90/year (20 rooms + channel sync), Enterprise $140/year (50 rooms + channel sync). 14-day free trial included.',
     },
     featureList: isAr
-      ? ['تقويم حجوزات 5 سنوات', 'فوترة PDF تلقائية', 'دعم العربية RTL', 'تحليلات مالية', 'تتبع المصروفات', 'تطبيق جوال قابل للتثبيت', 'تكامل قنوات (Airbnb / جاذبين / Booking.com)', 'إدارة متعددة المستأجرين', 'دعم متعدد العملات', 'إدارة الضيوف', 'تتبع الإشغال']
-      : ['5-Year Booking Calendar', 'Automated PDF Invoicing', 'Expense Tracking', 'Arabic RTL Support', 'Financial Analytics', 'Installable Mobile Web App', 'Channel Integrations (Airbnb / Gathern / Booking.com)', 'Multi-tenant Architecture', 'Multi-currency Support', 'Guest Management', 'Occupancy Tracking'],
+      ? ['تقويم حجوزات 3 سنوات', 'فوترة PDF تلقائية', 'دعم العربية RTL', 'تحليلات مالية', 'تتبع المصروفات', 'تطبيق جوال قابل للتثبيت', 'تكامل قنوات (Airbnb / جاذبين / Booking.com)']
+      : ['3-Year Booking Calendar', 'Automated PDF Invoicing', 'Expense Tracking', 'Arabic RTL Support', 'Financial Analytics', 'Installable Mobile Web App', 'Channel Integrations (Airbnb / Gathern / Booking.com)'],
     screenshot: 'https://hujuzatk.com/og-image.png',
-    aggregateRating: {
-      '@type': 'AggregateRating',
-      ratingValue: '4.9',
-      reviewCount: '28',
-      bestRating: '5',
-      worstRating: '1',
-    },
-    review: {
-      '@type': 'Review',
-      author: { '@type': 'Organization', name: isAr ? 'فندق صدى مكة' : 'Sada Makka Hotel' },
-      reviewBody: isAr
-        ? 'إدارة فندق في مكة المكرمة تعني ضغطاً عالياً وهامش خطأ صفري. حجوزاتك يتعامل مع مواسم الذروة بكفاءة تامة. الفوترة التلقائية وحدها كانت تستحق التحول.'
-        : 'Running a hotel in Makkah means high traffic and zero margin for error. Hujuzatk handles our peak seasons flawlessly. The automated invoicing alone was worth the switch.',
-      reviewRating: { '@type': 'Rating', ratingValue: '5', bestRating: '5' },
-    },
-  });
-
-  // JSON-LD: FAQPage
-  setJsonLD('faq', {
-    '@context': 'https://schema.org',
-    '@type': 'FAQPage',
-    mainEntity: isAr
-      ? [
-          { '@type': 'Question', name: 'ما هو نظام حجوزاتك PMS؟', acceptedAnswer: { '@type': 'Answer', text: 'حجوزاتك هو نظام إدارة الحجوزات والفنادق المبني على السحابة، مصمم للفنادق والشقق والإيجارات السياحية. يتميز بتقويم حجوزات لـ5 سنوات، وفوترة تلقائية، وتحليلات مالية، ودعم كامل للغة العربية والإنجليزية.' } },
-          { '@type': 'Question', name: 'هل حجوزاتك يدعم اللغة العربية؟', acceptedAnswer: { '@type': 'Answer', text: 'نعم، يدعم حجوزاتك اللغة العربية بشكل كامل مع تخطيط RTL أصيل، وتنسيقات التواريخ العربية، وعملة OMR، وواجهة كاملة من اليمين إلى اليسار.' } },
-          { '@type': 'Question', name: 'كم تكلفة حجوزاتك؟', acceptedAnswer: { '@type': 'Answer', text: 'نقدم ثلاث خطط: الأساسية 40$/سنة (30 غرفة، بدون مزامنة، عرض من 50$)، المحترف 90$/سنة (20 غرفة مع مزامنة Airbnb وجاذبين وBooking.com، عرض من 100$)، المؤسسات 140$/سنة (50 غرفة مع مزامنة ودعم مخصص، عرض من 150$). تجربة مجانية 14 يوماً بدون بطاقة ائتمان.' } },
-          { '@type': 'Question', name: 'هل حجوزاتك متاح كتطبيق جوال؟', acceptedAnswer: { '@type': 'Answer', text: 'نعم. يتم تثبيت حجوزاتك على الشاشة الرئيسية لهاتفك بنقرة واحدة من المتصفح، ويعمل دون إنترنت، ويرسل إشعارات — دون الحاجة للتحميل من App Store أو Play Store.' } },
-          { '@type': 'Question', name: 'ما الفرق بين نظام PMS السحابي والمحلي في حجوزاتك؟', acceptedAnswer: { '@type': 'Answer', text: 'حجوزاتك يدعم كلا الخيارين: التخزين المحلي عالي السرعة باستخدام Dexie DB للعمل دون إنترنت، والترقية إلى PostgreSQL السحابي عبر Supabase لمزامنة البيانات عبر الأجهزة.' } },
-        ]
-      : [
-          { '@type': 'Question', name: 'What is Hujuzatk PMS?', acceptedAnswer: { '@type': 'Answer', text: 'Hujuzatk is a cloud-based Hotel and Property Management System (PMS) for hotels, apartments, and vacation rentals. It features a 5-year booking calendar, automated PDF invoicing, financial analytics, and native Arabic and English support.' } },
-          { '@type': 'Question', name: 'Does Hujuzatk support Arabic?', acceptedAnswer: { '@type': 'Answer', text: 'Yes. Hujuzatk has native Arabic RTL support including Arabic date formats, OMR currency, and a complete right-to-left layout throughout the entire application.' } },
-          { '@type': 'Question', name: 'How much does Hujuzatk cost?', acceptedAnswer: { '@type': 'Answer', text: 'Three plans: Basic $40/year (30 rooms, no channel sync, promo from $50), Pro $90/year (20 rooms with Airbnb, Gathern & Booking.com sync, promo from $100), Enterprise $140/year (50 rooms + channel sync + dedicated support, promo from $150). 14-day free trial included — no credit card required.' } },
-          { '@type': 'Question', name: 'Is Hujuzatk available as a mobile app?', acceptedAnswer: { '@type': 'Answer', text: 'Yes. Hujuzatk installs to your phone\'s home screen from the browser in one tap — works offline, sends push notifications, no App Store or Play Store download needed.' } },
-          { '@type': 'Question', name: 'What is the difference between local and cloud PMS in Hujuzatk?', acceptedAnswer: { '@type': 'Answer', text: 'Hujuzatk supports both: a high-speed local Dexie DB for offline-first operation, and a PostgreSQL cloud upgrade via Supabase for cross-device data sync.' } },
-        ],
   });
 }
-
-// -------- detectLang --------
 
 function detectLang(): Lang {
   const stored = localStorage.getItem('landing-lang');
@@ -589,45 +1092,64 @@ function detectLang(): Lang {
   return 'en';
 }
 
+// =====================================================================
+// Main LandingPage
+// =====================================================================
 export function LandingPage() {
   const navigate = useNavigate();
-  const [workspaceName, setWorkspaceName] = useState('');
   const [lang, setLang] = useState<Lang>(detectLang);
+  const [workspaceName, setWorkspaceName] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
-  const [loggedInUser, setLoggedInUser] = useState<{ name: string; email: string; slug: string } | null>(null);
-  const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const [sessionResolved, setSessionResolved] = useState(false);
   const [showPromo, setShowPromo] = useState(false);
+  const [videoOpen, setVideoOpen] = useState(false);
+  const [loggedInUser, setLoggedInUser] = useState<{ name: string; email: string; slug: string } | null>(null);
+  const [sessionResolved, setSessionResolved] = useState(false);
 
+  const c = content[lang];
+  const isRtl = lang === 'ar';
+  const isAr = lang === 'ar';
+
+  useEffect(() => { applySEO(lang); }, [lang]);
+
+  // Detect logged-in session
   useEffect(() => {
+    let mounted = true;
     authService.getCurrentUser().then((s) => {
+      if (!mounted) return;
       if (s) {
         const slug = encodeURIComponent((s.tenant.name || 'workspace').replace(/\s+/g, '-'));
-        setLoggedInUser({ name: s.tenant.name || s.tenant.email, email: s.tenant.email, slug });
+        setLoggedInUser({ name: s.tenant.name, email: s.tenant.email, slug });
       }
-    }).finally(() => setSessionResolved(true));
+      setSessionResolved(true);
+    }).catch(() => setSessionResolved(true));
+    return () => { mounted = false; };
   }, []);
 
-  // Promo popup — fires 10s after session hydration if:
-  // (a) user is not logged in, (b) promo still active, (c) no recent dismissal
+  // Promo popup auto-show
   useEffect(() => {
-    if (!sessionResolved || loggedInUser || !isPromoActive()) return;
+    if (!sessionResolved || loggedInUser) return;
+    if (!isPromoActive()) return;
     try {
       const dismissedAt = localStorage.getItem(PROMO_DISMISS_KEY);
       if (dismissedAt) {
-        const daysSince = (Date.now() - new Date(dismissedAt).getTime()) / 86400000;
-        if (daysSince < PROMO_DISMISS_COOLDOWN_DAYS) return;
+        const ageDays = (Date.now() - new Date(dismissedAt).getTime()) / 86_400_000;
+        if (ageDays < PROMO_DISMISS_COOLDOWN_DAYS) return;
       }
     } catch {}
     const timer = setTimeout(() => setShowPromo(true), 10_000);
     return () => clearTimeout(timer);
   }, [sessionResolved, loggedInUser]);
 
-  const handlePromoStart = async (ws: string) => {
-    setShowPromo(false);
-    trackCTA('promo_start_workspace', 'popup');
-    const name = ws.trim();
-    if (!name) { navigate('/user?tab=register'); return; }
+  const setLangTo = (l: Lang) => { setLang(l); localStorage.setItem('landing-lang', l); };
+  const cycleLang = () => {
+    const order: Lang[] = ['en', 'ar', 'tr'];
+    setLangTo(order[(order.indexOf(lang) + 1) % order.length]);
+  };
+
+  const handleOpenWorkspace = async () => {
+    const name = workspaceName.trim();
+    if (!name) { trackCTA('get_started_empty', 'hero'); navigate('/user?tab=register'); return; }
+    trackWorkspaceSearch(name);
     const slug = name.replace(/\s+/g, '-');
     try {
       const exists = await authService.checkWorkspaceExists(slug);
@@ -638,778 +1160,597 @@ export function LandingPage() {
     }
   };
 
-  const cycleLang = () => {
-    const order: Lang[] = ['en', 'ar', 'tr'];
-    const next = order[(order.indexOf(lang) + 1) % order.length];
-    setLang(next);
-    localStorage.setItem('landing-lang', next);
-  };
-  const setLangTo = (l: Lang) => {
-    setLang(l);
-    localStorage.setItem('landing-lang', l);
-  };
-
-  const c = content[lang];
-
-  const handleOpenWorkspace = async () => {
-    if (!workspaceName.trim()) {
-      trackCTA('get_started_empty', 'hero');
-      navigate('/user?tab=register');
-      return;
-    }
-    trackWorkspaceSearch(workspaceName.trim());
-    const slug = workspaceName.trim().replace(/\s+/g, '-');
-    try {
-      const exists = await authService.checkWorkspaceExists(slug);
-      if (exists) {
-        navigate(`/${slug}`);
-      } else {
-        navigate(`/user?workspace=${encodeURIComponent(workspaceName)}&tab=register`);
-      }
-    } catch {
-      navigate(`/user?workspace=${encodeURIComponent(workspaceName)}&tab=register`);
+  const handlePromoStart = (planId: string) => {
+    setShowPromo(false);
+    trackCTA(`promo_start_${planId}`, 'popup');
+    if (planId === 'enterprise') {
+      window.open('https://wa.me/905523205496?text=I%27m%20interested%20in%20Hujuzatk%20Enterprise', '_blank');
+    } else {
+      navigate(`/user?tab=register&plan=${planId}`);
     }
   };
 
-  useEffect(() => { applySEO(lang); }, [lang]);
+  const handlePlanCta = (planId: string) => {
+    trackCTA(`start_trial_${planId}`, 'pricing');
+    if (planId === 'enterprise') {
+      window.open('https://wa.me/905523205496?text=I%27m%20interested%20in%20Hujuzatk%20Enterprise', '_blank');
+    } else {
+      navigate(`/user?tab=register&plan=${planId}`);
+    }
+  };
+
+  const promoOn = isPromoActive();
 
   return (
-    <div className={cn('min-h-screen bg-slate-50 font-sans text-slate-900 selection:bg-emerald-100 selection:text-emerald-900')} dir={c.dir}>
-      <header className="fixed top-0 z-50 w-full border-b border-slate-200 bg-white/70 backdrop-blur-xl">
-        <nav className="container mx-auto flex items-center justify-between px-4 py-4 sm:px-6">
-          {/* Logo */}
-          <div className="flex items-center gap-2.5">
-            <div className="flex items-center justify-center w-10 h-10 rounded-xl">
-              <img src="/logo.svg" alt="Logo" style={{ width: 40, height: 40 }} />
-            </div>
-            <span className="text-2xl font-black tracking-tight text-slate-900">Hujuzatk</span>
-          </div>
-
-          {/* Desktop links */}
-          <div className="hidden items-center gap-8 md:flex">
-            <a href="#features" className="text-sm font-semibold text-slate-600 hover:text-emerald-600 transition-colors">{c.nav.features}</a>
-            <a href="#pricing" className="text-sm font-semibold text-slate-600 hover:text-emerald-600 transition-colors">{c.nav.pricing}</a>
-          </div>
-
-          {/* Desktop right actions */}
-          <div className="hidden md:flex items-center gap-3">
-            <div className="relative flex items-center">
-              <Globe size={14} className="absolute left-2.5 text-slate-400 pointer-events-none" />
-              <select
-                value={lang}
-                onChange={(e) => setLangTo(e.target.value as Lang)}
-                className="appearance-none pl-8 pr-6 py-1.5 rounded-full border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 transition-colors bg-white cursor-pointer outline-none"
-              >
-                <option value="en">English</option>
-                <option value="ar">العربية</option>
-                <option value="tr">Türkçe</option>
-              </select>
-              <CaretDown size={10} weight="bold" className="absolute right-2 text-slate-400 pointer-events-none" />
-            </div>
+    <div dir={c.dir} style={{
+      background: 'var(--bg)', minHeight: '100vh',
+      fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-en)',
+    }}>
+      {/* ───────── Nav ───────── */}
+      <nav className="relative z-10" style={{ background: 'var(--surface)', borderBottom: '1px solid var(--border)' }}>
+        <div className="max-w-[1280px] mx-auto flex items-center justify-between" style={{ padding: '20px 24px' }}>
+          <Link to="/" className="shrink-0"><HZLogo size={36} /></Link>
+          <div className="hidden md:flex items-center gap-1">
+            <a href="#features" className="px-4 py-2 text-sm font-semibold" style={{ color: 'var(--ink-700)' }}>{c.nav.features}</a>
+            <a href="#pricing"  className="px-4 py-2 text-sm font-semibold" style={{ color: 'var(--ink-700)' }}>{c.nav.pricing}</a>
+            <button
+              onClick={cycleLang}
+              className="px-3 py-1.5 text-xs font-bold mx-2"
+              style={{ borderRadius: 999, border: '1px solid var(--border)', color: 'var(--ink-700)', background: '#fff' }}
+            >
+              {lang === 'en' ? 'العربية' : lang === 'ar' ? 'Türkçe' : 'EN'}
+            </button>
             {loggedInUser ? (
-              <div className="relative">
-                <button
-                  onClick={() => setUserMenuOpen(v => !v)}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-emerald-200 bg-emerald-50 text-sm font-bold text-emerald-700 hover:bg-emerald-100 transition-colors"
-                >
-                  <div className="w-6 h-6 rounded-full bg-emerald-600 flex items-center justify-center text-white text-xs font-black">
-                    {loggedInUser.name[0]?.toUpperCase() || 'U'}
-                  </div>
-                  {loggedInUser.name}
-                  <CaretDown size={12} weight="bold" className={cn('transition-transform', userMenuOpen && 'rotate-180')} />
-                </button>
-                {userMenuOpen && (
-                  <>
-                    <div className="fixed inset-0 z-40" onClick={() => setUserMenuOpen(false)} />
-                    <div className="absolute top-full mt-2 right-0 z-50 bg-white rounded-2xl border border-slate-200 shadow-2xl py-2 min-w-[200px]">
-                      <div className="px-4 py-2 border-b border-slate-100">
-                        <div className="font-bold text-sm text-slate-900">{loggedInUser.name}</div>
-                        <div className="text-xs text-slate-400">{loggedInUser.email}</div>
-                      </div>
-                      <button
-                        onClick={() => { navigate(`/${loggedInUser.slug}`); setUserMenuOpen(false); }}
-                        className="w-full px-4 py-2.5 text-sm font-bold text-emerald-600 hover:bg-emerald-50 transition-colors text-left flex items-center gap-2"
-                      >
-                        <Sparkle size={16} weight="fill" />
-                        {{ ar: 'لوحة التحكم', tr: 'Panele Git', en: 'Go to Dashboard' }[lang]}
-                      </button>
-                      <button
-                        onClick={async () => {
-                          await authService.logout();
-                          setLoggedInUser(null);
-                          setUserMenuOpen(false);
-                        }}
-                        className="w-full px-4 py-2.5 text-sm font-bold text-red-500 hover:bg-red-50 transition-colors text-left"
-                      >
-                        {{ ar: 'تسجيل الخروج', tr: 'Çıkış', en: 'Logout' }[lang]}
-                      </button>
-                    </div>
-                  </>
-                )}
-              </div>
+              <button
+                onClick={() => navigate(`/${loggedInUser.slug}`)}
+                className="px-5 py-2.5 text-sm font-bold inline-flex items-center gap-2 transition-all hover:-translate-y-0.5"
+                style={{ background: 'var(--brand-green)', color: '#fff', borderRadius: 999, boxShadow: '0 8px 20px -8px rgba(14,159,110,.6)' }}
+              >
+                {c.open} {loggedInUser.name}
+              </button>
             ) : (
               <>
-                <button onClick={() => navigate('/user')} className="px-4 py-2 text-sm font-bold text-slate-700 hover:text-emerald-600 transition-colors">
+                <Link to="/user?tab=login" className="px-4 py-2 text-sm font-bold" style={{ color: 'var(--brand-green-deep)' }}>
                   {c.nav.login}
-                </button>
-                <button
-                  onClick={() => { trackCTA('start_trial', 'nav'); navigate('/user?tab=register'); }}
-                  className="group flex items-center gap-2 rounded-full bg-slate-900 px-6 py-2.5 text-sm font-bold text-white transition-all hover:bg-emerald-600 active:scale-95"
+                </Link>
+                <Link
+                  to="/user?tab=register"
+                  className="px-5 py-2.5 text-sm font-bold inline-flex items-center gap-2 transition-all hover:-translate-y-0.5"
+                  style={{ background: 'var(--brand-green)', color: '#fff', borderRadius: 999, boxShadow: '0 8px 20px -8px rgba(14,159,110,.6)' }}
                 >
-                  {c.nav.startTrial}
-                  <ArrowRight size={16} className={cn('transition-transform group-hover:translate-x-1', lang === 'ar' && 'rotate-180')} />
-                </button>
+                  {c.nav.signup}
+                </Link>
               </>
             )}
           </div>
-
-          {/* Mobile: hamburger */}
           <button
-            onClick={() => setMenuOpen((v) => !v)}
-            className="md:hidden flex items-center justify-center w-10 h-10 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 transition-colors"
+            onClick={() => setMenuOpen((m) => !m)}
+            className="md:hidden grid place-items-center"
+            style={{ width: 40, height: 40, borderRadius: 12, color: 'var(--ink-900)' }}
             aria-label="Menu"
           >
-            {menuOpen ? <X size={22} /> : <List size={22} />}
+            {menuOpen ? <X size={22} weight="bold" /> : <List size={22} weight="bold" />}
           </button>
-        </nav>
-
-        {/* Mobile dropdown */}
+        </div>
         {menuOpen && (
-          <div className="md:hidden border-t border-slate-100 bg-white/95 backdrop-blur-xl px-4 py-4 flex flex-col gap-1" dir={c.dir}>
-            <a
-              href="#features"
-              onClick={() => setMenuOpen(false)}
-              className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold text-slate-700 hover:bg-emerald-50 hover:text-emerald-600 transition-colors"
-            >
-              {c.nav.features}
-            </a>
-            <a
-              href="#pricing"
-              onClick={() => setMenuOpen(false)}
-              className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold text-slate-700 hover:bg-emerald-50 hover:text-emerald-600 transition-colors"
-            >
-              {c.nav.pricing}
-            </a>
-            <div className="my-1 border-t border-slate-100" />
-            {loggedInUser ? (
-              <>
-                <div className="flex items-center gap-3 px-4 py-3">
-                  <div className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center text-white font-black text-xs">
-                    {loggedInUser.name[0]?.toUpperCase() || 'U'}
-                  </div>
-                  <div>
-                    <div className="font-bold text-sm text-slate-900">{loggedInUser.name}</div>
-                    <div className="text-xs text-slate-400">{loggedInUser.email}</div>
-                  </div>
-                </div>
-                <button
-                  onClick={() => { navigate(`/${loggedInUser.slug}`); setMenuOpen(false); }}
-                  className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold text-emerald-600 hover:bg-emerald-50 transition-colors text-start w-full"
-                >
-                  <Sparkle size={16} weight="fill" />
-                  {{ ar: 'لوحة التحكم', tr: 'Panele Git', en: 'Go to Dashboard' }[lang]}
-                </button>
-                <button
-                  onClick={async () => { await authService.logout(); setLoggedInUser(null); setMenuOpen(false); }}
-                  className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold text-red-500 hover:bg-red-50 transition-colors text-start w-full"
-                >
-                  {{ ar: 'تسجيل الخروج', tr: 'Çıkış', en: 'Logout' }[lang]}
-                </button>
-              </>
-            ) : (
-              <>
-                <button
-                  onClick={() => { navigate('/user'); setMenuOpen(false); }}
-                  className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold text-slate-700 hover:bg-emerald-50 hover:text-emerald-600 transition-colors text-start"
-                >
-                  {c.nav.login}
-                </button>
-              </>
-            )}
-            <Link
-              to="/privacy"
-              onClick={() => setMenuOpen(false)}
-              className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold text-slate-500 hover:bg-slate-50 transition-colors"
-            >
-              {c.footer.privacy}
-            </Link>
-            <Link
-              to="/terms"
-              onClick={() => setMenuOpen(false)}
-              className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold text-slate-500 hover:bg-slate-50 transition-colors"
-            >
-              {c.footer.terms}
-            </Link>
-            <div className="my-1 border-t border-slate-100" />
-            <div className="relative flex items-center px-4 py-2">
-              <Globe size={16} className="absolute left-7 text-slate-400 pointer-events-none" />
-              <select
-                value={lang}
-                onChange={(e) => { setLangTo(e.target.value as Lang); setMenuOpen(false); }}
-                className="appearance-none pl-10 pr-8 py-2.5 rounded-2xl border border-slate-200 text-sm font-bold text-slate-600 bg-white w-full cursor-pointer outline-none"
-              >
-                <option value="en">English</option>
-                <option value="ar">العربية</option>
-                <option value="tr">Türkçe</option>
-              </select>
-              <CaretDown size={12} weight="bold" className="absolute right-7 text-slate-400 pointer-events-none" />
-            </div>
-            {!loggedInUser && (
-              <button
-                onClick={() => { trackCTA('start_trial', 'mobile_menu'); navigate('/user?tab=register'); setMenuOpen(false); }}
-                className="mt-2 w-full flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-6 py-3.5 text-sm font-black text-white transition-all hover:bg-emerald-700 active:scale-95"
-              >
-                {c.nav.startTrial}
-                <ArrowRight size={16} className={lang === 'ar' ? 'rotate-180' : ''} />
+          <div className="md:hidden border-t" style={{ borderColor: 'var(--border)' }}>
+            <div className="max-w-[1280px] mx-auto flex flex-col" style={{ padding: '12px 24px' }}>
+              <a onClick={() => setMenuOpen(false)} href="#features" className="py-3 text-sm font-semibold" style={{ color: 'var(--ink-700)' }}>{c.nav.features}</a>
+              <a onClick={() => setMenuOpen(false)} href="#pricing"  className="py-3 text-sm font-semibold" style={{ color: 'var(--ink-700)' }}>{c.nav.pricing}</a>
+              <button onClick={cycleLang} className="py-3 text-sm font-semibold text-start" style={{ color: 'var(--ink-700)' }}>
+                {lang === 'en' ? 'العربية' : lang === 'ar' ? 'Türkçe' : 'English'}
               </button>
-            )}
+              {loggedInUser ? (
+                <button onClick={() => navigate(`/${loggedInUser.slug}`)} className="py-3 text-sm font-bold text-start" style={{ color: 'var(--brand-green-deep)' }}>
+                  {c.open} {loggedInUser.name}
+                </button>
+              ) : (
+                <>
+                  <Link to="/user?tab=login" className="py-3 text-sm font-bold" style={{ color: 'var(--brand-green-deep)' }}>{c.nav.login}</Link>
+                  <Link to="/user?tab=register" className="py-3 text-sm font-bold" style={{ color: 'var(--brand-green-deep)' }}>{c.nav.signup}</Link>
+                </>
+              )}
+            </div>
           </div>
         )}
-      </header>
+      </nav>
 
-      <main>
-        {/* Hero */}
-        <section className="relative overflow-hidden pt-32 pb-20 lg:pt-40 lg:pb-24">
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-full -z-10 pointer-events-none opacity-20">
-            <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-emerald-400 rounded-full blur-[120px]" />
-            <div className="absolute bottom-[10%] right-[-5%] w-[30%] h-[30%] bg-blue-400 rounded-full blur-[100px]" />
-          </div>
-          <div className="container mx-auto px-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-              {/* Text column */}
-              <div className="flex flex-col items-start">
-                <div className="mb-8 flex max-w-fit items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50/50 px-4 py-1.5 text-sm font-bold text-emerald-700 backdrop-blur-xs">
-                  <Sparkle size={16} weight="fill" />
-                  <span>{c.hero.badge}</span>
-                </div>
-                <h1 className="text-5xl font-black leading-[1.1] tracking-tight text-slate-900 sm:text-6xl lg:text-7xl">
-                  {c.hero.headline}{' '}
-                  <span className="bg-gradient-to-r from-emerald-600 to-teal-500 bg-clip-text text-transparent italic">{c.hero.italic}</span>
-                </h1>
-                <p className="mt-8 max-w-xl text-lg font-medium leading-relaxed text-slate-600">{c.hero.sub}</p>
-                <div className="mt-10 w-full max-w-lg">
-                  <div className="group relative flex flex-col gap-3 rounded-2xl bg-white p-3 shadow-2xl shadow-slate-200 ring-1 ring-slate-200 sm:flex-row">
-                    <div className="relative flex-grow">
-                      <div className={cn('absolute inset-y-0 flex items-center pointer-events-none text-slate-400 group-focus-within:text-emerald-500 transition-colors', lang === 'ar' ? 'right-5' : 'left-5')}>
-                        <Buildings size={20} />
-                      </div>
-                      <input
-                        type="text"
-                        placeholder={c.hero.placeholder}
-                        className={cn('w-full h-14 rounded-[1.5rem] border-0 bg-slate-50 text-lg font-semibold text-slate-900 ring-0 focus:ring-2 focus:ring-emerald-500 transition-all placeholder:text-slate-400', lang === 'ar' ? 'pr-14 pl-6' : 'pl-14 pr-6')}
-                        value={workspaceName}
-                        onChange={(e) => setWorkspaceName(e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && handleOpenWorkspace()}
-                      />
-                    </div>
-                    <button
-                      onClick={handleOpenWorkspace}
-                      className="h-14 flex items-center justify-center gap-3 rounded-[1.5rem] bg-emerald-600 px-10 text-lg font-bold text-white transition-all hover:bg-emerald-700 hover:shadow-xl hover:shadow-emerald-200 active:scale-95"
-                    >
-                      {c.hero.cta} <ArrowRight size={20} weight="bold" className={lang === 'ar' ? 'rotate-180' : ''} />
-                    </button>
-                  </div>
-                  <div className="mt-6 flex flex-wrap items-center gap-6 text-sm font-bold text-slate-400 uppercase tracking-widest">
-                    {c.hero.pills.map((p, i) => (
-                      <span key={i} className="flex items-center gap-2">
-                        <Check size={18} weight="bold" className="text-emerald-500" /> {p}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </div>
+      {/* ───────── Hero ───────── */}
+      <section className="relative overflow-hidden" style={{ background: 'var(--surface)', borderBottom: '1px solid var(--border)' }}>
+        <div className="absolute" style={{ insetInlineStart: -200, top: -120, width: 520, height: 520, borderRadius: '50%', background: 'var(--bg-cream)', opacity: 0.7, zIndex: 0 }} />
+        <div className="absolute" style={{ insetInlineEnd: -180, top: 280, width: 380, height: 380, borderRadius: '50%', background: 'var(--bg-mint)', opacity: 0.5, zIndex: 0 }} />
+        <div className="bg-dots absolute" style={{ insetInlineStart: 60, top: 200, width: 120, height: 120, opacity: 0.5, zIndex: 1 }} />
 
-              {/* Calendar Mac frame — desktop only */}
-              <div className="hidden lg:block">
-                <div className="rounded-2xl overflow-hidden shadow-2xl shadow-slate-300/60 ring-1 ring-slate-200">
-                  <div className="bg-slate-100 border-b border-slate-200 px-4 py-2.5 flex items-center gap-3">
-                    <div className="flex gap-1.5">
-                      <div className="w-3 h-3 rounded-full bg-red-400" />
-                      <div className="w-3 h-3 rounded-full bg-yellow-400" />
-                      <div className="w-3 h-3 rounded-full bg-green-500" />
-                    </div>
-                    <div className="flex-1 bg-white rounded-md px-3 py-1 text-[10px] text-slate-400 font-mono text-center border border-slate-200">
-                      hujuzatk.com
-                    </div>
-                  </div>
-                  <img
-                    src="/screenshots/calendar.png"
-                    alt={c.screenshots.labels.calendar}
-                    className="w-full object-cover object-top"
-                  />
-                </div>
-              </div>
+        <div className="max-w-[1280px] mx-auto relative z-10" style={{ padding: '60px 24px 60px' }}>
+          {/* Headline */}
+          <div className="hz-reveal text-center mx-auto" data-reveal="on" style={{ maxWidth: 880, marginBottom: 24 }}>
+            <span className="eyebrow inline-block" style={{ marginBottom: 20 }}>{c.hero.eyebrow}</span>
+            <h1 className="h-display" style={{ fontSize: isAr ? 64 : 76, margin: '0 0 20px', color: 'var(--ink-900)', lineHeight: 1.05 }}>
+              {c.hero.title1}{' '}
+              <span className="mark-underline">
+                {c.hero.mark}
+                <HZUnderline color="var(--brand-green)" />
+              </span>
+            </h1>
+            <p className="mx-auto" style={{ fontSize: 18, lineHeight: 1.6, color: 'var(--ink-500)', maxWidth: 680, margin: '0 auto 28px' }}>
+              {c.hero.subtitle}
+            </p>
+            <div className="flex justify-center flex-wrap" style={{ gap: 14, marginBottom: 14 }}>
+              <button
+                onClick={() => { trackCTA('hero_start', 'hero'); navigate('/user?tab=register'); }}
+                className="inline-flex items-center transition-all hover:-translate-y-0.5"
+                style={{
+                  background: 'var(--brand-green)', color: '#fff',
+                  padding: '16px 30px', fontSize: 16, fontWeight: 700,
+                  borderRadius: 999, gap: 10,
+                  boxShadow: '0 8px 20px -8px rgba(14,159,110,.6)',
+                }}
+              >
+                {c.hero.cta}
+                <ArrowRight size={18} weight="bold" style={{ transform: isRtl ? 'scaleX(-1)' : undefined }} />
+              </button>
+              <button
+                onClick={() => { trackCTA('hero_video', 'hero'); setVideoOpen(true); }}
+                className="inline-flex items-center transition-all hover:-translate-y-0.5"
+                style={{
+                  background: 'var(--surface)', border: '1.5px solid var(--ink-200)',
+                  color: 'var(--ink-900)', padding: '14px 22px', fontSize: 16, fontWeight: 600,
+                  borderRadius: 999, gap: 12,
+                }}
+              >
+                <span className="grid place-items-center" style={{
+                  width: 28, height: 28, borderRadius: '50%', background: 'var(--brand-green)', color: '#fff', fontSize: 11,
+                }}>
+                  <Play size={11} weight="fill" />
+                </span>
+                {c.hero.cta2}
+              </button>
             </div>
+            <p style={{ fontSize: 13, color: 'var(--ink-300)' }}>{c.hero.trust}</p>
           </div>
-        </section>
 
-        {/* Screenshots showcase — slider */}
-        <section className="bg-slate-900 py-24 lg:py-32 overflow-hidden">
-          <div className="container mx-auto px-6">
-            <div className="text-center mb-14">
-              <h2 className="text-3xl font-black text-white sm:text-5xl">{c.screenshots.heading}</h2>
-              <p className="mt-4 text-lg text-slate-400 max-w-2xl mx-auto">{c.screenshots.sub}</p>
+          {/* Phone with floating BadgeChips */}
+          <div className="hidden lg:block relative" style={{ height: 700 }}>
+            <div className="absolute" style={{ insetInlineStart: '50%', top: 30, transform: 'translateX(-50%)', width: 540, height: 540, borderRadius: '50%', background: 'var(--bg-mint)', zIndex: 0 }} />
+            <div className="absolute" style={{ insetInlineStart: '50%', top: 80, transform: 'translateX(-50%)', width: 440, height: 440, borderRadius: '50%', background: 'rgba(255,255,255,0.6)', zIndex: 0 }} />
+
+            <span className="absolute" style={{ insetInlineStart: '30%', top: 60, width: 12, height: 12, borderRadius: '50%', background: 'var(--accent-coral)', zIndex: 1 }} />
+            <span className="absolute" style={{ insetInlineEnd: '32%', top: 100, width: 10, height: 10, borderRadius: '50%', background: 'var(--brand-green)', zIndex: 1 }} />
+            <span className="absolute" style={{ insetInlineStart: '20%', bottom: 60, width: 8, height: 8, borderRadius: '50%', background: 'var(--accent-blue)', zIndex: 1 }} />
+
+            <div className="absolute" style={{ insetInlineStart: '50%', top: 0, transform: 'translateX(-50%)', zIndex: 3, animation: 'hzRevealUp .8s cubic-bezier(.2,.7,.2,1) both' }}>
+              <PhoneFrame><CalendarScreenMock /></PhoneFrame>
             </div>
-            <ShowcaseSlider
-              slides={[
-                { src: '/screenshots/list.png',     label: c.screenshots.labels.list,     caption: c.screenshots.captions.list,     featureIndices: [1, 7, 3, 4] },
-                { src: '/screenshots/reports.png',  label: c.screenshots.labels.reports,  caption: c.screenshots.captions.reports,  featureIndices: [3, 6, 0, 5] },
-                { src: '/screenshots/expense.png',  label: c.screenshots.labels.expense,  caption: c.screenshots.captions.expense,  featureIndices: [7, 3, 1, 4] },
-                { src: '/screenshots/settings.png', label: c.screenshots.labels.settings, caption: c.screenshots.captions.settings, featureIndices: [2, 4, 6, 1] },
-              ]}
-              features={c.features.items}
+
+            <BadgeChip
+              wrapStyle={{ top: 30, insetInlineEnd: '8%', zIndex: 5 }}
+              rot={3} floatAnim="hzFloatA" delay="0s"
+              accent="var(--brand-green-deep)" accentBg="var(--brand-green-tint)"
+              icon={<Calendar size={20} />}
+              title={c.badges.cal.title} sub={c.badges.cal.sub}
+            />
+            <BadgeChip
+              wrapStyle={{ top: 70, insetInlineStart: '6%', zIndex: 5 }}
+              rot={-4} floatAnim="hzFloatB" delay=".4s"
+              accent="var(--accent-amber)" accentBg="var(--accent-amber-soft)"
+              icon={<Receipt size={20} />}
+              title={c.badges.inv.title} sub={c.badges.inv.sub}
+            />
+            <BadgeChip
+              wrapStyle={{ top: 280, insetInlineStart: '2%', zIndex: 5 }}
+              rot={2} floatAnim="hzFloatC" delay=".7s"
+              accent="var(--accent-coral)" accentBg="var(--accent-coral-soft)"
+              icon={<ArrowsClockwise size={20} />}
+              title={c.badges.sync.title} sub={c.badges.sync.sub} statusDot
+            />
+            <BadgeChip
+              wrapStyle={{ top: 320, insetInlineEnd: '3%', zIndex: 5 }}
+              rot={-3} floatAnim="hzFloatA" delay="1s"
+              accent="var(--brand-green-deep)" accentBg="var(--brand-green-tint)"
+              icon={<ChartBar size={20} />}
+              title={c.badges.rev.title} big={c.badges.rev.big} delta={c.badges.rev.delta}
+            />
+            <BadgeChip
+              wrapStyle={{ bottom: 30, insetInlineStart: '10%', zIndex: 5 }}
+              rot={-2} floatAnim="hzFloatB" delay=".2s"
+              accent="var(--accent-blue)" accentBg="var(--accent-blue-soft)"
+              icon={<Globe size={20} />}
+              title={c.badges.rtl.title} sub={c.badges.rtl.sub}
+            />
+            <BadgeChip
+              wrapStyle={{ bottom: 50, insetInlineEnd: '10%', zIndex: 5 }}
+              rot={4} floatAnim="hzFloatC" delay=".55s"
+              accent="var(--accent-purple)" accentBg="var(--accent-purple-soft)"
+              icon={<DeviceMobile size={20} />}
+              title={c.badges.install.title} sub={c.badges.install.sub}
             />
           </div>
-        </section>
 
-        {/* Features */}
-        <section id="features" className="bg-white py-32 relative overflow-hidden">
-          <div className="absolute top-1/2 left-0 -translate-y-1/2 w-96 h-96 bg-emerald-50 rounded-full blur-[100px] -z-10" />
-          <div className="container mx-auto px-6">
-            <div className="max-w-3xl">
-              <h2 className="text-4xl font-black tracking-tight text-slate-900 sm:text-5xl">{c.features.heading}</h2>
-              <p className="mt-6 text-xl leading-relaxed text-slate-600">{c.features.sub}</p>
-            </div>
-            <div className="mt-20 grid grid-cols-1 gap-12 sm:grid-cols-2 lg:grid-cols-3">
-              {c.features.items.map((feature, i) => {
-                const Icon = FEATURE_ICONS[i];
-                return (
-                  <div key={i} className="group flex flex-col items-start transition-all">
-                    <div className={cn('flex h-12 w-12 items-center justify-center rounded-2xl mb-6 shadow-sm', i % 2 === 0 ? 'bg-emerald-50 text-emerald-600' : 'bg-blue-50 text-blue-600')}>
-                      <Icon size={24} weight="duotone" />
-                    </div>
-                    <h3 className="text-2xl font-extrabold text-slate-900">{feature.title}</h3>
-                    <p className="mt-4 text-lg leading-relaxed text-slate-500">{feature.desc}</p>
-                  </div>
-                );
-              })}
+          {/* Mobile: just the phone, no floating chips */}
+          <div className="lg:hidden flex justify-center" style={{ marginTop: 24 }}>
+            <div style={{ transform: 'scale(0.85)', transformOrigin: 'center top' }}>
+              <PhoneFrame><CalendarScreenMock /></PhoneFrame>
             </div>
           </div>
-        </section>
 
-        {/* Trust */}
-        <section className="bg-slate-900 py-32 text-white">
-          <div className="container mx-auto px-6">
-            {/* Security stats */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 items-center mb-24">
-              <div>
-                <div className="inline-flex items-center gap-2 rounded-full bg-emerald-500/20 px-4 py-1.5 text-sm font-bold text-emerald-400 mb-8">
-                  <ShieldCheck size={18} weight="fill" /> {c.trust.badge}
-                </div>
-                <h2 className="text-4xl font-black leading-tight sm:text-6xl">{c.trust.heading}</h2>
-                <p className="mt-8 text-xl text-slate-400 leading-relaxed">{c.trust.sub}</p>
-                <div className="mt-12 flex gap-12">
-                  <div>
-                    <p className="text-4xl font-black text-white">99.9%</p>
-                    <p className="mt-1 text-slate-500 uppercase text-xs font-bold tracking-widest">{c.trust.uptime}</p>
-                  </div>
-                  <div>
-                    <p className="text-4xl font-black text-white">0ms</p>
-                    <p className="mt-1 text-slate-500 uppercase text-xs font-bold tracking-widest">{c.trust.latency}</p>
-                  </div>
-                </div>
+          {/* Workspace shortcut */}
+          {!loggedInUser && sessionResolved && (
+            <div className="mt-12 max-w-[480px] mx-auto" style={{ padding: '0 24px' }}>
+              <p className="text-center mb-2" style={{ fontSize: 13, color: 'var(--ink-500)', fontWeight: 600 }}>{c.workspaceCheck}</p>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={workspaceName}
+                  onChange={(e) => setWorkspaceName(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleOpenWorkspace(); }}
+                  placeholder={c.workspacePh}
+                  className="flex-1 outline-none"
+                  style={{
+                    background: '#fff', border: '1px solid var(--border)',
+                    borderRadius: 12, padding: '12px 16px', fontSize: 14, fontWeight: 600,
+                    color: 'var(--ink-900)',
+                  }}
+                />
+                <button
+                  onClick={handleOpenWorkspace}
+                  className="font-bold transition-all hover:-translate-y-0.5"
+                  style={{
+                    background: 'var(--ink-900)', color: '#fff',
+                    borderRadius: 12, padding: '12px 22px', fontSize: 14,
+                  }}
+                >
+                  {c.open}
+                </button>
               </div>
-              <div className="hidden lg:block" />
             </div>
+          )}
+        </div>
+      </section>
 
-            {/* Testimonials */}
-            <div>
-              <p className="text-center text-sm font-bold uppercase tracking-widest text-emerald-400 mb-12">{c.trust.testimonialsHeading}</p>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {c.trust.testimonials.map((t, i) => (
-                  <div key={i} className="rounded-2xl bg-slate-800 border border-slate-700 p-8 flex flex-col gap-6 hover:border-emerald-500/40 transition-colors">
-                    <div className="flex gap-1 text-emerald-400">
-                      {[...Array(5)].map((_, j) => <Star key={j} size={16} weight="fill" />)}
-                    </div>
-                    <p className="text-base leading-relaxed text-slate-300 italic flex-1">"{t.quote}"</p>
-                    <div className="flex items-center gap-4 pt-4 border-t border-slate-700">
-                      <div className="h-12 w-12 rounded-full bg-emerald-600 flex items-center justify-center text-white font-black text-lg shrink-0">
-                        {t.initials}
-                      </div>
-                      <div className="min-w-0">
-                        <p className="font-bold text-white truncate">{t.author}</p>
-                        <p className="text-xs text-slate-500 truncate">{t.role}</p>
-                        <p className="text-xs text-emerald-500 mt-0.5">{t.phone}</p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+      {/* ───────── Logos Marquee ───────── */}
+      <section style={{ padding: '60px 0', background: 'var(--surface)', overflow: 'hidden' }}>
+        <div className="max-w-[1280px] mx-auto" style={{ padding: '0 24px' }}>
+          <p className="text-center" style={{ fontSize: 13, color: 'var(--ink-300)', marginBottom: 32, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+            {c.logos.intro}
+          </p>
+        </div>
+        <div className="relative" style={{
+          maskImage: 'linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent)',
+          WebkitMaskImage: 'linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent)',
+        }}>
+          <div className="hz-marquee-track flex" style={{ gap: 60, width: 'max-content', animation: 'hzMarquee 30s linear infinite' }}>
+            {[...c.logos.items, ...c.logos.items, ...c.logos.items].map((n, i) => (
+              <span key={i} className="whitespace-nowrap" style={{ fontSize: 22, fontWeight: 700, color: 'var(--ink-300)', letterSpacing: '-0.02em' }}>{n}</span>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ───────── Features ───────── */}
+      <section id="features" style={{ padding: '120px 24px', background: 'var(--bg)' }}>
+        <div className="max-w-[1280px] mx-auto">
+          <div className="hz-reveal text-center mx-auto" data-reveal="on" style={{ marginBottom: 64, maxWidth: 720 }}>
+            <span className="eyebrow">{c.features.eyebrow}</span>
+            <h2 className="h-display" style={{ fontSize: 48, margin: '16px 0 16px', color: 'var(--ink-900)' }}>{c.features.title}</h2>
+            <p style={{ fontSize: 18, color: 'var(--ink-500)', lineHeight: 1.6 }}>{c.features.subtitle}</p>
+          </div>
+
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-6 md:auto-rows-[minmax(340px,_auto)]">
+            <FeatureCard idx={0} span={2} item={c.f[0]} lang={lang}><CalendarHolo lang={lang} /></FeatureCard>
+            <FeatureCard idx={1} span={2} item={c.f[1]} lang={lang}><InvoiceHolo lang={lang} /></FeatureCard>
+            <FeatureCard idx={2} span={2} item={c.f[2]} lang={lang}><RtlHolo lang={lang} /></FeatureCard>
+
+            <FeatureCard idx={0} span={3} item={c.f[3]} lang={lang} wide><ReportsHolo lang={lang} /></FeatureCard>
+            <FeatureCard idx={1} span={3} item={c.f[5]} lang={lang} wide><ChannelsHolo lang={lang} /></FeatureCard>
+
+            <FeatureCard idx={0} span={3} item={c.f[4]} lang={lang} wide><InstallHolo lang={lang} /></FeatureCard>
+            <FeatureCard idx={1} span={3} item={c.f[6]} lang={lang} wide><ExpensesHolo lang={lang} /></FeatureCard>
+          </div>
+        </div>
+      </section>
+
+      {/* ───────── Testimonial ───────── */}
+      <section style={{ padding: '120px 24px', background: 'var(--bg-cream)' }}>
+        <div className="max-w-[900px] mx-auto text-center">
+          <svg width="48" height="36" viewBox="0 0 48 36" fill="none" className="mx-auto block" style={{ marginBottom: 24 }}>
+            <path d="M14 36c-7 0-12-5-12-13 0-9 7-18 18-23l5 7c-7 4-12 9-13 14h2c5 0 9 4 9 10s-4 5-9 5zm26 0c-7 0-12-5-12-13 0-9 7-18 18-23l5 7c-7 4-12 9-13 14h2c5 0 9 4 9 10s-4 5-9 5z" fill="var(--brand-green)" opacity="0.3" />
+          </svg>
+          <p className="h-display" style={{ fontSize: 32, lineHeight: 1.4, color: 'var(--ink-900)', margin: '0 0 32px', fontWeight: 600 }}>
+            {c.testimonial.quote}
+          </p>
+          <div className="flex items-center justify-center" style={{ gap: 16 }}>
+            <div className="grid place-items-center font-extrabold" style={{
+              width: 56, height: 56, borderRadius: '50%',
+              background: 'var(--brand-green-soft)', color: 'var(--brand-green-deep)', fontSize: 22,
+            }}>
+              أ
+            </div>
+            <div style={{ textAlign: isAr ? 'right' : 'left' }}>
+              <div className="font-bold" style={{ color: 'var(--ink-900)' }}>{c.testimonial.name}</div>
+              <div style={{ fontSize: 14, color: 'var(--ink-500)' }}>{c.testimonial.role}</div>
             </div>
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* Pricing — two plans */}
-        <section id="pricing" className="py-32 bg-white">
-          <div className="container mx-auto px-6 text-center">
-            <h2 className="text-4xl font-black text-slate-900 sm:text-6xl">{c.pricing.heading}</h2>
-            <p className="mt-6 text-xl text-slate-500 max-w-2xl mx-auto">{c.pricing.sub}</p>
-            <div className="mt-16 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
-              {c.pricing.plans.map((plan: any) => {
-                const promoOn = isPromoActive();
-                const showPromoCrossout = promoOn && plan.oldPrice && plan.price !== plan.oldPrice;
-                return (
-                  <div
-                    key={plan.id}
-                    className={cn(
-                      'relative rounded-2xl border p-2 bg-white shadow-xl transition-all',
-                      plan.recommended ? 'border-emerald-400 ring-2 ring-emerald-500 lg:scale-[1.02]' : 'border-slate-200'
-                    )}
-                  >
-                    {plan.recommended && (
-                      <div className={cn(
-                        'absolute -top-3 bg-emerald-600 text-white text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full',
-                        c.dir === 'rtl' ? 'right-6' : 'left-6'
-                      )}>
-                        {c.pricing.recommended}
-                      </div>
-                    )}
-                    <div className="rounded-[1.5rem] bg-slate-50 p-7 text-start h-full flex flex-col">
-                      <div className="flex items-start justify-between mb-3 gap-2">
-                        <div>
-                          <p className="text-sm font-black uppercase tracking-[0.2em] text-emerald-600">{plan.name}</p>
-                          <p className="text-xs text-slate-500 mt-1">{plan.tagline}</p>
-                        </div>
-                        {showPromoCrossout && (
-                          <span className="bg-amber-100 text-amber-700 text-[9px] font-black px-2 py-0.5 rounded-full whitespace-nowrap">
-                            {c.pricing.save}
+      {/* ───────── Pricing — 4 plans ───────── */}
+      <section id="pricing" style={{ padding: '120px 24px', background: 'var(--bg-cream)' }}>
+        <div className="max-w-[1280px] mx-auto">
+          <div className="text-center mx-auto" style={{ maxWidth: 720, marginBottom: 60 }}>
+            <span className="eyebrow">{c.pricing.eyebrow}</span>
+            <h2 className="h-display" style={{ fontSize: 48, margin: '16px 0 16px', color: 'var(--ink-900)' }}>{c.pricing.title}</h2>
+            <p style={{ fontSize: 18, color: 'var(--ink-500)' }}>{c.pricing.subtitle}</p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4" style={{ gap: 20 }}>
+            {c.pricing.plans.map((p) => {
+              const showCrossout = promoOn && 'oldPrice' in p && p.oldPrice && p.price !== p.oldPrice;
+              const isPopular = p.recommended;
+              return (
+                <div
+                  key={p.id}
+                  className="relative flex flex-col"
+                  style={{
+                    background: isPopular ? 'var(--ink-900)' : '#fff',
+                    color: isPopular ? '#fff' : 'var(--ink-900)',
+                    border: isPopular ? 'none' : '1px solid var(--border)',
+                    borderRadius: 24, padding: 28,
+                    transform: isPopular ? 'scale(1.02)' : undefined,
+                    boxShadow: isPopular ? '0 30px 60px -20px rgba(11,27,58,0.5)' : 'var(--sh-sm)',
+                    direction: isAr ? 'rtl' : 'ltr',
+                  }}
+                >
+                  {isPopular && (
+                    <span className="absolute font-bold uppercase" style={{
+                      top: -14, insetInlineStart: 28,
+                      background: 'var(--brand-green)', color: '#fff',
+                      padding: '6px 14px', borderRadius: 999,
+                      fontSize: 11, letterSpacing: '0.08em',
+                    }}>
+                      {c.pricing.recommended}
+                    </span>
+                  )}
+                  {showCrossout && !isPopular && (
+                    <span className="absolute font-bold" style={{
+                      top: -10, insetInlineEnd: 20,
+                      background: 'var(--accent-amber-soft)', color: 'var(--accent-amber)',
+                      padding: '4px 10px', borderRadius: 999, fontSize: 10,
+                    }}>
+                      {c.pricing.save}
+                    </span>
+                  )}
+
+                  <h3 className="font-bold" style={{ fontSize: 18, margin: '0 0 6px' }}>{p.name}</h3>
+                  <p style={{
+                    fontSize: 13, color: isPopular ? 'rgba(255,255,255,0.6)' : 'var(--ink-500)',
+                    margin: '0 0 18px', lineHeight: 1.4,
+                  }}>{p.tagline}</p>
+
+                  <div className="mb-5" dir="ltr">
+                    {p.price === 0 ? (
+                      <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--brand-green)' }}>{p.priceLabel}</div>
+                    ) : (
+                      <div className="flex items-baseline gap-1.5 flex-wrap">
+                        {showCrossout && (
+                          <span className="line-through font-bold" style={{
+                            fontSize: 14,
+                            color: isPopular ? 'rgba(255,255,255,0.4)' : 'var(--ink-300)',
+                          }}>
+                            {CURRENCY_SYMBOL}{(p as any).oldPrice}
                           </span>
                         )}
+                        <span style={{ fontSize: 38, fontWeight: 800, letterSpacing: '-0.03em' }}>{CURRENCY_SYMBOL}{p.price}</span>
+                        <span style={{ fontSize: 13, fontWeight: 600, color: isPopular ? 'rgba(255,255,255,0.6)' : 'var(--ink-500)' }}>{c.pricing.perYear}</span>
                       </div>
-                      <div className="my-5" dir="ltr">
-                        {plan.price === 0 ? (
-                          <div className="text-2xl font-black text-emerald-600">{plan.priceLabel}</div>
-                        ) : (
-                          <div className="flex items-baseline gap-2 flex-wrap">
-                            {showPromoCrossout && (
-                              <span className="text-base text-slate-400 line-through font-bold">
-                                {CURRENCY_SYMBOL}{plan.oldPrice}
-                              </span>
-                            )}
-                            <span className="text-5xl font-black text-slate-900">
-                              {CURRENCY_SYMBOL}{plan.price}
-                            </span>
-                            <span className="text-sm font-bold text-slate-400">{c.pricing.perYear}</span>
-                          </div>
-                        )}
-                      </div>
-                      <ul className="space-y-2.5 flex-1">
-                        {plan.features.map((li: string, i: number) => (
-                          <li key={i} className="flex items-start gap-2.5 text-xs font-semibold text-slate-700">
-                            <div className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
-                              <Check size={10} weight="bold" />
-                            </div>
-                            <span>{li}</span>
-                          </li>
-                        ))}
-                      </ul>
-                      <button
-                        onClick={() => {
-                          trackCTA(`start_trial_${plan.id}`, 'pricing');
-                          if (plan.id === 'enterprise') {
-                            window.open('https://wa.me/905523205496?text=I%27m%20interested%20in%20Hujuzatk%20Enterprise', '_blank');
-                          } else {
-                            navigate(`/user?tab=register&plan=${plan.id}`);
-                          }
-                        }}
-                        className={cn(
-                          'mt-6 w-full rounded-2xl py-3 text-sm font-black transition-all active:scale-[0.98]',
-                          plan.recommended
-                            ? 'bg-emerald-600 text-white hover:bg-emerald-700'
-                            : plan.id === 'enterprise'
-                            ? 'bg-slate-900 text-white hover:bg-slate-800'
-                            : 'bg-white border-2 border-slate-200 text-slate-900 hover:bg-slate-50'
-                        )}
-                      >
-                        {plan.cta}
-                      </button>
-                    </div>
+                    )}
                   </div>
-                );
-              })}
-            </div>
-            <p className="mt-8 text-sm font-medium text-slate-400">{c.pricing.note}</p>
-          </div>
-        </section>
-      </main>
 
-      <footer className="bg-slate-50 border-t border-slate-200 py-20">
-        <div className="container mx-auto px-6">
-          <div className="flex flex-col md:flex-row justify-between items-start gap-12">
-            <div className="max-w-sm">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="flex items-center justify-center w-10 h-10 rounded-xl">
-                  <img src="/logo.svg" alt="Logo" style={{ width: 40, height: 40 }} />
+                  <button
+                    onClick={() => handlePlanCta(p.id)}
+                    className="font-bold transition-all hover:-translate-y-0.5"
+                    style={{
+                      width: '100%', padding: '12px 20px',
+                      borderRadius: 999, fontSize: 14, marginBottom: 20,
+                      background: isPopular ? '#fff' : p.id === 'enterprise' ? 'var(--ink-900)' : 'var(--brand-green)',
+                      color: isPopular ? 'var(--ink-900)' : '#fff',
+                    }}
+                  >
+                    {p.cta}
+                  </button>
+
+                  <ul className="flex flex-col" style={{ gap: 10, listStyle: 'none', padding: 0, margin: 0 }}>
+                    {p.features.map((f, i) => (
+                      <li key={i} className="flex items-start" style={{ gap: 10, fontSize: 13, color: isPopular ? 'rgba(255,255,255,0.85)' : 'var(--ink-700)' }}>
+                        <Check size={16} weight="bold" style={{ color: 'var(--brand-green)', flexShrink: 0, marginTop: 2 }} />
+                        <span>{f}</span>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-                <span className="text-2xl font-black tracking-tight text-slate-900">Hujuzatk</span>
-              </div>
-              <p className="text-slate-500 text-sm mb-6 leading-relaxed">{c.footer.tagline}</p>
+              );
+            })}
+          </div>
+
+          <p className="text-center" style={{ marginTop: 32, fontSize: 14, color: 'var(--ink-300)', fontWeight: 500 }}>
+            {c.pricing.note}
+          </p>
+        </div>
+      </section>
+
+      {/* ───────── CTA ───────── */}
+      <section style={{ padding: '120px 24px' }}>
+        <div className="max-w-[1100px] mx-auto relative overflow-hidden text-center" style={{
+          background: 'linear-gradient(135deg, var(--brand-green) 0%, var(--brand-green-deep) 100%)',
+          color: '#fff', borderRadius: 36, padding: '72px 40px',
+        }}>
+          <div className="absolute" style={{ insetInlineEnd: -100, top: -100, width: 400, height: 400, borderRadius: '50%', background: 'rgba(255,255,255,0.08)' }} />
+          <div className="absolute" style={{ insetInlineStart: -60, bottom: -80, width: 240, height: 240, borderRadius: '50%', background: 'rgba(255,255,255,0.06)' }} />
+          <h2 className="h-display relative" style={{ fontSize: 48, margin: '0 0 18px' }}>{c.cta.title}</h2>
+          <p className="relative" style={{ fontSize: 18, opacity: 0.9, marginBottom: 32 }}>{c.cta.desc}</p>
+          <div className="inline-flex flex-wrap justify-center relative" style={{ gap: 14 }}>
+            <button
+              onClick={() => { trackCTA('bottom_cta_start', 'cta'); navigate('/user?tab=register'); }}
+              className="font-bold transition-all hover:-translate-y-0.5"
+              style={{ background: '#fff', color: 'var(--brand-green-deep)', padding: '16px 30px', fontSize: 15, borderRadius: 999 }}
+            >
+              {c.cta.button}
+            </button>
+            <a
+              href="https://wa.me/905523205496?text=Hi%20Hujuzatk"
+              target="_blank" rel="noopener noreferrer"
+              onClick={() => trackCTA('bottom_cta_talk', 'cta')}
+              className="font-bold transition-all hover:-translate-y-0.5 inline-flex items-center"
+              style={{ background: 'rgba(255,255,255,0.15)', border: '1.5px solid rgba(255,255,255,0.3)', color: '#fff', padding: '14px 26px', fontSize: 15, borderRadius: 999 }}
+            >
+              {c.cta.button2}
+            </a>
+          </div>
+        </div>
+      </section>
+
+      {/* ───────── Footer ───────── */}
+      <footer style={{ background: 'var(--ink-900)', color: '#fff', padding: '60px 24px 32px' }}>
+        <div className="max-w-[1280px] mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-4" style={{ gap: 40, marginBottom: 40 }}>
+            <div className="md:col-span-1">
+              <HZLogo size={32} mono color="#fff" />
+              <p style={{ marginTop: 16, fontSize: 14, color: 'rgba(255,255,255,0.6)', lineHeight: 1.6, maxWidth: 320 }}>
+                {c.footer.tagline}
+              </p>
+              <a
+                href="https://wa.me/905523205496"
+                target="_blank" rel="noopener noreferrer"
+                className="inline-flex items-center mt-4"
+                style={{ gap: 8, fontSize: 13, color: 'rgba(255,255,255,0.7)', fontWeight: 600 }}
+              >
+                <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#25d366' }} />
+                {c.footer.whatsapp}
+              </a>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-2 gap-4 text-sm font-bold uppercase tracking-widest">
-              <div className="flex flex-col gap-4">
-                <span className="text-slate-900">{c.footer.legal}</span>
-                <Link to="/privacy" className="text-slate-400 hover:text-emerald-600 transition-colors">{c.footer.privacy}</Link>
-                <Link to="/terms" className="text-slate-400 hover:text-emerald-600 transition-colors">{c.footer.terms}</Link>
-              </div>
-              <div className="flex flex-col gap-4">
-                <span className="text-slate-900">{c.footer.support}</span>
-                <a
-                  href="https://wa.me/905523205496"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-5 py-2.5 rounded-full text-sm font-black transition-all shadow-lg shadow-emerald-200 active:scale-95"
-                >
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L0 24l6.335-1.662c1.72.937 3.659 1.432 5.634 1.432h.006c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" />
-                  </svg>
-                  {c.footer.whatsapp}
-                </a>
-              </div>
+            <div>
+              <h4 className="font-bold" style={{ fontSize: 14, marginBottom: 16 }}>{c.footer.product}</h4>
+              <ul className="flex flex-col" style={{ gap: 10, listStyle: 'none', padding: 0, margin: 0 }}>
+                {c.footer.productLinks.map((it: string, j: number) => (
+                  <li key={j}>
+                    <a href={j === 0 ? '#features' : j === 1 ? '#pricing' : '#'} style={{ fontSize: 14, color: 'rgba(255,255,255,0.6)' }}>{it}</a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div>
+              <h4 className="font-bold" style={{ fontSize: 14, marginBottom: 16 }}>{c.footer.company}</h4>
+              <ul className="flex flex-col" style={{ gap: 10, listStyle: 'none', padding: 0, margin: 0 }}>
+                <li><Link to="/story" style={{ fontSize: 14, color: 'rgba(255,255,255,0.6)' }}>{c.footer.companyLinks[1]}</Link></li>
+                <li><a href="https://wa.me/905523205496" target="_blank" rel="noopener noreferrer" style={{ fontSize: 14, color: 'rgba(255,255,255,0.6)' }}>{c.footer.companyLinks[2]}</a></li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="font-bold" style={{ fontSize: 14, marginBottom: 16 }}>{c.footer.legal}</h4>
+              <ul className="flex flex-col" style={{ gap: 10, listStyle: 'none', padding: 0, margin: 0 }}>
+                <li><Link to="/privacy" style={{ fontSize: 14, color: 'rgba(255,255,255,0.6)' }}>{c.footer.legalLinks[0]}</Link></li>
+                <li><Link to="/terms" style={{ fontSize: 14, color: 'rgba(255,255,255,0.6)' }}>{c.footer.legalLinks[1]}</Link></li>
+              </ul>
             </div>
           </div>
-          <div className="mt-12 border-t border-slate-200 pt-12 flex flex-col md:flex-row justify-between text-sm font-medium text-slate-400 items-center gap-6">
-            <p>{c.footer.rights}</p>
-            <div className="flex items-center gap-4">
-              <Globe size={16} />
-              <span>{c.footer.location}</span>
-            </div>
+          <div className="flex justify-between flex-wrap" style={{
+            borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: 20,
+            fontSize: 13, color: 'rgba(255,255,255,0.4)', gap: 12,
+          }}>
+            <span>{c.footer.rights}</span>
+            <span>{c.footer.location}</span>
           </div>
         </div>
       </footer>
 
+      {/* ───────── Modals ───────── */}
+      <VideoModal open={videoOpen} onClose={() => setVideoOpen(false)} lang={lang} />
       {showPromo && !loggedInUser && (
         <PromoPopup
           lang={lang}
           strings={{
             title: c.pricing.promo.title,
             subtitle: c.pricing.promo.subtitle,
-            placeholder: c.pricing.promo.placeholder,
-            cta: c.pricing.promo.cta,
             perYear: c.pricing.perYear,
             was: c.pricing.was,
             save: c.pricing.save,
             recommended: c.pricing.recommended,
-            basic: { id: 'basic', name: c.pricing.plans[0].name, tagline: c.pricing.plans[0].tagline, recommended: false },
-            pro:   { id: 'pro',   name: c.pricing.plans[1].name, tagline: c.pricing.plans[1].tagline, recommended: true  },
+            plans: c.pricing.plans,
           }}
           onStart={handlePromoStart}
         />
       )}
+
+      {/* ───────── Floating WhatsApp ───────── */}
+      <a
+        href="https://wa.me/905523205496"
+        target="_blank" rel="noopener noreferrer"
+        aria-label="WhatsApp Support"
+        className="fixed z-40 grid place-items-center transition-all hover:scale-110"
+        style={{
+          bottom: 24, insetInlineEnd: 24,
+          width: 56, height: 56, borderRadius: '50%',
+          background: 'linear-gradient(135deg, #25d366 0%, #128c7e 100%)',
+          color: '#fff',
+          boxShadow: '0 12px 28px -8px rgba(37, 211, 102, .55)',
+        }}
+      >
+        <span className="absolute inset-0 rounded-full" style={{ background: 'rgba(74, 222, 128, 0.4)', animation: 'hzPulse 1.8s ease-in-out infinite' }} />
+        <svg width="26" height="26" viewBox="0 0 32 32" fill="white">
+          <path d="M19.11 17.205c-.372 0-1.088 1.39-1.518 1.39a.63.63 0 0 1-.315-.1c-.802-.402-1.504-.817-2.163-1.447-.545-.516-1.146-1.29-1.46-1.963a.426.426 0 0 1-.073-.215c0-.33.99-.945.99-1.49 0-.143-.73-2.09-.832-2.335-.143-.372-.214-.487-.6-.487-.187 0-.36-.043-.53-.043-.302 0-.53.115-.746.315-.688.645-1.032 1.318-1.06 2.264v.114c-.015.99.472 1.977 1.017 2.78 1.23 1.82 2.506 3.41 4.554 4.34.616.287 2.035.872 2.722.872.4 0 1.117-.058 1.43-.301.388-.302.673-.953.673-1.444 0-.156-.043-.301-.072-.444-.115-.422-1.917-1.234-2.018-1.205zM16.117 27.71c-2.063 0-4.083-.587-5.832-1.66l-.418-.25-4.318 1.131 1.158-4.21-.272-.434C5.234 20.4 4.578 18.214 4.578 16c0-6.357 5.182-11.54 11.54-11.54 6.36 0 11.54 5.183 11.54 11.54-.013 6.357-5.197 11.71-11.54 11.71zm0-25.117c-7.4 0-13.41 6.014-13.41 13.41 0 2.379.625 4.683 1.81 6.736l-1.93 7.057 7.213-1.886a13.39 13.39 0 0 0 6.347 1.622h.012c7.4 0 13.426-6.013 13.426-13.41 0-3.59-1.396-6.957-3.94-9.495a13.45 13.45 0 0 0-9.527-3.943z" />
+        </svg>
+      </a>
     </div>
   );
 }
 
-// -------- ShowcaseSlider --------
-
-interface SlideItem {
-  src: string;
-  label: string;
-  caption: string;
-  featureIndices: number[];
-}
-
-interface ShowcaseSliderProps {
-  slides: SlideItem[];
-  features: { title: string; desc: string }[];
-}
-
-function FeatureBadge({ icon: Icon, title }: { icon: React.ComponentType<any>; title: string }) {
-  return (
-    <div className="flex items-center gap-3 bg-slate-800 border border-slate-700 rounded-2xl px-4 py-3 w-full hover:border-emerald-500/40 transition-colors">
-      <div className="flex-shrink-0 w-8 h-8 rounded-xl bg-emerald-500/15 flex items-center justify-center text-emerald-400">
-        <Icon size={16} weight="duotone" />
-      </div>
-      <span className="text-xs font-black text-slate-300 leading-tight">{title}</span>
-    </div>
-  );
-}
-
-function ShowcaseSlider({ slides, features }: ShowcaseSliderProps) {
-  const [active, setActive] = useState(0);
-
-  useEffect(() => {
-    const id = setInterval(() => setActive(i => (i + 1) % slides.length), 4000);
-    return () => clearInterval(id);
-  }, [slides.length]);
-
-  const slide = slides[active];
-  const leftIndices = slide.featureIndices.slice(0, 2);
-  const rightIndices = slide.featureIndices.slice(2, 4);
-
-  return (
-    <div className="space-y-8">
-      {/* Desktop: 3-column layout with feature badges on sides */}
-      <div className="hidden lg:grid grid-cols-[200px_1fr_200px] gap-6 items-center">
-        {/* Left badges */}
-        <div className="flex flex-col gap-3">
-          {leftIndices.map(idx => (
-            <FeatureBadge key={idx} icon={FEATURE_ICONS[idx]} title={features[idx]?.title ?? ''} />
-          ))}
-        </div>
-
-        {/* Mac frame */}
-        <div className="rounded-2xl overflow-hidden shadow-2xl shadow-black/60 border border-slate-700">
-          {/* Title bar */}
-          <div className="bg-slate-800 border-b border-slate-700 px-4 py-2.5 flex items-center gap-3">
-            <div className="flex gap-1.5">
-              <div className="w-3 h-3 rounded-full bg-red-500/80" />
-              <div className="w-3 h-3 rounded-full bg-yellow-500/80" />
-              <div className="w-3 h-3 rounded-full bg-green-500/80" />
-            </div>
-            <div className="flex-1 bg-slate-700 rounded-md px-3 py-1 text-[10px] text-slate-400 font-mono text-center">
-              hujuzatk.com
-            </div>
-          </div>
-          {/* Screenshot */}
-          <div className="relative bg-slate-950 aspect-[16/10] overflow-hidden">
-            {slides.map((s, i) => (
-              <img
-                key={i}
-                src={s.src}
-                alt={s.label}
-                className={cn(
-                  'absolute inset-0 w-full h-full object-cover object-top transition-opacity duration-700',
-                  i === active ? 'opacity-100' : 'opacity-0',
-                )}
-              />
-            ))}
-          </div>
-        </div>
-
-        {/* Right badges */}
-        <div className="flex flex-col gap-3">
-          {rightIndices.map(idx => (
-            <FeatureBadge key={idx} icon={FEATURE_ICONS[idx]} title={features[idx]?.title ?? ''} />
-          ))}
-        </div>
-      </div>
-
-      {/* Mobile: mac frame + 2×2 badge grid */}
-      <div className="lg:hidden space-y-6">
-        <div className="rounded-2xl overflow-hidden shadow-xl shadow-black/60 border border-slate-700">
-          <div className="bg-slate-800 border-b border-slate-700 px-4 py-2.5 flex items-center gap-3">
-            <div className="flex gap-1.5">
-              <div className="w-2.5 h-2.5 rounded-full bg-red-500/80" />
-              <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/80" />
-              <div className="w-2.5 h-2.5 rounded-full bg-green-500/80" />
-            </div>
-            <div className="flex-1 bg-slate-700 rounded-md px-3 py-1 text-[10px] text-slate-400 font-mono text-center">
-              hujuzatk.com
-            </div>
-          </div>
-          <div className="relative bg-slate-950 aspect-[16/10] overflow-hidden">
-            {slides.map((s, i) => (
-              <img
-                key={i}
-                src={s.src}
-                alt={s.label}
-                className={cn(
-                  'absolute inset-0 w-full h-full object-cover object-top transition-opacity duration-700',
-                  i === active ? 'opacity-100' : 'opacity-0',
-                )}
-              />
-            ))}
-          </div>
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          {slide.featureIndices.map(idx => (
-            <FeatureBadge key={idx} icon={FEATURE_ICONS[idx]} title={features[idx]?.title ?? ''} />
-          ))}
-        </div>
-      </div>
-
-      {/* Caption + dots */}
-      <div className="flex flex-col items-center gap-4">
-        <p className="text-sm font-bold text-slate-400 text-center">{slide.caption}</p>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setActive(i => (i - 1 + slides.length) % slides.length)}
-            className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white transition-colors"
-          >
-            <CaretLeft size={14} weight="bold" />
-          </button>
-          <div className="flex gap-1.5">
-            {slides.map((_, i) => (
-              <button
-                key={i}
-                onClick={() => setActive(i)}
-                className={cn(
-                  'rounded-full transition-all duration-300',
-                  i === active ? 'w-6 h-2 bg-emerald-500' : 'w-2 h-2 bg-slate-600 hover:bg-slate-500',
-                )}
-              />
-            ))}
-          </div>
-          <button
-            onClick={() => setActive(i => (i + 1) % slides.length)}
-            className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white transition-colors"
-          >
-            <CaretRight size={14} weight="bold" />
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
+// =====================================================================
+// PrivacyPolicy + TermsOfService (kept simple, in new design language)
+// =====================================================================
 
 export function PrivacyPolicy() {
   const [lang, setLang] = useState<Lang>(detectLang);
   const isAr = lang === 'ar';
-
   const cycleLang = () => {
     const order: Lang[] = ['en', 'ar', 'tr'];
     const next = order[(order.indexOf(lang) + 1) % order.length];
-    setLang(next);
-    localStorage.setItem('landing-lang', next);
+    setLang(next); localStorage.setItem('landing-lang', next);
   };
-
   return (
-    <div className="min-h-screen bg-slate-50 py-20 px-4" dir={isAr ? 'rtl' : 'ltr'}>
-      <div className="max-w-3xl mx-auto bg-white p-8 rounded-2xl shadow-sm border border-slate-200 text-slate-900">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-black tracking-tight">{isAr ? 'سياسة الخصوصية' : 'Privacy Policy'}</h1>
-          <button onClick={cycleLang} className="flex items-center gap-1 px-3 py-1.5 rounded-full border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50">
+    <div className="min-h-screen" dir={isAr ? 'rtl' : 'ltr'} style={{ background: 'var(--bg)', padding: '60px 24px', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-en)' }}>
+      <div className="max-w-[760px] mx-auto" style={{
+        background: '#fff', border: '1px solid var(--border)', borderRadius: 24, padding: 36, color: 'var(--ink-900)',
+      }}>
+        <div className="flex justify-between items-center" style={{ marginBottom: 18 }}>
+          <h1 className="h-display" style={{ fontSize: 30, margin: 0 }}>{isAr ? 'سياسة الخصوصية' : 'Privacy Policy'}</h1>
+          <button onClick={cycleLang} className="inline-flex items-center gap-1.5 font-bold" style={{
+            padding: '6px 12px', borderRadius: 999, border: '1px solid var(--border)',
+            color: 'var(--ink-700)', fontSize: 12, background: '#fff',
+          }}>
             <Globe size={14} /> {{ en: 'العربية', ar: 'Türkçe', tr: 'English' }[lang]}
           </button>
         </div>
-        <p className="mb-4 text-slate-500 font-bold uppercase text-[10px] tracking-widest">{isAr ? `آخر تحديث: ${new Date().toLocaleDateString('ar')}` : `Last updated: ${new Date().toLocaleDateString()}`}</p>
-        <section className="space-y-6 text-slate-700 leading-relaxed">
+        <p style={{ marginBottom: 20, fontSize: 11, color: 'var(--ink-500)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em' }}>
+          {isAr ? `آخر تحديث: ${new Date().toLocaleDateString('ar')}` : `Last updated: ${new Date().toLocaleDateString()}`}
+        </p>
+        <div className="flex flex-col" style={{ gap: 18, color: 'var(--ink-700)', lineHeight: 1.6 }}>
           {isAr ? (
             <>
               <p>في حجوزاتك، نأخذ خصوصيتك بجدية. تصف هذه السياسة كيفية جمع بياناتك واستخدامها وحمايتها.</p>
-              <div>
-                <h2 className="text-xl font-black text-slate-900 mb-2">١. جمع البيانات</h2>
-                <p>نجمع المعلومات التي تقدمها مباشرة عند إنشاء حساب، مثل اسمك وبريدك الإلكتروني وتفاصيل العقار. جميع بيانات الحجز مخزنة بأمان ومعزولة لكل مستأجر.</p>
-              </div>
-              <div>
-                <h2 className="text-xl font-black text-slate-900 mb-2">٢. استخدام البيانات</h2>
-                <p>تُستخدم بياناتك فقط لتقديم خدمة حجوزاتك وتحسينها. لا نبيع معلوماتك الشخصية أو بيانات حجزك لأطراف ثالثة.</p>
-              </div>
-              <div>
-                <h2 className="text-xl font-black text-slate-900 mb-2">٣. الأمان</h2>
-                <p>نطبق معايير أمان عالية المستوى لحماية بياناتك. للمستخدمين السحابيين، البيانات مشفرة في السكون وأثناء النقل.</p>
-              </div>
+              <div><h2 style={{ fontSize: 18, fontWeight: 800, color: 'var(--ink-900)', marginBottom: 6 }}>١. جمع البيانات</h2><p>نجمع المعلومات التي تقدمها مباشرة عند إنشاء حساب، مثل اسمك وبريدك الإلكتروني وتفاصيل العقار.</p></div>
+              <div><h2 style={{ fontSize: 18, fontWeight: 800, color: 'var(--ink-900)', marginBottom: 6 }}>٢. استخدام البيانات</h2><p>تُستخدم بياناتك فقط لتقديم خدمة حجوزاتك وتحسينها. لا نبيع معلوماتك الشخصية.</p></div>
+              <div><h2 style={{ fontSize: 18, fontWeight: 800, color: 'var(--ink-900)', marginBottom: 6 }}>٣. الأمان</h2><p>نطبق معايير أمان عالية المستوى لحماية بياناتك. للمستخدمين السحابيين، البيانات مشفرة في السكون وأثناء النقل.</p></div>
             </>
           ) : (
             <>
               <p>At Hujuzatk, we take your privacy seriously. This policy describes how we collect, use, and protect your data.</p>
-              <div>
-                <h2 className="text-xl font-black text-slate-900 mb-2">1. Data Collection</h2>
-                <p>We collect information you provide directly to us when you create an account, such as your name, email address, and property details. All booking data is stored securely and is isolated per tenant.</p>
-              </div>
-              <div>
-                <h2 className="text-xl font-black text-slate-900 mb-2">2. Data Usage</h2>
-                <p>Your data is used solely to provide and improve the Hujuzatk service. We do not sell your personal information or booking data to third parties.</p>
-              </div>
-              <div>
-                <h2 className="text-xl font-black text-slate-900 mb-2">3. Security</h2>
-                <p>We implement industry-standard security measures to protect your data. For PostgreSQL cloud users, data is encrypted at rest and in transit via Supabase/PostgreSQL protocols.</p>
-              </div>
+              <div><h2 style={{ fontSize: 18, fontWeight: 800, color: 'var(--ink-900)', marginBottom: 6 }}>1. Data Collection</h2><p>We collect information you provide directly to us when you create an account.</p></div>
+              <div><h2 style={{ fontSize: 18, fontWeight: 800, color: 'var(--ink-900)', marginBottom: 6 }}>2. Data Usage</h2><p>Your data is used solely to provide and improve the Hujuzatk service. We do not sell your personal information.</p></div>
+              <div><h2 style={{ fontSize: 18, fontWeight: 800, color: 'var(--ink-900)', marginBottom: 6 }}>3. Security</h2><p>We implement industry-standard security measures. Cloud data is encrypted at rest and in transit.</p></div>
             </>
           )}
-        </section>
-        <div className="mt-12 pt-8 border-t border-slate-100">
-          <Link to="/" className="text-emerald-600 font-black uppercase tracking-widest text-xs hover:underline flex items-center gap-2">
+        </div>
+        <div style={{ marginTop: 36, paddingTop: 24, borderTop: '1px solid var(--border)' }}>
+          <Link to="/" className="inline-flex items-center font-bold" style={{ color: 'var(--brand-green-deep)', fontSize: 12, letterSpacing: '0.12em', textTransform: 'uppercase', gap: 8 }}>
             {isAr ? '→ العودة للرئيسية' : '← Back to Home'}
           </Link>
         </div>
@@ -1421,59 +1762,45 @@ export function PrivacyPolicy() {
 export function TermsOfService() {
   const [lang, setLang] = useState<Lang>(detectLang);
   const isAr = lang === 'ar';
-
   const cycleLang = () => {
     const order: Lang[] = ['en', 'ar', 'tr'];
     const next = order[(order.indexOf(lang) + 1) % order.length];
-    setLang(next);
-    localStorage.setItem('landing-lang', next);
+    setLang(next); localStorage.setItem('landing-lang', next);
   };
-
   return (
-    <div className="min-h-screen bg-slate-50 py-20 px-4" dir={isAr ? 'rtl' : 'ltr'}>
-      <div className="max-w-3xl mx-auto bg-white p-8 rounded-2xl shadow-sm border border-slate-200 text-slate-900">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-black tracking-tight">{isAr ? 'شروط الخدمة' : 'Terms of Service'}</h1>
-          <button onClick={cycleLang} className="flex items-center gap-1 px-3 py-1.5 rounded-full border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50">
+    <div className="min-h-screen" dir={isAr ? 'rtl' : 'ltr'} style={{ background: 'var(--bg)', padding: '60px 24px', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-en)' }}>
+      <div className="max-w-[760px] mx-auto" style={{
+        background: '#fff', border: '1px solid var(--border)', borderRadius: 24, padding: 36, color: 'var(--ink-900)',
+      }}>
+        <div className="flex justify-between items-center" style={{ marginBottom: 18 }}>
+          <h1 className="h-display" style={{ fontSize: 30, margin: 0 }}>{isAr ? 'شروط الخدمة' : 'Terms of Service'}</h1>
+          <button onClick={cycleLang} className="inline-flex items-center gap-1.5 font-bold" style={{
+            padding: '6px 12px', borderRadius: 999, border: '1px solid var(--border)',
+            color: 'var(--ink-700)', fontSize: 12, background: '#fff',
+          }}>
             <Globe size={14} /> {{ en: 'العربية', ar: 'Türkçe', tr: 'English' }[lang]}
           </button>
         </div>
-        <p className="mb-4 text-slate-500 font-bold uppercase text-[10px] tracking-widest">{isAr ? `آخر تحديث: ${new Date().toLocaleDateString('ar')}` : `Last updated: ${new Date().toLocaleDateString()}`}</p>
-        <section className="space-y-6 text-slate-700 leading-relaxed">
+        <p style={{ marginBottom: 20, fontSize: 11, color: 'var(--ink-500)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em' }}>
+          {isAr ? `آخر تحديث: ${new Date().toLocaleDateString('ar')}` : `Last updated: ${new Date().toLocaleDateString()}`}
+        </p>
+        <div className="flex flex-col" style={{ gap: 18, color: 'var(--ink-700)', lineHeight: 1.6 }}>
           {isAr ? (
             <>
-              <div>
-                <h2 className="text-xl font-black text-slate-900 mb-2">١. قبول الشروط</h2>
-                <p>بالوصول إلى حجوزاتك، توافق على الالتزام بهذه الشروط. خدمتنا مقدمة "كما هي" و"كما هو متاح".</p>
-              </div>
-              <div>
-                <h2 className="text-xl font-black text-slate-900 mb-2">٢. الاشتراك والتجارب</h2>
-                <p>تحصل الحسابات الجديدة على فترة تجريبية مجانية لمدة 14 يومًا. بعد التجربة، يتطلب الاستمرار في الوصول اشتراكًا فعّالًا يديره مسؤول النظام.</p>
-              </div>
-              <div>
-                <h2 className="text-xl font-black text-slate-900 mb-2">٣. مسؤولية المستخدم</h2>
-                <p>المستخدمون مسؤولون عن الحفاظ على سرية بيانات تسجيل الدخول وعن جميع الأنشطة التي تتم تحت مساحة عملهم.</p>
-              </div>
+              <div><h2 style={{ fontSize: 18, fontWeight: 800, color: 'var(--ink-900)', marginBottom: 6 }}>١. قبول الشروط</h2><p>بالوصول إلى حجوزاتك، توافق على الالتزام بهذه الشروط. خدمتنا مقدمة "كما هي" و"كما هو متاح".</p></div>
+              <div><h2 style={{ fontSize: 18, fontWeight: 800, color: 'var(--ink-900)', marginBottom: 6 }}>٢. الاشتراك والتجارب</h2><p>تحصل الحسابات الجديدة على فترة تجريبية مجانية لمدة 14 يومًا.</p></div>
+              <div><h2 style={{ fontSize: 18, fontWeight: 800, color: 'var(--ink-900)', marginBottom: 6 }}>٣. مسؤولية المستخدم</h2><p>المستخدمون مسؤولون عن الحفاظ على سرية بيانات تسجيل الدخول.</p></div>
             </>
           ) : (
             <>
-              <div>
-                <h2 className="text-xl font-black text-slate-900 mb-2">1. Acceptance of Terms</h2>
-                <p>By accessing Hujuzatk, you agree to be bound by these terms. Our service is provided "as is" and "as available".</p>
-              </div>
-              <div>
-                <h2 className="text-xl font-black text-slate-900 mb-2">2. Subscription & Trials</h2>
-                <p>New accounts receive a 14-day free trial. After the trial, continued access requires an active subscription managed by the system administrator.</p>
-              </div>
-              <div>
-                <h2 className="text-xl font-black text-slate-900 mb-2">3. User Responsibility</h2>
-                <p>Users are responsible for maintaining the confidentiality of their login credentials and for all activities that occur under their workspace.</p>
-              </div>
+              <div><h2 style={{ fontSize: 18, fontWeight: 800, color: 'var(--ink-900)', marginBottom: 6 }}>1. Acceptance of Terms</h2><p>By accessing Hujuzatk, you agree to be bound by these terms. Our service is provided "as is" and "as available".</p></div>
+              <div><h2 style={{ fontSize: 18, fontWeight: 800, color: 'var(--ink-900)', marginBottom: 6 }}>2. Subscription & Trials</h2><p>New accounts receive a 14-day free trial. After the trial, continued access requires an active subscription.</p></div>
+              <div><h2 style={{ fontSize: 18, fontWeight: 800, color: 'var(--ink-900)', marginBottom: 6 }}>3. User Responsibility</h2><p>Users are responsible for maintaining the confidentiality of their login credentials.</p></div>
             </>
           )}
-        </section>
-        <div className="mt-12 pt-8 border-t border-slate-100">
-          <Link to="/" className="text-emerald-600 font-black uppercase tracking-widest text-xs hover:underline flex items-center gap-2">
+        </div>
+        <div style={{ marginTop: 36, paddingTop: 24, borderTop: '1px solid var(--border)' }}>
+          <Link to="/" className="inline-flex items-center font-bold" style={{ color: 'var(--brand-green-deep)', fontSize: 12, letterSpacing: '0.12em', textTransform: 'uppercase', gap: 8 }}>
             {isAr ? '→ العودة للرئيسية' : '← Back to Home'}
           </Link>
         </div>
