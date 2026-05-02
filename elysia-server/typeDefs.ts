@@ -133,6 +133,16 @@ export const typeDefs = `
     occupancyRate: Float!
   }
 
+  type RoomMonthOccupancy {
+    roomId: String!
+    roomName: String!
+    year: Int!
+    month: Int!
+    occupiedNights: Int!
+    totalNights: Int!
+    occupancyRate: Float!
+  }
+
   type RevenueReport {
     year: Int!
     month: Int
@@ -244,6 +254,7 @@ export const typeDefs = `
     getBookingsByDateRange(startDate: DateTime!, endDate: DateTime!): [Booking!]!
     getBookingsByRoom(room: String!): [Booking!]!
     getOccupancyReport(room: String, year: Int!, month: Int!): OccupancyReport!
+    getYearlyOccupancy(year: Int!): [RoomMonthOccupancy!]!
     getRevenueReport(year: Int!, month: Int): RevenueReport!
     getGuestStatistics: GuestStatistics!
     getAuditLogs(limit: Int, offset: Int, action: AuditAction): [AuditLog!]!
@@ -257,6 +268,8 @@ export const typeDefs = `
     login(email: String!, password: String!): AuthPayload!
     logout: Boolean!
     refreshToken(refreshToken: String!): AuthPayload!
+    requestPasswordReset(email: String!): Boolean!
+    resetPassword(token: String!, newPassword: String!): Boolean!
     updateTenant(input: UpdateTenantInput!): Tenant!
     updateTenantSettings(input: UpdateTenantSettingsInput!): TenantSettings!
     addRoom(name: String!): Tenant!

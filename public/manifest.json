@@ -12,7 +12,7 @@
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "theme_color": "#10b981",
+  "theme_color": "#0E9F6E",
   "background_color": "#ffffff",
   "description": "Professional SaaS Property Management System with 5-Year Calendar, Reports, and Invoices.",
   "lang": "en",

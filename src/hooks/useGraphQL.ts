@@ -1,18 +1,21 @@
-// @ts-ignore - Apollo Client exports are available at runtime despite TS type issues
-import { useQuery, useMutation, useSubscription } from '@apollo/client';
+import { useQuery, useMutation, useSubscription } from '@apollo/client/react';
 import {
   ME_QUERY,
   LOGIN_MUTATION,
   REGISTER_MUTATION,
+  REQUEST_PASSWORD_RESET_MUTATION,
+  RESET_PASSWORD_MUTATION,
   GET_BOOKINGS_QUERY,
   GET_BOOKING_QUERY,
   GET_BOOKINGS_BY_DATE_RANGE_QUERY,
   CREATE_BOOKING_MUTATION,
   UPDATE_BOOKING_MUTATION,
   DELETE_BOOKING_MUTATION,
+  BULK_IMPORT_BOOKINGS_MUTATION,
   GET_OCCUPANCY_REPORT_QUERY,
   GET_REVENUE_REPORT_QUERY,
   GET_GUEST_STATISTICS_QUERY,
+  GET_YEARLY_OCCUPANCY_QUERY,
   BOOKING_CREATED_SUBSCRIPTION,
   BOOKING_UPDATED_SUBSCRIPTION,
 } from '../lib/graphql';
@@ -266,6 +269,27 @@ export function useDeleteBooking() {
   };
 }
 
+export function useBulkImportBookings() {
+  const [bulkImport, { loading, error }] = useMutation(BULK_IMPORT_BOOKINGS_MUTATION, {
+    refetchQueries: [
+      {
+        query: GET_BOOKINGS_QUERY,
+        variables: { filter: {}, limit: 100, offset: 0, sortBy: 'checkIn', sortOrder: 'desc' },
+      },
+    ],
+  });
+
+  return {
+    bulkImport: useCallback(
+      (bookings: BookingInput[]) =>
+        bulkImport({ variables: { bookings } }).then((r: any) => r.data?.bulkImportBookings ?? []),
+      [bulkImport]
+    ),
+    loading,
+    error,
+  };
+}
+
 // ============= REPORT HOOKS =============
 
 export function useOccupancyReport(room?: string, year?: number, month?: number) {
@@ -301,6 +325,22 @@ export function useGuestStatistics() {
     statistics: data?.getGuestStatistics,
     loading,
     error,
+  };
+}
+
+export function useYearlyOccupancy(year: number) {
+  const { data, loading, error, refetch } = useQuery(GET_YEARLY_OCCUPANCY_QUERY, {
+    variables: { year },
+    fetchPolicy: 'no-cache',
+  });
+  return {
+    data: (data?.getYearlyOccupancy ?? []) as {
+      roomId: string; roomName: string; year: number; month: number;
+      occupiedNights: number; totalNights: number; occupancyRate: number;
+    }[],
+    loading,
+    error,
+    refetch,
   };
 }
 
@@ -354,5 +394,32 @@ export function useBookingManager(filter?: BookingFilter) {
     updateBooking,
     deleteBooking,
     refetch,
+  };
+}
+
+// ============= PASSWORD RESET =============
+
+export function useRequestPasswordReset() {
+  const [mutate, { loading, error }] = useMutation(REQUEST_PASSWORD_RESET_MUTATION);
+  return {
+    requestReset: useCallback(
+      (email: string) => mutate({ variables: { email } }).then(r => r.data?.requestPasswordReset ?? false),
+      [mutate],
+    ),
+    loading,
+    error,
+  };
+}
+
+export function useResetPassword() {
+  const [mutate, { loading, error }] = useMutation(RESET_PASSWORD_MUTATION);
+  return {
+    resetPassword: useCallback(
+      (token: string, newPassword: string) =>
+        mutate({ variables: { token, newPassword } }).then(r => r.data?.resetPassword ?? false),
+      [mutate],
+    ),
+    loading,
+    error,
   };
 }

@@ -17,6 +17,8 @@ interface ListViewProps {
   setListSearchTerm: (s: string) => void;
   setShowAddModal: (v: boolean) => void;
   setSelectedBooking: (b: any) => void;
+  serverHasMore?: boolean;
+  serverLoading?: boolean;
   listContainerRef: React.RefObject<HTMLDivElement | null>;
   rooms: any[];
   currency: string;
@@ -36,6 +38,8 @@ export default function ListView({
   setListSearchTerm,
   setShowAddModal,
   setSelectedBooking,
+  serverHasMore = false,
+  serverLoading = false,
   listContainerRef,
   rooms,
   currency,
@@ -45,12 +49,12 @@ export default function ListView({
   const roomNameMap = Object.fromEntries(rooms.map((r: any) => [r.id, r.name]));
 
   const FILTER_META: { id: ListFilter; Icon: any; active: string }[] = [
-    { id: 'all',            Icon: List,           active: 'bg-white text-slate-900 shadow-md' },
     { id: 'today_checkin',  Icon: ArrowSquareIn,  active: 'bg-emerald-500 text-white shadow-sm' },
     { id: 'today_checkout', Icon: ArrowSquareOut, active: 'bg-blue-500 text-white shadow-sm' },
     { id: 'active',         Icon: CheckCircle,    active: 'bg-violet-500 text-white shadow-sm' },
     { id: 'past',           Icon: Archive,        active: 'bg-slate-600 text-white shadow-sm' },
     { id: 'canceled',       Icon: XCircle,        active: 'bg-rose-500 text-white shadow-sm' },
+    { id: 'all',            Icon: List,           active: 'bg-white text-slate-900 shadow-md' },
   ];
 
   return (
@@ -196,13 +200,18 @@ export default function ListView({
         </table>
       </div>
 
-      {visibleCount < totalCount && totalCount > 0 && (
+      {serverLoading && (
+        <div className="flex justify-center pt-6">
+          <div className="w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+        </div>
+      )}
+      {!serverLoading && (visibleCount < totalCount || serverHasMore) && totalCount > 0 && (
         <div className="flex justify-center pt-6">
           <button
             onClick={onLoadMore}
             className="bg-emerald-600 text-white px-8 py-3 rounded-2xl text-sm font-black uppercase tracking-widest shadow-lg shadow-emerald-50 hover:bg-emerald-700 transition-all active:scale-95"
           >
-            Load {Math.min(50, totalCount - visibleCount)} more of {totalCount}
+            {serverHasMore ? t(lang, 'list.loadMore') : `Load ${Math.min(50, totalCount - visibleCount)} more of ${totalCount}`}
           </button>
         </div>
       )}

@@ -526,6 +526,20 @@ export const ADMIN_SET_PLAN_MUTATION = gql`
 
 // ============= EXPENSES =============
 
+export const GET_YEARLY_OCCUPANCY_QUERY = gql`
+  query GetYearlyOccupancy($year: Int!) {
+    getYearlyOccupancy(year: $year) {
+      roomId
+      roomName
+      year
+      month
+      occupiedNights
+      totalNights
+      occupancyRate
+    }
+  }
+`;
+
 export const GET_EXPENSES_QUERY = gql`
   query GetExpenses($startDate: DateTime, $endDate: DateTime, $roomId: String) {
     getExpenses(startDate: $startDate, endDate: $endDate, roomId: $roomId) {
@@ -586,5 +600,17 @@ export const COMPLETE_ONBOARDING_MUTATION = gql`
       id
       onboardedAt
     }
+  }
+`;
+
+export const REQUEST_PASSWORD_RESET_MUTATION = gql`
+  mutation RequestPasswordReset($email: String!) {
+    requestPasswordReset(email: $email)
+  }
+`;
+
+export const RESET_PASSWORD_MUTATION = gql`
+  mutation ResetPassword($token: String!, $newPassword: String!) {
+    resetPassword(token: $token, newPassword: $newPassword)
   }
 `;

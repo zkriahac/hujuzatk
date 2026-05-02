@@ -5,11 +5,15 @@
   "regions": ["sin1"],
   "rewrites": [
     { "source": "/graphql", "destination": "/api/graphql" },
-    { "source": "/health", "destination": "/api/health" }
+    { "source": "/health",  "destination": "/api/health" }
   ],
+  "functions": {
+    "api/cron-analytics.ts": { "maxDuration": 300 }
+  },
   "crons": [
     { "path": "/api/cron-sync?channel=airbnb",      "schedule": "0 1 * * *" },
     { "path": "/api/cron-sync?channel=gathern",     "schedule": "0 2 * * *" },
-    { "path": "/api/cron-sync?channel=booking.com", "schedule": "0 3 * * *" }
+    { "path": "/api/cron-sync?channel=booking.com", "schedule": "0 3 * * *" },
+    { "path": "/api/cron-analytics",                "schedule": "0 4 1 * *" }
   ]
 }

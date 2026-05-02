@@ -3,11 +3,13 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { authService, type SessionUser } from '../lib/authService';
 import { type AuthMode } from '../utils/constants';
 import { cn } from '../utils/cn';
-import { Sparkle } from 'phosphor-react';
+import { Sparkle, EnvelopeSimple, CheckCircle } from 'phosphor-react';
 import { t, getDir, type Language } from '../lib/i18n';
 import { trackLogin, trackRegister } from '../lib/analytics';
 import { addAccount } from '../lib/accountStore';
 import TenantApp from '../components/TenantApp';
+import { apolloClient } from '../lib/apolloClient';
+import { REQUEST_PASSWORD_RESET_MUTATION } from '../lib/graphql';
 
 // Save the freshly-authenticated session into the multi-account switcher store
 function rememberAccount(s: SessionUser) {
@@ -55,6 +57,7 @@ export function AuthScreen({ mode, onModeChange, onLoggedIn, error, setError, wo
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [forgotSent, setForgotSent] = useState(false);
   const dir = getDir(lang);
 
   useEffect(() => {
@@ -67,6 +70,20 @@ export function AuthScreen({ mode, onModeChange, onLoggedIn, error, setError, wo
     e.preventDefault();
     setLoading(true);
     setError(null);
+
+    // Forgot-password flow
+    if (mode === 'forgot') {
+      try {
+        await apolloClient.mutate({
+          mutation: REQUEST_PASSWORD_RESET_MUTATION,
+          variables: { email },
+        });
+        setForgotSent(true);
+      } catch { /* always show success to avoid email enumeration */ setForgotSent(true); }
+      finally { setLoading(false); }
+      return;
+    }
+
     try {
       if (mode === 'register') {
         let defaults: any = {};
@@ -96,21 +113,91 @@ export function AuthScreen({ mode, onModeChange, onLoggedIn, error, setError, wo
     }
   };
 
-  return (
-    <div className="bg-white/90 backdrop-blur shadow-xl rounded-2xl max-w-md w-full p-8 border border-emerald-100" dir={dir}>
-      <div className="flex items-center gap-3 mb-6">
-        <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold shadow-lg shadow-emerald-200 shrink-0">
-          <div className="flex items-center justify-center w-full h-full rounded-xl">
-            <img src="/logo.svg" alt="Plus Logo" style={{ width: 40, height: 40 }} />
-          </div>
-        </div>
-        <div>
-          <div className="font-bold text-lg">Hujuzatk PMS</div>
-          <div className="text-xs text-gray-500">
-            {workspaceLabel ? `Workspace: ${workspaceLabel}` : ({ ar: 'إدارة الحجوزات الاحترافية', tr: 'Profesyonel Mülk Yönetimi', en: 'Professional Property Management' }[lang])}
-          </div>
+  const LABELS = {
+    en: { forgot: 'Forgot password?', forgotTitle: 'Reset Password', forgotSub: 'Enter your account email and we will send a reset link.', forgotBtn: 'Send Reset Link', forgotSentTitle: 'Check your email', forgotSentSub: 'If that address is registered, a reset link has been sent. Check your spam folder too.', backLogin: 'Back to login' },
+    ar: { forgot: 'نسيت كلمة المرور؟', forgotTitle: 'إعادة تعيين كلمة المرور', forgotSub: 'أدخل بريدك الإلكتروني وسنرسل لك رابط إعادة التعيين.', forgotBtn: 'إرسال رابط الإعادة', forgotSentTitle: 'تحقق من بريدك', forgotSentSub: 'إذا كان العنوان مسجلاً، فقد تم إرسال رابط إعادة التعيين. تحقق من مجلد الرسائل غير المرغوب فيها أيضاً.', backLogin: 'العودة لتسجيل الدخول' },
+    tr: { forgot: 'Şifremi unuttum', forgotTitle: 'Şifre Sıfırla', forgotSub: 'E-posta adresinizi girin, sıfırlama bağlantısı gönderelim.', forgotBtn: 'Sıfırlama Bağlantısı Gönder', forgotSentTitle: 'E-postanı kontrol et', forgotSentSub: 'Bu adres kayıtlıysa sıfırlama bağlantısı gönderildi. Spam klasörünü de kontrol et.', backLogin: 'Girişe dön' },
+  }[lang];
+
+  const header = (
+    <div className="flex items-center gap-3 mb-6">
+      <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold shadow-lg shadow-emerald-200 shrink-0">
+        <div className="flex items-center justify-center w-full h-full rounded-xl">
+          <img src="/logo.svg" alt="Plus Logo" style={{ width: 40, height: 40 }} />
         </div>
       </div>
+      <div>
+        <div className="font-bold text-lg">Hujuzatk PMS</div>
+        <div className="text-xs text-gray-500">
+          {workspaceLabel ? `Workspace: ${workspaceLabel}` : ({ ar: 'إدارة الحجوزات الاحترافية', tr: 'Profesyonel Mülk Yönetimi', en: 'Professional Property Management' }[lang])}
+        </div>
+      </div>
+    </div>
+  );
+
+  // ---- Forgot password screen ----
+  if (mode === 'forgot') {
+    return (
+      <div className="bg-white/90 backdrop-blur shadow-xl rounded-2xl max-w-md w-full p-8 border border-emerald-100" dir={dir}>
+        {header}
+        {forgotSent ? (
+          <div className="text-center py-2">
+            <CheckCircle size={44} weight="fill" className="text-emerald-500 mx-auto mb-3" />
+            <p className="font-black text-slate-900 mb-2">{LABELS.forgotSentTitle}</p>
+            <p className="text-xs text-slate-500 mb-6 leading-relaxed">{LABELS.forgotSentSub}</p>
+            <button
+              type="button"
+              onClick={() => { setForgotSent(false); onModeChange('login'); }}
+              className="text-emerald-600 text-sm font-black hover:underline"
+            >
+              {LABELS.backLogin}
+            </button>
+          </div>
+        ) : (
+          <>
+            <div className="mb-5">
+              <p className="font-black text-slate-900 text-base">{LABELS.forgotTitle}</p>
+              <p className="text-xs text-slate-500 mt-1 leading-relaxed">{LABELS.forgotSub}</p>
+            </div>
+            {error && <div className="mb-4 text-xs text-red-600 bg-red-50 border border-red-100 rounded p-3 font-semibold">{error}</div>}
+            <form onSubmit={handleSubmit} className="space-y-4 text-sm">
+              <div>
+                <label className="block text-xs font-bold text-slate-600 mb-1">{t(lang, 'auth.email')}</label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  className="w-full border rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500/60 bg-slate-50 border-slate-200"
+                  placeholder="you@example.com"
+                  required
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-4 rounded-xl shadow-lg shadow-emerald-100 transition-all active:scale-[0.98] disabled:opacity-60 flex items-center justify-center gap-2"
+              >
+                <EnvelopeSimple size={16} weight="bold" />
+                {loading ? ({ ar: 'جاري الإرسال...', tr: 'Gönderiliyor...', en: 'Sending…' }[lang]) : LABELS.forgotBtn}
+              </button>
+              <button
+                type="button"
+                onClick={() => onModeChange('login')}
+                className="w-full text-slate-400 text-xs font-bold hover:text-slate-600 transition-colors"
+              >
+                {LABELS.backLogin}
+              </button>
+            </form>
+          </>
+        )}
+      </div>
+    );
+  }
+
+  // ---- Login / Register screen ----
+  return (
+    <div className="bg-white/90 backdrop-blur shadow-xl rounded-2xl max-w-md w-full p-8 border border-emerald-100" dir={dir}>
+      {header}
 
       <div className="flex mb-6 bg-slate-100 rounded-lg p-1 text-xs font-bold">
         <button
@@ -170,7 +257,18 @@ export function AuthScreen({ mode, onModeChange, onLoggedIn, error, setError, wo
           />
         </div>
         <div>
-          <label className="block text-xs font-bold text-slate-600 mb-1">{t(lang, 'auth.password')}</label>
+          <div className="flex items-center justify-between mb-1">
+            <label className="text-xs font-bold text-slate-600">{t(lang, 'auth.password')}</label>
+            {mode === 'login' && (
+              <button
+                type="button"
+                onClick={() => { setError(null); onModeChange('forgot'); }}
+                className="text-[11px] font-bold text-emerald-600 hover:underline"
+              >
+                {LABELS.forgot}
+              </button>
+            )}
+          </div>
           <input
             type="password"
             value={password}
@@ -248,7 +346,7 @@ export function UserAuthShell() {
           </div>
           <div className="flex flex-col gap-3">
             <button
-              onClick={() => navigate(`/${slug}`)}
+              onClick={() => navigate(`/${slug}/calendar`)}
               className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-4 rounded-xl shadow-lg shadow-emerald-100 transition-all active:scale-[0.98] flex items-center justify-center gap-2"
             >
               <Sparkle size={18} weight="fill" />
@@ -277,7 +375,7 @@ export function UserAuthShell() {
           onModeChange={setAuthMode}
           onLoggedIn={(s) => {
             const slug = encodeURIComponent((s.tenant.name || 'workspace').replace(/\s+/g, '-'));
-            navigate(`/${slug}`);
+            navigate(`/${slug}/calendar`);
           }}
           error={authError}
           setError={setAuthError}

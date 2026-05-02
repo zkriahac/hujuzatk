@@ -242,6 +242,23 @@ model Expense {
   @@index([tenantId, roomId, date])
 }
 
+// ============= ANALYTICS CACHE =============
+
+model MonthlyOccupancyCache {
+  id             String   @id @default(cuid())
+  tenantId       String
+  roomId         String
+  year           Int
+  month          Int      // 1–12
+  occupiedNights Int
+  totalNights    Int
+  occupancyRate  Float
+  updatedAt      DateTime @updatedAt
+
+  @@unique([tenantId, roomId, year, month])
+  @@index([tenantId])
+}
+
 // ============= GLOBAL SETTINGS (Not tenant-specific) =============
 
 model GlobalSettings {

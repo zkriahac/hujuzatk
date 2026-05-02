@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { format, addMonths, differenceInCalendarDays, differenceInDays, eachMonthOfInterval, endOfMonth, parseISO, startOfMonth } from 'date-fns';
 import { CaretDown, CalendarBlank, ListBullets, ChartPie, GearSix, ShieldCheck, ArrowsClockwise, CurrencyCircleDollar } from 'phosphor-react';
 import { authService, type SessionUser } from '../lib/authService';
@@ -21,7 +22,7 @@ import AccountSwitcher from './AccountSwitcher';
 import PwaInstallPrompt from './PwaInstallPrompt';
 import OnboardingTour, { type OnboardingStep } from './OnboardingTour';
 import { apolloClient } from '../lib/apolloClient';
-import { COMPLETE_ONBOARDING_MUTATION } from '../lib/graphql';
+import { COMPLETE_ONBOARDING_MUTATION, GET_BOOKINGS_QUERY } from '../lib/graphql';
 import { AddBookingModal, BookingDetailsModal, InvoiceModal } from './Modals';
 
 const ONBOARDING_LOCAL_KEY = 'hujuzatk_onboarded_local';
@@ -38,7 +39,23 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
   const dir = getDir(lang);
   const isRtl = dir === 'rtl';
 
-  const [currentView, setCurrentView] = useState<View>(session.isAdmin ? 'admin' : 'calendar');
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const VIEW_SLUGS: Record<string, View> = {
+    calendar: 'calendar', list: 'list', reports: 'reports',
+    settings: 'settings', integrations: 'integrations',
+    expenses: 'expenses', admin: 'admin',
+  };
+  const pathParts = location.pathname.split('/').filter(Boolean);
+  const workspaceSlug = pathParts[0] ?? '';
+  const pathView = pathParts[1];
+  const currentView: View = VIEW_SLUGS[pathView] ?? (session.isAdmin ? 'admin' : 'calendar');
+
+  const setCurrentView = useCallback((v: View) => {
+    navigate(`/${workspaceSlug}/${v}`);
+  }, [navigate, workspaceSlug]);
+
   const [showViewMenu, setShowViewMenu] = useState(false);
 
   // If admin disables integrations while tenant is on that view, bounce them to Calendar.
@@ -115,8 +132,16 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
   const [reportType, setReportType] = useState<'stay' | 'created'>('stay');
 
   const [listSearchTerm, setListSearchTerm] = useState('');
-  const [listFilter, setListFilter] = useState<ListFilter>('all');
+  const [listFilter, setListFilter] = useState<ListFilter>('today_checkin');
   const [visibleListCount, setVisibleListCount] = useState(30);
+
+  // Server-side pagination for 'all' and 'past' tabs
+  const SERVER_PAGE_SIZE = 50;
+  const [serverBookings, setServerBookings] = useState<Booking[]>([]);
+  const [serverHasMore, setServerHasMore] = useState(false);
+  const [serverOffset, setServerOffset] = useState(0);
+  const [serverLoading, setServerLoading] = useState(false);
+  const useServerMode = listFilter === 'all' || listFilter === 'past';
 
   const generateMonthDays = (year: number, month: number): Date[] => {
     const days: Date[] = [];
@@ -330,6 +355,52 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
   const visibleBookings = filteredBookings.slice(0, visibleListCount);
   const listContainerRef = useRef<HTMLDivElement | null>(null);
 
+  // Fire server query when 'all' or 'past' tab is active
+  useEffect(() => {
+    if (!useServerMode) return;
+    setServerOffset(0);
+    setServerBookings([]);
+    setServerHasMore(false);
+    const timer = setTimeout(async () => {
+      setServerLoading(true);
+      try {
+        const filter: Record<string, any> = {};
+        if (listSearchTerm) filter.guestName = listSearchTerm;
+        if (listFilter === 'past') filter.endDate = format(new Date(), 'yyyy-MM-dd');
+        const result = await apolloClient.query({
+          query: GET_BOOKINGS_QUERY,
+          variables: { filter, limit: SERVER_PAGE_SIZE, offset: 0, sortBy: 'checkIn', sortOrder: 'desc' },
+          fetchPolicy: 'network-only',
+        });
+        const fetched: Booking[] = result.data?.getBookings ?? [];
+        setServerBookings(fetched);
+        setServerHasMore(fetched.length === SERVER_PAGE_SIZE);
+      } catch { /* network error — show empty list */ }
+      finally { setServerLoading(false); }
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [useServerMode, listFilter, listSearchTerm]);
+
+  const handleServerLoadMore = async () => {
+    const newOffset = serverOffset + SERVER_PAGE_SIZE;
+    setServerLoading(true);
+    try {
+      const filter: Record<string, any> = {};
+      if (listSearchTerm) filter.guestName = listSearchTerm;
+      if (listFilter === 'past') filter.endDate = format(new Date(), 'yyyy-MM-dd');
+      const result = await apolloClient.query({
+        query: GET_BOOKINGS_QUERY,
+        variables: { filter, limit: SERVER_PAGE_SIZE, offset: newOffset, sortBy: 'checkIn', sortOrder: 'desc' },
+        fetchPolicy: 'network-only',
+      });
+      const fetched: Booking[] = result.data?.getBookings ?? [];
+      setServerBookings(prev => [...prev, ...fetched]);
+      setServerHasMore(fetched.length === SERVER_PAGE_SIZE);
+      setServerOffset(newOffset);
+    } catch {}
+    finally { setServerLoading(false); }
+  };
+
   useEffect(() => {
     const el = listContainerRef.current;
     if (!el) return;
@@ -429,7 +500,7 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
               <button
                 onClick={() => setShowViewMenu(v => !v)}
                 data-tour="view-switcher"
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 text-[10px] sm:text-[11px] font-black uppercase tracking-widest hover:bg-emerald-100 transition-colors"
+                className="flex items-center gap-1.5 px-2.5 py-2.5 rounded-lg bg-emerald-50 text-emerald-700 text-[10px] sm:text-[11px] font-black uppercase tracking-widest hover:bg-emerald-100 transition-colors"
               >
                 {(() => { const I = { calendar: CalendarBlank, list: ListBullets, reports: ChartPie, integrations: ArrowsClockwise, expenses: CurrencyCircleDollar, settings: GearSix, admin: ShieldCheck }[currentView]; return <I size={14} weight="fill" />; })()}
                 {t(lang, `nav.${currentView}`)}
@@ -506,11 +577,13 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
       <main className={cn('container mx-auto p-2 pt-2', currentView === 'calendar' && 'hidden')}>
         {currentView === 'list' && (
           <ListView
-            bookings={visibleBookings}
-            fullFiltered={filteredBookings}
-            visibleCount={visibleListCount}
-            totalCount={filteredBookings.length}
-            onLoadMore={() => setVisibleListCount(prev => prev + 50)}
+            bookings={useServerMode ? serverBookings : visibleBookings}
+            fullFiltered={useServerMode ? serverBookings : filteredBookings}
+            visibleCount={useServerMode ? serverBookings.length : visibleListCount}
+            totalCount={useServerMode ? serverBookings.length : filteredBookings.length}
+            onLoadMore={useServerMode ? handleServerLoadMore : () => setVisibleListCount(prev => prev + 50)}
+            serverHasMore={useServerMode && serverHasMore}
+            serverLoading={serverLoading}
             listFilter={listFilter}
             setListFilter={setListFilter}
             listSearchTerm={listSearchTerm}

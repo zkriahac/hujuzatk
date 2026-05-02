@@ -2,6 +2,9 @@ import { Elysia } from 'elysia';
 import { cors } from '@elysiajs/cors';
 import { yoga } from './graphql';
 import { syncAllTenantsForChannel, VALID_CHANNELS, type Channel } from './channelSync';
+import { buildAllTenantsCache } from './analyticsSync';
+import { PrismaClient } from '@prisma/client';
+const prismaForCron = new PrismaClient();
 
 const ALLOWED_ORIGINS = [
   'https://hujuzatk.com',
@@ -62,6 +65,18 @@ const app = new Elysia()
       { imported: 0, updated: 0, canceled: 0, skipped: 0, failed: 0 }
     );
     return { ok: true, channel, integrationsProcessed: results.length, totals, durationMs: Date.now() - startedAt, results };
+  })
+  .get('/api/cron-analytics', async ({ headers, set }) => {
+    const isVercelCron = headers['x-vercel-cron'] === '1';
+    const secret = process.env.CRON_SECRET;
+    const hasValidSecret = secret && headers.authorization === `Bearer ${secret}`;
+    if (!isVercelCron && !hasValidSecret) {
+      set.status = 401;
+      return { error: 'Unauthorized' };
+    }
+    const startedAt = Date.now();
+    await buildAllTenantsCache(prismaForCron);
+    return { ok: true, durationMs: Date.now() - startedAt };
   })
   .all('/graphql', async ({ request, set }) => {
     const response = await yoga.handle(request);

@@ -1,145 +1,216 @@
 import { useState } from 'react';
 import { X, Sparkle, Check } from 'phosphor-react';
 import {
-  PLAN_BASIC, PLAN_PRO, CURRENCY_SYMBOL, PROMO_RATE_PCT,
-  PROMO_DISMISS_KEY,
+  PROMO_RATE_PCT, PROMO_DISMISS_KEY, CURRENCY_SYMBOL, isPromoActive,
 } from '../lib/promoConfig';
 
 type Lang = 'en' | 'ar' | 'tr';
 
-interface PromoPlan {
+interface PromoPlanCard {
   id: string;
   name: string;
   tagline: string;
+  price: number;
+  oldPrice?: number;
+  priceLabel?: string;
+  features: string[];
+  cta: string;
   recommended: boolean;
 }
 
 interface PromoStrings {
   title: string;
   subtitle: string;
-  placeholder: string;
-  cta: string;
   perYear: string;
   was: string;
   save: string;
   recommended: string;
-  basic: PromoPlan;
-  pro: PromoPlan;
+  plans: PromoPlanCard[];
 }
 
 interface Props {
   lang: Lang;
   strings: PromoStrings;
-  onStart: (workspace: string) => void;
+  onStart: (planId: string) => void;
 }
 
 export default function PromoPopup({ lang, strings, onStart }: Props) {
-  const [workspace, setWorkspace] = useState('');
   const [closed, setClosed] = useState(false);
   const isRtl = lang === 'ar';
+  const promoOn = isPromoActive();
 
   const handleClose = () => {
     try { localStorage.setItem(PROMO_DISMISS_KEY, new Date().toISOString()); } catch {}
     setClosed(true);
   };
 
-  const handleSubmit = () => {
-    // Also mark as dismissed so it doesn't re-appear right after submit
-    try { localStorage.setItem(PROMO_DISMISS_KEY, new Date().toISOString()); } catch {}
-    onStart(workspace);
-  };
-
   if (closed) return null;
-
-  const Price = ({ plan }: { plan: typeof PLAN_BASIC | typeof PLAN_PRO }) => (
-    <div className="flex items-baseline gap-2" dir="ltr">
-      <span className="text-[11px] text-slate-400 line-through font-bold">
-        {strings.was} {CURRENCY_SYMBOL}{plan.oldPrice}
-      </span>
-      <span className="text-3xl font-black text-emerald-600">
-        {CURRENCY_SYMBOL}{plan.newPrice}
-      </span>
-      <span className="text-xs text-slate-500 font-bold">{strings.perYear}</span>
-    </div>
-  );
-
-  const PlanCard = ({
-    planName, tagline, planData, recommended,
-  }: { planName: string; tagline: string; planData: typeof PLAN_BASIC | typeof PLAN_PRO; recommended: boolean }) => (
-    <div className={`relative rounded-2xl border p-5 ${recommended ? 'border-emerald-400 bg-emerald-50/40' : 'border-slate-200 bg-white'}`}>
-      {recommended && (
-        <div className={`absolute -top-2.5 ${isRtl ? 'right-4' : 'left-4'} bg-emerald-600 text-white text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full`}>
-          {strings.recommended}
-        </div>
-      )}
-      <div className="flex items-start justify-between mb-2">
-        <div>
-          <p className="text-xs font-black uppercase tracking-widest text-slate-500">{planName}</p>
-          <p className="text-[11px] text-slate-400 mt-0.5">{tagline}</p>
-        </div>
-        <span className="bg-amber-100 text-amber-700 text-[9px] font-black px-2 py-0.5 rounded-full whitespace-nowrap">
-          {strings.save}
-        </span>
-      </div>
-      <Price plan={planData} />
-    </div>
-  );
 
   return (
     <div
-      className="fixed inset-0 z-[150] bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200"
-      role="dialog"
-      aria-modal="true"
+      className="fixed inset-0 z-[150] flex items-center justify-center"
+      style={{
+        background: 'rgba(8,15,32,0.6)', backdropFilter: 'blur(8px)',
+        padding: 16, animation: 'hzFadeIn .25s ease both',
+      }}
+      role="dialog" aria-modal="true"
       dir={isRtl ? 'rtl' : 'ltr'}
     >
-      <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-7 relative">
+      <div
+        className="relative w-full overflow-y-auto"
+        style={{
+          background: '#fff', borderRadius: 28, padding: 28,
+          maxWidth: 720, maxHeight: '92vh',
+          boxShadow: '0 60px 120px -20px rgba(11,27,58,.4)',
+          fontFamily: isRtl ? 'var(--font-ar)' : 'var(--font-en)',
+        }}
+      >
         {/* Close */}
         <button
           onClick={handleClose}
           aria-label="Close"
-          className={`absolute top-4 ${isRtl ? 'left-4' : 'right-4'} text-slate-400 hover:text-slate-800 transition-colors`}
+          className="absolute grid place-items-center transition-colors"
+          style={{
+            top: 18, insetInlineEnd: 18,
+            width: 32, height: 32, borderRadius: '50%',
+            background: 'var(--surface-alt)', color: 'var(--ink-500)',
+          }}
         >
-          <X size={22} weight="bold" />
+          <X size={16} weight="bold" />
         </button>
 
         {/* Header */}
-        <div className="flex items-center gap-2 mb-2">
-          <Sparkle size={18} weight="fill" className="text-amber-500" />
-          <span className="text-[10px] font-black uppercase tracking-widest text-amber-600">
-            {PROMO_RATE_PCT}% OFF
-          </span>
+        <div className="flex items-center" style={{ gap: 8, marginBottom: 8 }}>
+          <Sparkle size={16} weight="fill" style={{ color: 'var(--accent-amber)' }} />
+          {promoOn && (
+            <span className="font-bold uppercase" style={{
+              fontSize: 10, letterSpacing: '0.18em', color: 'var(--accent-amber)',
+            }}>
+              {PROMO_RATE_PCT}% OFF
+            </span>
+          )}
         </div>
-        <h2 className="text-2xl font-black text-slate-900 leading-tight mb-1.5">
+        <h2 className="h-display" style={{
+          fontSize: 24, fontWeight: 700, color: 'var(--ink-900)', margin: '0 0 6px', lineHeight: 1.15,
+        }}>
           {strings.title}
         </h2>
-        <p className="text-sm text-slate-500 mb-5 leading-relaxed">
+        <p style={{
+          fontSize: 14, color: 'var(--ink-500)', lineHeight: 1.6, margin: '0 0 22px',
+        }}>
           {strings.subtitle}
         </p>
 
-        {/* Two plan cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
-          <PlanCard planName={strings.basic.name} tagline={strings.basic.tagline} planData={PLAN_BASIC} recommended={false} />
-          <PlanCard planName={strings.pro.name} tagline={strings.pro.tagline} planData={PLAN_PRO} recommended={true} />
-        </div>
+        {/* 2×2 plan grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2" style={{ gap: 14 }}>
+          {strings.plans.map((plan) => {
+            const showCrossout = promoOn && plan.oldPrice && plan.price !== plan.oldPrice;
+            const isPopular = plan.recommended;
+            return (
+              <div
+                key={plan.id}
+                className="relative flex flex-col"
+                style={{
+                  background: isPopular ? 'var(--ink-900)' : '#fff',
+                  color: isPopular ? '#fff' : 'var(--ink-900)',
+                  border: isPopular ? 'none' : '1px solid var(--border)',
+                  borderRadius: 20, padding: 18,
+                  boxShadow: isPopular ? '0 20px 40px -12px rgba(11,27,58,0.4)' : 'var(--sh-sm)',
+                }}
+              >
+                {isPopular && (
+                  <div className="absolute font-bold uppercase" style={{
+                    top: -10, insetInlineStart: 18,
+                    background: 'var(--brand-green)', color: '#fff',
+                    padding: '4px 10px', borderRadius: 999,
+                    fontSize: 9, letterSpacing: '0.14em',
+                  }}>
+                    {strings.recommended}
+                  </div>
+                )}
+                {showCrossout && !isPopular && (
+                  <div className="absolute font-bold" style={{
+                    top: -8, insetInlineEnd: 14,
+                    background: 'var(--accent-amber-soft)', color: 'var(--accent-amber)',
+                    padding: '3px 9px', borderRadius: 999, fontSize: 10,
+                  }}>
+                    {strings.save}
+                  </div>
+                )}
 
-        {/* Workspace input + CTA */}
-        <div className="space-y-2">
-          <input
-            type="text"
-            value={workspace}
-            onChange={e => setWorkspace(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter') handleSubmit(); }}
-            placeholder={strings.placeholder}
-            className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm font-black text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-            autoFocus
-          />
-          <button
-            onClick={handleSubmit}
-            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm py-3 rounded-2xl transition-colors flex items-center justify-center gap-2"
-          >
-            <Check size={16} weight="bold" />
-            {strings.cta}
-          </button>
+                <div style={{ marginBottom: 8 }}>
+                  <p className="font-bold uppercase" style={{
+                    fontSize: 11, letterSpacing: '0.14em',
+                    color: isPopular ? 'var(--brand-green)' : 'var(--brand-green-deep)',
+                  }}>
+                    {plan.name}
+                  </p>
+                  <p style={{
+                    fontSize: 11, color: isPopular ? 'rgba(255,255,255,0.55)' : 'var(--ink-300)',
+                    marginTop: 2, lineHeight: 1.4,
+                  }}>{plan.tagline}</p>
+                </div>
+
+                {/* Price */}
+                <div style={{ marginBottom: 12 }} dir="ltr">
+                  {plan.price === 0 ? (
+                    <div className="font-extrabold" style={{ fontSize: 16, color: 'var(--brand-green)' }}>
+                      {plan.priceLabel}
+                    </div>
+                  ) : (
+                    <div className="flex items-baseline flex-wrap" style={{ gap: 6 }}>
+                      {showCrossout && (
+                        <span className="line-through font-bold" style={{
+                          fontSize: 11,
+                          color: isPopular ? 'rgba(255,255,255,0.4)' : 'var(--ink-300)',
+                        }}>
+                          {strings.was} {CURRENCY_SYMBOL}{plan.oldPrice}
+                        </span>
+                      )}
+                      <span style={{ fontSize: 26, fontWeight: 800, letterSpacing: '-0.02em' }}>
+                        {CURRENCY_SYMBOL}{plan.price}
+                      </span>
+                      <span style={{
+                        fontSize: 11, fontWeight: 600,
+                        color: isPopular ? 'rgba(255,255,255,0.6)' : 'var(--ink-500)',
+                      }}>{strings.perYear}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* 3 features */}
+                <ul className="flex-1 flex flex-col" style={{ gap: 6, listStyle: 'none', padding: 0, margin: '0 0 14px' }}>
+                  {plan.features.slice(0, 3).map((f, i) => (
+                    <li key={i} className="flex items-start" style={{
+                      gap: 7, fontSize: 11, fontWeight: 600,
+                      color: isPopular ? 'rgba(255,255,255,0.85)' : 'var(--ink-700)',
+                    }}>
+                      <Check size={11} weight="bold" style={{ color: 'var(--brand-green)', flexShrink: 0, marginTop: 2 }} />
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+
+                {/* CTA */}
+                <button
+                  onClick={() => {
+                    try { localStorage.setItem(PROMO_DISMISS_KEY, new Date().toISOString()); } catch {}
+                    onStart(plan.id);
+                  }}
+                  className="font-bold transition-all hover:-translate-y-0.5"
+                  style={{
+                    width: '100%', padding: '10px 16px',
+                    borderRadius: 999, fontSize: 12,
+                    background: isPopular ? '#fff' : plan.id === 'enterprise' ? 'var(--ink-900)' : 'var(--brand-green)',
+                    color: isPopular ? 'var(--ink-900)' : '#fff',
+                    boxShadow: isPopular ? 'none' : plan.id === 'enterprise' ? 'none' : '0 6px 14px -4px rgba(14,159,110,.5)',
+                  }}
+                >
+                  {plan.cta}
+                </button>
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>

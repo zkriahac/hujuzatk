@@ -93,6 +93,11 @@ const cache = new InMemoryCache({
     Tenant: {
       keyFields: ['id'],
     },
+    // Report types have no id — disable normalization so Apollo embeds them inline
+    OccupancyReport: { keyFields: false },
+    RevenueReport: { keyFields: false },
+    GuestStatistics: { keyFields: false },
+    RoomMonthOccupancy: { keyFields: false },
   },
 });
 

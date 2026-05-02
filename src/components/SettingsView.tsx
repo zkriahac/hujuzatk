@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { Globe, Layout, X, CurrencyDollar, Buildings, Crown, Check, Calendar } from 'phosphor-react';
+import { Globe, Layout, X, CurrencyDollar, Buildings, Crown, Check, Calendar, Upload } from 'phosphor-react';
 import { authService } from '../lib/authService';
 import type { SessionUser } from '../lib/authService';
 import { t, type Language } from '../lib/i18n';
 import type { Tenant } from '../db';
 import { apolloClient } from '../lib/apolloClient';
 import { UPDATE_TENANT_SETTINGS_MUTATION } from '../lib/graphql';
+import { ImportBookingsModal } from './Modals';
 import { PLANS, type PlanKey, isUnlimited } from '../lib/planConfig';
 import { formatTz } from '../utils/formatTz';
 import { cn } from '../utils/cn';
@@ -35,6 +36,7 @@ interface SettingsViewProps {
 export default function SettingsView({ session, onSessionChange, lang }: SettingsViewProps) {
   const [tenant, setTenant] = useState<Tenant>(session.tenant);
   const [saving, setSaving] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
   const [defaultNightPrice, setDefaultNightPrice] = useState<number>(session.tenant.defaultNightPrice ?? 50);
   const [defaultTax, setDefaultTax] = useState<number>(session.tenant.defaultTax ?? 0);
   const [company, setCompany] = useState<CompanyForm>({
@@ -392,7 +394,30 @@ export default function SettingsView({ session, onSessionChange, lang }: Setting
             </div>
           ))}
         </div>
+
+        <div className="mt-6 pt-6 border-t border-slate-100 flex items-center justify-between">
+          <div>
+            <div className="font-black text-slate-800 text-sm">{t(lang, 'import.title')}</div>
+            <div className="text-xs text-slate-500 mt-0.5">{t(lang, 'import.settingsHint')}</div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowImportModal(true)}
+            className="flex items-center gap-2 bg-slate-900 text-white px-6 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-700 transition-all shadow-xl shadow-slate-200 active:scale-95"
+          >
+            <Upload size={15} weight="bold" />
+            {t(lang, 'list.import')}
+          </button>
+        </div>
       </div>
+
+      {showImportModal && (
+        <ImportBookingsModal
+          onClose={() => setShowImportModal(false)}
+          rooms={tenant.rooms || []}
+          lang={lang}
+        />
+      )}
 
       <div className="flex justify-center pt-8">
         <button

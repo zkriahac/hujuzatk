@@ -13,7 +13,7 @@ const CHAPTERS = [
   { id: 'open', label: 'Prologue' },
   { id: 'chaos', label: 'The Old Day' },
   { id: 'shift', label: 'A Quieter Way' },
-  { id: 'calendar', label: 'Five Years Wide' },
+  { id: 'calendar', label: 'Three Years Wide' },
   { id: 'numbers', label: 'What Changes' },
   { id: 'voices', label: 'Voices' },
   { id: 'end', label: 'Begin' },
@@ -286,7 +286,7 @@ function ShiftScene({ reduced }: { reduced: boolean }) {
           <span className="italic text-emerald-200">run a hotel.</span>
         </h2>
         <p className="mx-auto mt-8 max-w-xl text-base leading-relaxed text-slate-400">
-          One calendar. Five years wide. Every conflict caught before it lands on the desk.
+          One calendar. Three years wide. Every conflict caught before it lands on the desk.
         </p>
       </motion.div>
     </section>
@@ -307,8 +307,8 @@ function CalendarScene({
   const xShift = useTransform(scrollYProgress, [0, 1], [0, -80]);
 
   const notes = [
-    { k: '5 years', v: 'visible at once, scrolled like a single sheet.' },
-    { k: '1,825 days', v: 'virtualized — no lag even on a slow laptop.' },
+    { k: '3 years', v: 'visible at once, scrolled like a single sheet.' },
+    { k: '1,095 days', v: 'virtualized — no lag even on a slow laptop.' },
     { k: 'Conflicts', v: 'flagged before a guest ever books the same key.' },
     { k: 'RTL & EN', v: 'the calendar mirrors without breaking a pixel.' },
   ];
@@ -337,7 +337,7 @@ function CalendarScene({
               The calendar
             </p>
             <h3 className="text-3xl font-light leading-tight md:text-4xl">
-              A single surface for every night, this year and the next four.
+              A single surface for every night, this year and the next two.
             </h3>
           </div>
         </div>
@@ -524,7 +524,7 @@ function EndingScene({ reduced }: { reduced: boolean }) {
           operation.
         </h2>
         <p className="mx-auto mt-8 max-w-lg text-base leading-relaxed text-slate-400">
-          Fourteen days free. No card required. Your calendar will be five years wide by Tuesday.
+          Fourteen days free. No card required. Your calendar will be three years wide by Tuesday.
         </p>
         <div className="mt-12 flex flex-col items-center justify-center gap-4 sm:flex-row">
           <Link
@@ -724,7 +724,7 @@ function CalendarMock({ reduced }: { reduced: boolean }) {
 
       {/* Footer */}
       <div className="flex items-center justify-between border-t border-white/5 px-5 py-2.5 text-[10px] font-mono uppercase tracking-[0.2em] text-slate-500">
-        <span>1,825 days visible</span>
+        <span>1,095 days visible</span>
         <span className="text-emerald-300/70">● virtualized</span>
       </div>
     </div>

@@ -104,6 +104,18 @@ export const translations: Record<Language, Record<string, string>> = {
     'list.view': 'View',
     'list.checkInToday': 'CHECK-IN TODAY',
     'list.nights': 'nights',
+    'list.import': 'Import',
+    'list.loadMore': 'Load more',
+    'import.title': 'Import Bookings',
+    'import.settingsHint': 'Upload a CSV file to bulk-import bookings',
+    'import.hint': 'CSV file — one booking per row. Columns: الإسم, تاريخ الحجز, طريقة الدفع, الدخول, الليالي, الخروج, رقم الشقة, سعر الليلة, دفعة, المتبقي, ملاحظات',
+    'import.selectFile': 'Select CSV file',
+    'import.doImport': 'Import',
+    'import.success': '{n} bookings imported',
+    'import.skipped': '{n} skipped (old check-out or invalid)',
+    'import.rowsFound': '{n} rows found',
+    'import.roomsMatched': '{n} rooms matched',
+    'import.unmatched': '{n} unmatched rooms',
 
     // Reports
     'reports.type': 'Report Type',
@@ -171,6 +183,10 @@ export const translations: Record<Language, Record<string, string>> = {
     'booking.cancel': 'Cancel',
     'booking.source': 'Source (e.g. Booking.com, Airbnb)',
     'booking.save': 'Save Booking',
+    'booking.extraDetails': 'Extra Details',
+    'booking.extraDetailsHint': 'City, phone & notes',
+    'booking.notes': 'Notes',
+    'booking.notesPlaceholder': 'Any notes about this booking…',
 
     // Booking Details
     'booking.detailsTitle': 'Booking Details',
@@ -404,6 +420,18 @@ export const translations: Record<Language, Record<string, string>> = {
     'list.view': 'عرض',
     'list.checkInToday': 'وصول اليوم',
     'list.nights': 'ليالي',
+    'list.import': 'استيراد',
+    'list.loadMore': 'تحميل المزيد',
+    'import.title': 'استيراد الحجوزات',
+    'import.settingsHint': 'ارفع ملف CSV لاستيراد الحجوزات بالجملة',
+    'import.hint': 'ملف CSV — حجز لكل صف. الأعمدة: الإسم، تاريخ الحجز، طريقة الدفع، الدخول، الليالي، الخروج، رقم الشقة، سعر الليلة، دفعة، المتبقي، ملاحظات',
+    'import.selectFile': 'اختر ملف CSV',
+    'import.doImport': 'استيراد',
+    'import.success': 'تم استيراد {n} حجز',
+    'import.skipped': 'تم تخطي {n} (تاريخ قديم أو غير صالح)',
+    'import.rowsFound': 'تم العثور على {n} صفوف',
+    'import.roomsMatched': '{n} غرف متطابقة',
+    'import.unmatched': '{n} غرف غير متطابقة',
 
     // Reports
     'reports.type': 'نوع التقرير',
@@ -471,6 +499,10 @@ export const translations: Record<Language, Record<string, string>> = {
     'booking.cancel': 'إلغاء',
     'booking.source': 'المصدر (مثلاً Booking.com, Airbnb)',
     'booking.save': 'حفظ الحجز',
+    'booking.extraDetails': 'تفاصيل إضافية',
+    'booking.extraDetailsHint': 'المدينة والهاتف والملاحظات',
+    'booking.notes': 'ملاحظات',
+    'booking.notesPlaceholder': 'أي ملاحظات حول هذا الحجز…',
 
     // Booking Details
     'booking.detailsTitle': 'تفاصيل الحجز',
@@ -704,6 +736,18 @@ export const translations: Record<Language, Record<string, string>> = {
     'list.view': 'Görüntüle',
     'list.checkInToday': 'BUGÜN GİRİŞ',
     'list.nights': 'gece',
+    'list.import': 'İçe Aktar',
+    'list.loadMore': 'Daha fazla yükle',
+    'import.title': 'Rezervasyon İçe Aktar',
+    'import.settingsHint': 'Toplu rezervasyon içe aktarmak için CSV dosyası yükleyin',
+    'import.hint': 'CSV dosyası — her satır bir rezervasyon. Sütunlar: الإسم, تاريخ الحجز, طريقة الدفع, الدخول, الليالي, الخروج, رقم الشقة, سعر الليلة, دفعة, المتبقي, ملاحظات',
+    'import.selectFile': 'CSV Dosyası Seç',
+    'import.doImport': 'İçe Aktar',
+    'import.success': '{n} rezervasyon içe aktarıldı',
+    'import.skipped': '{n} atlandı (eski tarih veya geçersiz)',
+    'import.rowsFound': '{n} satır bulundu',
+    'import.roomsMatched': '{n} oda eşleşti',
+    'import.unmatched': '{n} oda eşleşmedi',
 
     // Reports
     'reports.type': 'Rapor Türü',
@@ -771,6 +815,10 @@ export const translations: Record<Language, Record<string, string>> = {
     'booking.cancel': 'İptal',
     'booking.source': 'Kaynak (ör. Booking.com, Airbnb)',
     'booking.save': 'Rezervasyonu Kaydet',
+    'booking.extraDetails': 'Ek Detaylar',
+    'booking.extraDetailsHint': 'Şehir, telefon ve notlar',
+    'booking.notes': 'Notlar',
+    'booking.notesPlaceholder': 'Bu rezervasyon hakkında notlar…',
 
     // Booking Details
     'booking.detailsTitle': 'Rezervasyon Detayları',

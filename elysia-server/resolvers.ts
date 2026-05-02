@@ -10,10 +10,17 @@
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { GraphQLError } from 'graphql';
-import { differenceInCalendarDays, getDaysInMonth } from 'date-fns';
+import { differenceInCalendarDays, getDaysInMonth, subMonths } from 'date-fns';
 import { prisma } from './prisma';
 import { performSync, VALID_CHANNELS } from './channelSync';
 import { PLANS, isValidPlan } from './planConfig';
+import {
+  sendNewTenantEmail,
+  sendPlanActivatedEmail,
+  sendPlanCanceledEmail,
+  sendPlanChangedEmail,
+  sendPasswordResetEmail,
+} from './emailService';
 
 const TRIAL_DAYS = parseInt(process.env.TRIAL_DAYS || '14');
 
@@ -164,6 +171,25 @@ export const resolvers = {
 			const averageBookingValue = bookingCount > 0 ? totalRevenue / bookingCount : 0;
 			return { year, month, totalRevenue: Math.round(totalRevenue * 100) / 100, totalDeposits: Math.round(totalDeposits * 100) / 100, totalOutstanding: Math.round(totalOutstanding * 100) / 100, bookingCount, averageBookingValue: Math.round(averageBookingValue * 100) / 100 };
 		},
+		async getYearlyOccupancy(_: any, { year }: { year: number }, context: any) {
+			requireAuth(context);
+			const tenantId = context.user.tenantId;
+			const tenant = await prisma.tenant.findUnique({ where: { id: tenantId }, select: { rooms: true } });
+			if (!tenant) return [];
+			const rows = await prisma.monthlyOccupancyCache.findMany({ where: { tenantId, year } });
+			return rows.map((r: any) => {
+				const room = (tenant.rooms as { id: string; name: string }[]).find((rm) => rm.id === r.roomId);
+				return {
+					roomId: r.roomId,
+					roomName: room?.name ?? r.roomId,
+					year: r.year,
+					month: r.month,
+					occupiedNights: r.occupiedNights,
+					totalNights: r.totalNights,
+					occupancyRate: r.occupancyRate,
+				};
+			});
+		},
 		async getGuestStatistics(_: any, __: any, context: any) {
 			requireAuth(context);
 			const bookings = await prisma.booking.findMany({ where: { tenantId: context.user.tenantId } });
@@ -244,6 +270,7 @@ export const resolvers = {
 			const tenant = await prisma.tenant.create({ data: { name: input.name, email: input.email, phone: input.phone || null, passwordHash, currency: input.currency || globals?.defaultCurrency || 'OMR', timezone: input.timezone || globals?.defaultTimezone || 'Asia/Muscat', language: input.language || globals?.defaultLanguage || 'en', subscriptionStatus: 'TRIAL', validUntil: calculateValidUntil(trialDays), rooms: defaultRooms, isAdmin: false, isActive: true, plan: 'trial', maxRooms: trialPlan.maxRooms, integrationsEnabled: trialPlan.integrationsEnabled, settings: { create: { defaultNightPrice: 50, defaultTax: 0 } } }, include: { settings: true } });
 			const { token, refreshToken } = generateTokens(tenant.id, tenant.email);
 			await prisma.auditLog.create({ data: { tenantId: tenant.id, action: 'TENANT_UPDATED', entityType: 'Tenant', entityId: tenant.id, changes: { action: 'tenant_created' } } });
+			void sendNewTenantEmail({ name: tenant.name, email: tenant.email, phone: tenant.phone });
 			return { token, refreshToken, tenant: { ...normalizeTenant(tenant), bookingsCount: 0 } };
 		},
 		async login(_: any, { email, password }: any, context: any) {
@@ -258,6 +285,43 @@ export const resolvers = {
 			return { token, refreshToken, tenant: { ...normalizeTenant(tenant), bookingsCount: (tenant as any)._count?.bookings || 0 } };
 		},
 		async logout() { return true; },
+
+		// Forgot password — step 1: send reset link (always returns true so emails aren't enumerable)
+		async requestPasswordReset(_: any, { email }: any) {
+			const tenant = await prisma.tenant.findUnique({ where: { email } });
+			if (tenant && tenant.isActive) {
+				// Sign a 1-hour JWT using (JWT_SECRET + passwordHash) so the token auto-invalidates
+				// the moment the password is changed — no extra DB column needed.
+				const secret = process.env.JWT_SECRET! + tenant.passwordHash;
+				const token = jwt.sign({ sub: tenant.id, type: 'pwd_reset' }, secret, { expiresIn: '1h' });
+				void sendPasswordResetEmail(tenant.email, token);
+			}
+			return true;
+		},
+
+		// Forgot password — step 2: set new password using the token from the email
+		async resetPassword(_: any, { token, newPassword }: any) {
+			if (!token || !newPassword) throw new GraphQLError('Token and new password are required', { extensions: { code: 'BAD_USER_INPUT', http: { status: 400 } } });
+			if (newPassword.length < 8) throw new GraphQLError('Password must be at least 8 characters', { extensions: { code: 'BAD_USER_INPUT', http: { status: 400 } } });
+
+			// Decode (unverified) to get the tenant id
+			let decoded: any;
+			try { decoded = jwt.decode(token); } catch { decoded = null; }
+			if (!decoded?.sub || decoded?.type !== 'pwd_reset') throw new GraphQLError('Invalid or expired reset link', { extensions: { code: 'BAD_USER_INPUT', http: { status: 400 } } });
+
+			const tenant = await prisma.tenant.findUnique({ where: { id: decoded.sub } });
+			if (!tenant) throw new GraphQLError('Invalid or expired reset link', { extensions: { code: 'BAD_USER_INPUT', http: { status: 400 } } });
+
+			// Verify signature using the combined secret
+			const secret = process.env.JWT_SECRET! + tenant.passwordHash;
+			try { jwt.verify(token, secret); }
+			catch { throw new GraphQLError('Invalid or expired reset link. Please request a new one.', { extensions: { code: 'BAD_USER_INPUT', http: { status: 400 } } }); }
+
+			const passwordHash = await bcrypt.hash(newPassword, 10);
+			await prisma.tenant.update({ where: { id: tenant.id }, data: { passwordHash } });
+			return true;
+		},
+
 		async refreshToken(_: any, { refreshToken }: any, context: any) {
 			try {
 				const verified = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET!);
@@ -361,7 +425,13 @@ export const resolvers = {
 			if (!tenant) throw new GraphQLError('Tenant not found', { extensions: { code: 'NOT_FOUND', http: { status: 404 } } });
 			// Reserve a contiguous range of booking numbers up front (single counter bump),
 			// then assign them in order. Avoids N round-trips on the counter.
-			const validInputs = bookings.filter((b) => differenceInCalendarDays(new Date(b.checkOut), new Date(b.checkIn)) > 0);
+			const threeMonthsAgo = subMonths(new Date(), 3);
+			const validInputs = bookings.filter((b) => {
+				const checkOut = new Date(b.checkOut);
+				if (differenceInCalendarDays(checkOut, new Date(b.checkIn)) <= 0) return false;
+				if (checkOut < threeMonthsAgo) return false;
+				return true;
+			});
 			if (!validInputs.length) return [];
 			const updatedTenant = await prisma.tenant.update({
 				where: { id: context.user.tenantId },
@@ -490,6 +560,7 @@ export const resolvers = {
 			validUntil.setDate(validUntil.getDate() + days);
 			const updated = await prisma.tenant.update({ where: { id: tenantId }, data: { subscriptionStatus: 'active', validUntil }, include: { settings: true, _count: { select: { bookings: true } } } });
 			await prisma.payment.create({ data: { tenantId, amount: 0, currency: 'OMR', status: 'completed', planType: 'admin-grant', planDays: days, description: `Admin granted ${days} days subscription` } });
+			void sendPlanActivatedEmail({ name: tenant.name, email: tenant.email }, days, validUntil);
 			return { ...normalizeTenant(updated), bookingsCount: updated._count?.bookings || 0 };
 		},
 		async cancelSubscription(_: any, { tenantId }: any, context: any) {
@@ -498,6 +569,7 @@ export const resolvers = {
 			if (!tenant) throw new GraphQLError('Tenant not found', { extensions: { code: 'NOT_FOUND', http: { status: 404 } } });
 			await prisma.tenant.update({ where: { id: tenantId }, data: { subscriptionStatus: 'canceled' } });
 			await prisma.auditLog.create({ data: { tenantId, action: 'TENANT_UPDATED', entityType: 'Tenant', entityId: tenantId, changes: { action: 'subscription_canceled' } } });
+			void sendPlanCanceledEmail({ name: tenant.name, email: tenant.email });
 			return true;
 		},
 		async adminLoginAs(_: any, { tenantId }: any, context: any) {
@@ -682,6 +754,7 @@ export const resolvers = {
 					changes: { action: 'plan_changed', plan, actorId: context.user.tenantId },
 				},
 			});
+			void sendPlanChangedEmail({ name: updated.name, email: updated.email }, plan);
 			return { ...normalizeTenant(updated), bookingsCount: updated._count?.bookings || 0 };
 		},
 

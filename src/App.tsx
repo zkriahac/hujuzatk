@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { LandingPage, PrivacyPolicy, TermsOfService } from './pages/LandingPage';
 import { UserAuthShell, WorkspaceShell } from './pages/AuthShell';
 import { SuperAdminShell } from './pages/SuperAdminShell';
+import ResetPasswordPage from './pages/ResetPasswordPage';
 import { StoryPage } from './pages/StoryPage';
 import { NotFound } from './pages/NotFound';
 import { trackPageView } from './lib/analytics';
@@ -49,6 +50,7 @@ export function App() {
   if (path === '/privacy') return <PrivacyPolicy />;
   if (path === '/terms') return <TermsOfService />;
   if (path === '/404') return <NotFound />;
+  if (path === '/reset-password') return <ResetPasswordPage />;
   if (path.startsWith('/user')) return <UserAuthShell />;
   if (path.startsWith('/superadmin')) return <SuperAdminShell />;
 

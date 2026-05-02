@@ -149,6 +149,7 @@ All GraphQL operations are wrapped in custom hooks:
 | `useOccupancyReport(room, year, month)` | Occupancy data |
 | `useRevenueReport(year, month?)` | Revenue data |
 | `useGuestStatistics()` | Aggregate stats |
+| `useYearlyOccupancy(year)` | Full-year heatmap data from `MonthlyOccupancyCache` |
 | `useBookingManager(filter?)` | Combined CRUD hook |
 
 ### Local Database (`src/db.ts`)
@@ -178,7 +179,7 @@ Used as a local cache (synced from GraphQL responses) and as a fallback when the
 
 ## Internationalization
 
-`src/lib/i18n.ts` supports `en` (English) and `ar` (Arabic with RTL layout). Language is stored on the `Tenant` record and applied via the `t()` and `getDir()` helpers throughout `App.tsx`.
+`src/lib/i18n.ts` supports `en` (English), `ar` (Arabic with RTL layout), and `tr` (Turkish). Language is stored on the `Tenant` record and applied via the `t()` and `getDir()` helpers throughout the app.
 
 ---
 

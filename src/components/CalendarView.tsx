@@ -247,13 +247,24 @@ export default function CalendarView({
                         <span className="hidden sm:inline">{formatTz(date, 'dd MMM', tz, lang)}</span>
                       </td>
                       {rooms.map((r: any) => {
-                        const cellBookings = bookings.filter((b: any) => {
-                          // Show canceled too — just visually faded
-                          const inRoom = b.room === r.id;
-                          const checkInStr = b.checkIn.split('T')[0];
-                          const checkOutStr = b.checkOut.split('T')[0];
-                          return inRoom && dStr >= checkInStr && dStr < checkOutStr;
-                        });
+                        const cellBookings = bookings
+                          .filter((b: any) => {
+                            // Show canceled too — just visually faded
+                            const inRoom = b.room === r.id;
+                            const checkInStr = b.checkIn.split('T')[0];
+                            const checkOutStr = b.checkOut.split('T')[0];
+                            return inRoom && dStr >= checkInStr && dStr < checkOutStr;
+                          })
+                          // Canceled/completed render first (lower z-index) so active bookings sit on top
+                          .sort((a: any, b: any) => {
+                            const zScore = (s: string) => {
+                              const u = (s || '').toUpperCase();
+                              if (u === 'CANCELED') return 0;
+                              if (u === 'COMPLETED' || u === 'NO-SHOW' || u === 'NO_SHOW') return 1;
+                              return 2;
+                            };
+                            return zScore(a.status) - zScore(b.status);
+                          });
                         const hasBookings = cellBookings.length > 0;
                         const isPendingAdd = !!showAddModal && addModalInitialDate === dStr && addModalInitialRoom === r.id && !hasBookings;
                         return (
@@ -330,8 +341,15 @@ export default function CalendarView({
                                     (isHovered || isSelected) && 'shadow-lg z-10',
                                     isSelected && 'ring-2 ring-emerald-500 ring-inset',
                                   )}
-                                  title={`${b.bookingNumber ? '#' + String(b.bookingNumber).padStart(4, '0') + ' • ' : ''}${b.guestName}`}
+                                  title={`${b.bookingNumber ? '#' + String(b.bookingNumber).padStart(4, '0') + ' • ' : ''}${b.guestName}${b.notes ? ' 📝' : ''}`}
                                 >
+                                  {/* Note corner fold — amber dog-ear in the top-right, visible on first/single slice */}
+                                  {b.notes && (isFirst || isSingle) && (
+                                    <span
+                                      className="absolute top-0 right-0 pointer-events-none z-10"
+                                      style={{ width: 9, height: 9, background: '#f59e0b', clipPath: 'polygon(100% 0, 0 0, 100% 100%)' }}
+                                    />
+                                  )}
                                   {/* Guest name on the middle slice; booking # appended on first slice when zoom permits */}
                                   <span className="truncate">
                                     {isFirst && b.bookingNumber && zoom >= 2 && (

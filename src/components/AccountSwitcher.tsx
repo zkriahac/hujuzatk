@@ -53,7 +53,7 @@ export default function AccountSwitcher({ lang, isRtl, currentTenantId, session,
     <div className="relative" ref={ref}>
       <button
         onClick={() => setOpen(o => !o)}
-        className="flex items-center justify-center w-8 h-8 rounded-full bg-emerald-600 text-white shrink-0 hover:bg-emerald-700 transition-colors"
+        className="flex items-center gap-1.5 px-2.5 py-2.5 rounded-lg bg-emerald-50 text-emerald-700 text-[10px] sm:text-[11px] font-black uppercase tracking-widest hover:bg-emerald-100 transition-colors"
         aria-label={t(lang, 'account.switch')}
       >
         <UserGear size={18} weight="bold" />

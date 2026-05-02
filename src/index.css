@@ -1,62 +1,274 @@
 @import "tailwindcss";
 
-button, select, a, [role="button"], label[for] {
-  cursor: pointer;
+/* ============================================================
+   Design tokens — Hujuzatk Variant B
+   These map to Tailwind utilities like `bg-brand-green`,
+   `text-ink-900`, `font-display`, `rounded-r-md`, `shadow-sh-card`.
+   ============================================================ */
+@theme {
+  /* Brand */
+  --color-brand-green:      #0E9F6E;
+  --color-brand-green-soft: #D1FAE5;
+  --color-brand-green-tint: #ECFDF5;
+  --color-brand-green-deep: #047857;
+
+  /* Ink (navy) */
+  --color-ink-900: #0B1B3A;
+  --color-ink-700: #1E2D4F;
+  --color-ink-500: #4B5878;
+  --color-ink-300: #94A0B9;
+  --color-ink-200: #C9D0DD;
+
+  /* Accents (room categories) */
+  --color-accent-blue:        #3B82F6;
+  --color-accent-blue-soft:   #DBEAFE;
+  --color-accent-purple:      #8B5CF6;
+  --color-accent-purple-soft: #EDE9FE;
+  --color-accent-coral:       #F87171;
+  --color-accent-coral-soft:  #FEE2E2;
+  --color-accent-amber:       #F59E0B;
+  --color-accent-amber-soft:  #FEF3C7;
+
+  /* Surface */
+  --color-bg:           #FAFAF7;
+  --color-bg-cream:     #FBF8F0;
+  --color-bg-mint:      #F0FAF5;
+  --color-surface:      #FFFFFF;
+  --color-surface-alt:  #F4F6FA;
+  --color-border-soft:  #EFF2F7;
+
+  /* Typography */
+  --font-display: "Inter", system-ui, sans-serif;
+  --font-arabic:  "IBM Plex Sans Arabic", "Tajawal", system-ui, sans-serif;
+
+  /* Radii */
+  --radius-r-sm:  8px;
+  --radius-r-md:  14px;
+  --radius-r-lg:  20px;
+  --radius-r-xl:  28px;
+  --radius-r-2xl: 36px;
+
+  /* Shadows */
+  --shadow-sh-sm:   0 1px 2px rgba(11,27,58,.04), 0 1px 1px rgba(11,27,58,.03);
+  --shadow-sh-md:   0 8px 24px -6px rgba(11,27,58,.08), 0 2px 6px rgba(11,27,58,.04);
+  --shadow-sh-lg:   0 24px 48px -12px rgba(11,27,58,.12), 0 8px 16px -4px rgba(11,27,58,.06);
+  --shadow-sh-card: 0 1px 0 rgba(11,27,58,.02), 0 12px 32px -16px rgba(11,27,58,.16);
 }
 
-button:disabled, select:disabled {
-  cursor: not-allowed;
+/* ============================================================
+   Plain CSS variables (kept in sync with @theme above) so legacy
+   `var(--brand-green)` references inside design files still work.
+   ============================================================ */
+:root {
+  --brand-green:      #0E9F6E;
+  --brand-green-soft: #D1FAE5;
+  --brand-green-tint: #ECFDF5;
+  --brand-green-deep: #047857;
+
+  --ink-900: #0B1B3A;
+  --ink-700: #1E2D4F;
+  --ink-500: #4B5878;
+  --ink-300: #94A0B9;
+  --ink-200: #C9D0DD;
+
+  --accent-blue:        #3B82F6;
+  --accent-blue-soft:   #DBEAFE;
+  --accent-purple:      #8B5CF6;
+  --accent-purple-soft: #EDE9FE;
+  --accent-coral:       #F87171;
+  --accent-coral-soft:  #FEE2E2;
+  --accent-amber:       #F59E0B;
+  --accent-amber-soft:  #FEF3C7;
+
+  --bg:          #FAFAF7;
+  --bg-cream:    #FBF8F0;
+  --bg-mint:     #F0FAF5;
+  --surface:     #FFFFFF;
+  --surface-alt: #F4F6FA;
+  --border:      #E6EAF1;
+  --border-soft: #EFF2F7;
+
+  --font-ar: "IBM Plex Sans Arabic", "Tajawal", system-ui, sans-serif;
+  --font-en: "Inter", system-ui, sans-serif;
+
+  --r-sm:  8px;
+  --r-md:  14px;
+  --r-lg:  20px;
+  --r-xl:  28px;
+  --r-2xl: 36px;
+
+  --sh-sm:   0 1px 2px rgba(11,27,58,.04), 0 1px 1px rgba(11,27,58,.03);
+  --sh-md:   0 8px 24px -6px rgba(11,27,58,.08), 0 2px 6px rgba(11,27,58,.04);
+  --sh-lg:   0 24px 48px -12px rgba(11,27,58,.12), 0 8px 16px -4px rgba(11,27,58,.06);
+  --sh-card: 0 1px 0 rgba(11,27,58,.02), 0 12px 32px -16px rgba(11,27,58,.16);
 }
+
+/* ============================================================
+   Base resets / cursors
+   ============================================================ */
+button, select, a, [role="button"], label[for] { cursor: pointer; }
+button:disabled, select:disabled { cursor: not-allowed; }
 
 html {
   height: 100%;
   overflow: hidden;
   overscroll-behavior: none;
 }
-
 body {
   height: 100%;
   margin: 0;
   overflow: auto;
   -webkit-overflow-scrolling: touch;
+  font-family: var(--font-en);
+  color: var(--ink-900);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+#root { min-height: 100%; }
+
+[dir="rtl"], [dir="rtl"] * { font-family: var(--font-ar); }
+
+/* Native <select> chevron breathing room */
+select { padding-inline-end: 2.5rem; }
+
+/* ============================================================
+   Typography helpers (Variant B design DNA)
+   ============================================================ */
+.h-display { font-weight: 700; letter-spacing: -0.025em; line-height: 1.05; }
+[dir="rtl"] .h-display { letter-spacing: 0; line-height: 1.25; }
+
+.eyebrow {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--brand-green-deep);
+}
+[dir="rtl"] .eyebrow { letter-spacing: 0; font-size: 13px; text-transform: none; }
+
+.mark-underline { position: relative; display: inline-block; white-space: nowrap; }
+.mark-underline svg {
+  position: absolute;
+  inset: auto 0 -8px 0;
+  width: 100%;
+  height: 14px;
+  pointer-events: none;
 }
 
-#root {
-  min-height: 100%;
+/* ============================================================
+   Reveal-on-scroll
+   ============================================================ */
+.hz-reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity .7s cubic-bezier(.2,.7,.2,1), transform .7s cubic-bezier(.2,.7,.2,1);
+}
+.hz-reveal[data-reveal="on"] {
+  opacity: 1;
+  transform: none;
 }
 
-[dir="rtl"],
-[dir="rtl"] * {
-  font-family: 'Cairo', sans-serif;
+/* ============================================================
+   Hover lift for cards
+   ============================================================ */
+.hz-card-hover {
+  transition: transform .35s cubic-bezier(.2,.7,.2,1), box-shadow .35s cubic-bezier(.2,.7,.2,1);
+}
+.hz-card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 24px 48px -16px rgba(11,27,58,0.18), 0 8px 16px -8px rgba(11,27,58,0.08);
 }
 
-/* Native <select> elements draw their chevron at the inline-end edge.
-   Without explicit padding, the chevron sits flush against the border —
-   give every select a 2.5rem padding-end so the arrow has breathing room.
-   Individual components can still override with utility classes if needed. */
-select {
-  padding-inline-end: 2.5rem;
+/* ============================================================
+   Subtle dotted bg
+   ============================================================ */
+.bg-dots {
+  background-image: radial-gradient(circle, rgba(11,27,58,.08) 1px, transparent 1px);
+  background-size: 18px 18px;
 }
 
+/* ============================================================
+   Marquee for logos strip
+   ============================================================ */
+@keyframes hzMarquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+[dir="rtl"] .hz-marquee-track { animation-direction: reverse; }
+
+/* ============================================================
+   Floating motion for hero badges
+   ============================================================ */
+@keyframes hzFloatA {
+  0%, 100% { transform: translateY(0) rotate(var(--rot, 0deg)); }
+  50%      { transform: translateY(-10px) rotate(calc(var(--rot, 0deg) + 1.5deg)); }
+}
+@keyframes hzFloatB {
+  0%, 100% { transform: translateY(0) rotate(var(--rot, 0deg)); }
+  50%      { transform: translateY(8px) rotate(calc(var(--rot, 0deg) - 1.5deg)); }
+}
+@keyframes hzFloatC {
+  0%, 100% { transform: translate(0,0) rotate(var(--rot, 0deg)); }
+  50%      { transform: translate(-6px, -6px) rotate(calc(var(--rot, 0deg) + 1deg)); }
+}
+
+/* ============================================================
+   Pulse for status dots
+   ============================================================ */
+@keyframes hzPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(14,159,110,0.5); }
+  50%      { box-shadow: 0 0 0 8px rgba(14,159,110,0); }
+}
+
+/* ============================================================
+   Reveal up
+   ============================================================ */
+@keyframes hzRevealUp {
+  from { opacity: 0; transform: translateY(28px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ============================================================
+   Bar grow for chart holos
+   ============================================================ */
+@keyframes hzGrowBar {
+  from { transform: scaleY(0); }
+  to   { transform: scaleY(1); }
+}
+
+/* ============================================================
+   Ken-burns for video frames
+   ============================================================ */
+@keyframes hzKenBurns {
+  from { transform: scale(1); }
+  to   { transform: scale(1.04); }
+}
+
+/* ============================================================
+   Fade-in (used by VideoModal)
+   ============================================================ */
+@keyframes hzFadeIn {
+  from { opacity: 0; transform: scale(0.97); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+/* ============================================================
+   No-scrollbar helper (used by some marquees)
+   ============================================================ */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { scrollbar-width: none; }
+
+/* ============================================================
+   Print: keep invoice-only visible
+   ============================================================ */
 @media print {
-  html, body {
-    height: auto !important;
-    overflow: visible !important;
-  }
-
+  html, body { height: auto !important; overflow: visible !important; }
   body * { visibility: hidden; }
-
-  .invoice-print-area,
-  .invoice-print-area * { visibility: visible; }
-
+  .invoice-print-area, .invoice-print-area * { visibility: visible; }
   .invoice-print-area {
-    position: fixed;
-    inset: 0;
-    overflow: visible !important;
-    max-height: none !important;
-    padding: 1.5rem;
-    background: #ffffff;
+    position: fixed; inset: 0;
+    overflow: visible !important; max-height: none !important;
+    padding: 1.5rem; background: #ffffff;
   }
-
   .hide-on-print { display: none !important; }
 }

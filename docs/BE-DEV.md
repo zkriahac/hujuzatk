@@ -23,20 +23,25 @@ The active backend is **elysia-server** — an Elysia + GraphQL Yoga + Prisma se
 
 ```
 elysia-server/
-  index.ts          # Elysia HTTP server (local dev only)
-  graphql.ts        # GraphQL Yoga instance + error masking
-  typeDefs.ts       # GraphQL SDL schema
-  resolvers.ts      # All query/mutation resolvers
-  context.ts        # JWT extraction, request context
-  prisma.ts         # Prisma client singleton
+  index.ts              # Elysia HTTP server (local dev only)
+  graphql.ts            # GraphQL Yoga instance + error masking
+  typeDefs.ts           # GraphQL SDL schema
+  resolvers.ts          # All query/mutation resolvers
+  context.ts            # JWT extraction, request context
+  prisma.ts             # Prisma client singleton
+  analyticsSync.ts      # Pre-compute MonthlyOccupancyCache for all tenants
   prisma/
-    schema.prisma   # Database models
-    seed.ts         # Seed script
+    schema.prisma       # Database models
+    seed.ts             # Seed script
+    migrations/
+      add_monthly_occupancy_cache.sql   # Manual migration (run in Supabase SQL editor)
   api/
-    graphql.ts      # Vercel serverless handler (production)
-    health.ts       # Health check endpoint
-  vercel.json       # Vercel deployment config
-  .env              # Local environment variables
+    graphql.ts          # Vercel serverless handler (production)
+    health.ts           # Health check endpoint
+    cron-sync.ts        # Vercel cron: iCal channel sync (nightly)
+    cron-analytics.ts   # Vercel cron: occupancy cache rebuild (1st of each month)
+  vercel.json           # Vercel deployment config + cron schedules
+  .env                  # Local environment variables
 ```
 
 ---
@@ -53,10 +58,12 @@ PORT=4000
 
 JWT_SECRET=...                    # Access token secret
 JWT_REFRESH_SECRET=...            # Refresh token secret
-JWT_EXPIRE=24h
-JWT_REFRESH_EXPIRE=7d
+JWT_EXPIRE=7d
+JWT_REFRESH_EXPIRE=30d
 
 TRIAL_DAYS=14
+
+CRON_SECRET=...                   # Bearer token for manual cron triggers
 ```
 
 For Vercel production, set all the above in the Vercel project's environment settings (not committed).
@@ -98,6 +105,16 @@ npx prisma db seed           # run seed script
 | `AuditLog` | Change history for bookings and tenants |
 | `Payment` | Subscription payments (admin-granted) |
 | `GlobalSettings` | App-wide defaults (singleton, id=1) |
+| `ChannelIntegration` | iCal sync links per room (Airbnb / Gathern / Booking.com) |
+| `Expense` | Per-room expense records |
+| `MonthlyOccupancyCache` | Pre-computed occupancy per `[tenantId, roomId, year, month]` — rebuilt by cron |
+
+### DB migrations note
+
+Supabase is firewalled from local dev machines — `prisma migrate dev` and `prisma db push` both fail locally. Schema changes must be:
+1. Updated in `prisma/schema.prisma`
+2. Run `npx prisma generate` (client-only, works offline)
+3. Written as a SQL file in `prisma/migrations/` and applied manually via the Supabase SQL Editor
 
 ---
 
@@ -121,7 +138,7 @@ npx prisma db seed           # run seed script
 | `mutation createBooking(input)` | Create new booking |
 | `mutation updateBooking(id, input)` | Update booking |
 | `mutation deleteBooking(id)` | Soft delete |
-| `mutation bulkImportBookings(bookings)` | Import up to 500 at once |
+| `mutation bulkImportBookings(bookings)` | Import up to 500 at once — bookings with `checkOut` older than 3 months are silently skipped |
 | `mutation bulkDeleteBookings(ids)` | Bulk delete by ID array |
 
 ### Reports
@@ -130,6 +147,7 @@ npx prisma db seed           # run seed script
 | `query getOccupancyReport(room, year, month)` | Occupancy % for a month |
 | `query getRevenueReport(year, month?)` | Revenue breakdown |
 | `query getGuestStatistics` | Aggregate guest stats |
+| `query getYearlyOccupancy(year)` | Full-year heatmap data — reads from `MonthlyOccupancyCache` |
 
 ### Admin (super admin only)
 | Operation | Description |
@@ -164,10 +182,28 @@ Vercel config (`elysia-server/vercel.json`):
 - Region: `sin1` (Singapore)
 - Route `/graphql` → `api/graphql.ts`
 - Route `/health` → `api/health.ts`
+- Cron jobs (see below)
 
 **Note:** The local `index.ts` (Elysia HTTP server) is NOT used on Vercel. Vercel uses `api/graphql.ts` directly which internally calls the same GraphQL Yoga instance.
 
 Production domain: `https://api.hujuzatk.com/graphql`
+
+### Cron jobs
+
+| Endpoint | Schedule | Purpose |
+|----------|----------|---------|
+| `/api/cron-sync?channel=airbnb` | `0 1 * * *` | Sync Airbnb iCal feeds |
+| `/api/cron-sync?channel=gathern` | `0 2 * * *` | Sync Gathern iCal feeds |
+| `/api/cron-sync?channel=booking.com` | `0 3 * * *` | Sync Booking.com iCal feeds |
+| `/api/cron-analytics` | `0 4 1 * *` | Rebuild `MonthlyOccupancyCache` for all tenants |
+
+Auth: Vercel sets `x-vercel-cron: 1` automatically. For manual triggers use `Authorization: Bearer <CRON_SECRET>`:
+
+```bash
+curl -H "Authorization: Bearer <CRON_SECRET>" https://api.hujuzatk.com/api/cron-analytics
+```
+
+On first run after adding a new tenant, `cron-analytics` backfills the last 36 months automatically.
 
 ### Deploy steps
 
@@ -177,7 +213,7 @@ npx vercel --prod
 ```
 
 Make sure the following env vars are set in the Vercel project dashboard before deploying:
-`DATABASE_URL`, `JWT_SECRET`, `JWT_REFRESH_SECRET`, `JWT_EXPIRE`, `JWT_REFRESH_EXPIRE`, `TRIAL_DAYS`
+`DATABASE_URL`, `JWT_SECRET`, `JWT_REFRESH_SECRET`, `JWT_EXPIRE`, `JWT_REFRESH_EXPIRE`, `TRIAL_DAYS`, `CRON_SECRET`
 
 ---
 

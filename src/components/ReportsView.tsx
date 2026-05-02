@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Layout, ChartPie, CreditCard, Calendar, Users, Target, FileXls, TrendDown, Scales, CaretDown } from 'phosphor-react';
+import { Layout, ChartPie, CreditCard, Calendar, Users, Target, FileXls, TrendDown, Scales, CaretDown, CaretLeft, CaretRight, ChartBar, Table } from 'phosphor-react';
 import { t, type Language } from '../lib/i18n';
 import { apolloClient } from '../lib/apolloClient';
 import { GET_EXPENSES_QUERY } from '../lib/graphql';
+import { useYearlyOccupancy } from '../hooks/useGraphQL';
 
 interface ReportsViewProps {
   rooms: any[];
@@ -48,6 +49,10 @@ export default function ReportsView({
     reportData.roomStats.length === 0
       ? 0
       : reportData.roomStats.reduce((a: any, b: any) => a + b.occupancyRate, 0) / reportData.roomStats.length;
+
+  const [heatmapYear, setHeatmapYear] = useState(new Date().getFullYear());
+  const [heatmapMode, setHeatmapMode] = useState<'chart' | 'table'>('chart');
+  const { data: yearlyOccupancy, loading: heatmapLoading } = useYearlyOccupancy(heatmapYear);
 
   const [expenses, setExpenses] = useState<Expense[]>([]);
   // Refetch expenses whenever the date range / room filter changes — keeps the
@@ -314,7 +319,212 @@ export default function ReportsView({
           </div>
         </div>
       </div>
+
+      {/* Annual Occupancy Heatmap */}
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between gap-4 flex-wrap">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+              <Calendar size={18} weight="duotone" />
+            </div>
+            <div>
+              <p className="text-sm font-black text-slate-900">
+                {lang === 'ar' ? 'خريطة الإشغال السنوية' : lang === 'tr' ? 'Yıllık Doluluk Haritası' : 'Annual Occupancy Heatmap'}
+              </p>
+              <p className="text-[11px] text-slate-400 font-bold uppercase tracking-widest">
+                {lang === 'ar' ? 'إشغال كل غرفة لكل شهر' : lang === 'tr' ? 'Her oda, her ay' : 'Per room · per month'}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            {/* Chart / Table toggle */}
+            <div className="flex rounded-xl border border-slate-200 overflow-hidden">
+              <button
+                onClick={() => setHeatmapMode('chart')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest transition-all ${heatmapMode === 'chart' ? 'bg-emerald-600 text-white' : 'text-slate-500 hover:bg-slate-50'}`}
+              >
+                <ChartBar size={13} weight="bold" />
+                {lang === 'ar' ? 'مخطط' : lang === 'tr' ? 'Grafik' : 'Chart'}
+              </button>
+              <button
+                onClick={() => setHeatmapMode('table')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest transition-all ${heatmapMode === 'table' ? 'bg-emerald-600 text-white' : 'text-slate-500 hover:bg-slate-50'}`}
+              >
+                <Table size={13} weight="bold" />
+                {lang === 'ar' ? 'جدول' : lang === 'tr' ? 'Tablo' : 'Table'}
+              </button>
+            </div>
+            {/* Year navigation */}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setHeatmapYear(y => y - 1)}
+                className="w-8 h-8 flex items-center justify-center rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50 transition-all"
+              >
+                {lang === 'ar' ? <CaretRight size={14} weight="bold" /> : <CaretLeft size={14} weight="bold" />}
+              </button>
+              <span className="text-sm font-black text-slate-900 w-12 text-center tabular-nums">{heatmapYear}</span>
+              <button
+                onClick={() => setHeatmapYear(y => y + 1)}
+                disabled={heatmapYear >= new Date().getFullYear()}
+                className="w-8 h-8 flex items-center justify-center rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+              >
+                {lang === 'ar' ? <CaretLeft size={14} weight="bold" /> : <CaretRight size={14} weight="bold" />}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {heatmapLoading && yearlyOccupancy.length === 0 ? (
+          <div className="p-10 text-center text-slate-400 text-sm font-bold">
+            {lang === 'ar' ? 'جاري التحميل…' : lang === 'tr' ? 'Yükleniyor…' : 'Loading…'}
+          </div>
+        ) : yearlyOccupancy.length === 0 ? (
+          <div className="p-10 text-center text-slate-400 text-sm font-bold">
+            {lang === 'ar'
+              ? 'لا توجد بيانات بعد. سيتم حساب الإشغال تلقائياً.'
+              : lang === 'tr'
+              ? 'Henüz veri yok. Doluluk otomatik hesaplanacak.'
+              : 'No data yet — occupancy will be computed automatically by the monthly cron.'}
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            {heatmapMode === 'chart'
+              ? <HeatmapChart data={yearlyOccupancy} lang={lang} />
+              : <HeatmapGrid data={yearlyOccupancy} lang={lang} />
+            }
+          </div>
+        )}
+      </div>
     </div>
+  );
+}
+
+const MONTHS_EN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const MONTHS_AR = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+const MONTHS_TR = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
+
+function occupancyCell(rate: number): string {
+  if (rate >= 0.76) return 'bg-emerald-700 text-white';
+  if (rate >= 0.51) return 'bg-emerald-500 text-white';
+  if (rate >= 0.26) return 'bg-emerald-200 text-emerald-900';
+  if (rate > 0)     return 'bg-emerald-50 text-emerald-700';
+  return 'bg-slate-50 text-slate-300';
+}
+
+function occupancyCellBg(rate: number): string {
+  if (rate >= 0.76) return 'bg-emerald-700';
+  if (rate >= 0.51) return 'bg-emerald-500';
+  if (rate >= 0.26) return 'bg-emerald-200';
+  if (rate > 0)     return 'bg-emerald-50';
+  return 'bg-slate-100';
+}
+
+function HeatmapGrid({ data, lang }: {
+  data: { roomId: string; roomName: string; month: number; occupiedNights: number; totalNights: number; occupancyRate: number }[];
+  lang: Language;
+}) {
+  const months = lang === 'ar' ? MONTHS_AR : lang === 'tr' ? MONTHS_TR : MONTHS_EN;
+  const roomIds = [...new Set(data.map(d => d.roomId))];
+  const byRoomMonth: Record<string, Record<number, typeof data[0]>> = {};
+  data.forEach(d => {
+    if (!byRoomMonth[d.roomId]) byRoomMonth[d.roomId] = {};
+    byRoomMonth[d.roomId][d.month] = d;
+  });
+  const roomName = (id: string) => data.find(d => d.roomId === id)?.roomName ?? id;
+
+  return (
+    <table className="w-full text-xs min-w-[640px]">
+      <thead>
+        <tr className="bg-slate-50 border-b border-slate-100">
+          <th className="px-4 py-3 text-start text-[10px] font-black uppercase tracking-widest text-slate-400 w-28">
+            {lang === 'ar' ? 'الغرفة' : lang === 'tr' ? 'Oda' : 'Room'}
+          </th>
+          {months.map((m, i) => (
+            <th key={i} className="px-2 py-3 text-center text-[10px] font-black uppercase tracking-widest text-slate-400">{m}</th>
+          ))}
+        </tr>
+      </thead>
+      <tbody className="divide-y divide-slate-50">
+        {roomIds.map(roomId => (
+          <tr key={roomId} className="hover:bg-slate-50/50 transition-colors">
+            <td className="px-4 py-2.5 font-black text-slate-700 text-xs">{roomName(roomId)}</td>
+            {Array.from({ length: 12 }, (_, i) => i + 1).map(month => {
+              const cell = byRoomMonth[roomId]?.[month];
+              const rate = cell?.occupancyRate ?? 0;
+              const pct = Math.round(rate * 100);
+              return (
+                <td
+                  key={month}
+                  title={cell ? `${cell.occupiedNights}/${cell.totalNights} nights (${pct}%)` : '—'}
+                  className="px-1 py-2"
+                >
+                  <div className={`rounded-lg text-center py-1.5 font-black tabular-nums text-[11px] ${occupancyCell(rate)}`}>
+                    {cell ? `${pct}%` : '—'}
+                  </div>
+                </td>
+              );
+            })}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
+function HeatmapChart({ data, lang }: {
+  data: { roomId: string; roomName: string; month: number; occupiedNights: number; totalNights: number; occupancyRate: number }[];
+  lang: Language;
+}) {
+  const months = lang === 'ar' ? MONTHS_AR : lang === 'tr' ? MONTHS_TR : MONTHS_EN;
+  const roomIds = [...new Set(data.map(d => d.roomId))];
+  const byRoomMonth: Record<string, Record<number, typeof data[0]>> = {};
+  data.forEach(d => {
+    if (!byRoomMonth[d.roomId]) byRoomMonth[d.roomId] = {};
+    byRoomMonth[d.roomId][d.month] = d;
+  });
+  const roomName = (id: string) => data.find(d => d.roomId === id)?.roomName ?? id;
+
+  return (
+    <table className="w-full text-xs min-w-[640px]">
+      <thead>
+        <tr className="bg-slate-50 border-b border-slate-100">
+          <th className="px-4 py-3 text-start text-[10px] font-black uppercase tracking-widest text-slate-400 w-28">
+            {lang === 'ar' ? 'الغرفة' : lang === 'tr' ? 'Oda' : 'Room'}
+          </th>
+          {months.map((m, i) => (
+            <th key={i} className="px-1 py-3 text-center text-[10px] font-black uppercase tracking-widest text-slate-400">{m}</th>
+          ))}
+        </tr>
+      </thead>
+      <tbody className="divide-y divide-slate-50">
+        {roomIds.map(roomId => (
+          <tr key={roomId} className="hover:bg-slate-50/50 transition-colors">
+            <td className="px-4 py-2 font-black text-slate-700 text-xs align-bottom">{roomName(roomId)}</td>
+            {Array.from({ length: 12 }, (_, i) => i + 1).map(month => {
+              const cell = byRoomMonth[roomId]?.[month];
+              const rate = cell?.occupancyRate ?? 0;
+              const pct = Math.round(rate * 100);
+              const bgClass = occupancyCellBg(rate);
+              return (
+                <td
+                  key={month}
+                  title={cell ? `${cell.occupiedNights}/${cell.totalNights} nights (${pct}%)` : '—'}
+                  className="px-1 py-2 align-bottom"
+                >
+                  <div className="flex flex-col items-center gap-0.5 h-20 justify-end">
+                    <span className="text-[10px] font-bold text-slate-400 tabular-nums">{cell ? `${pct}%` : ''}</span>
+                    <div
+                      className={`w-full rounded-t-md ${bgClass} transition-all duration-500`}
+                      style={{ height: cell ? `${Math.max(4, pct)}%` : '2px' }}
+                    />
+                  </div>
+                </td>
+              );
+            })}
+          </tr>
+        ))}
+      </tbody>
+    </table>
   );
 }
 
