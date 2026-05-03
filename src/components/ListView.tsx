@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { parseISO, isSameDay, startOfToday } from 'date-fns';
-import { MagnifyingGlass, Users, Eye, List, ArrowSquareIn, ArrowSquareOut, CheckCircle, Archive, XCircle, Trash, ArrowsClockwise, PencilSimple, X as XIcon } from 'phosphor-react';
+import { MagnifyingGlass, Users, Eye, List, ArrowSquareIn, ArrowSquareOut, CheckCircle, Archive, XCircle, Trash, ArrowsClockwise, PencilSimple, X as XIcon, Upload } from 'phosphor-react';
 import { cn } from '../utils/cn';
 import { t, type Language } from '../lib/i18n';
 import { formatTz } from '../utils/formatTz';
@@ -23,6 +23,7 @@ interface ListViewProps {
   listSearchTerm: string;
   setListSearchTerm: (s: string) => void;
   setShowAddModal: (v: boolean) => void;
+  onImportClick: () => void;
   setSelectedBooking: (b: any) => void;
   serverHasMore?: boolean;
   serverLoading?: boolean;
@@ -48,6 +49,7 @@ export default function ListView({
   listSearchTerm,
   setListSearchTerm,
   setShowAddModal,
+  onImportClick,
   setSelectedBooking,
   serverHasMore = false,
   serverLoading = false,
@@ -147,6 +149,13 @@ export default function ListView({
               onChange={(e) => setListSearchTerm(e.target.value)}
             />
           </div>
+          <button
+            onClick={onImportClick}
+            className="inline-flex items-center gap-1.5 bg-white border border-slate-200 text-slate-700 px-4 py-2.5 rounded-2xl text-[11px] font-black uppercase tracking-widest whitespace-nowrap hover:bg-slate-50 active:scale-95 transition-all"
+          >
+            <Upload size={13} weight="bold" />
+            {t(lang, 'list.import')}
+          </button>
           <button
             onClick={() => setShowAddModal(true)}
             className="bg-emerald-600 text-white px-6 py-2.5 rounded-2xl text-[11px] font-black uppercase tracking-widest whitespace-nowrap shadow-lg shadow-emerald-50 active:scale-95 transition-all"

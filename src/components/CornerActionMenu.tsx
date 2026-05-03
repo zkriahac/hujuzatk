@@ -36,8 +36,8 @@ interface Props {
 export default function CornerActionMenu({
   items,
   isRtl = false,
-  radius = 50,
-  itemSize = 45,
+  radius = 75,
+  itemSize = 40,
   className,
 }: Props) {
   const [open, setOpen] = useState(false);

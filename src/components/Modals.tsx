@@ -195,16 +195,13 @@ export function AddBookingModal({ onClose, onAdd, initialDate, initialRoom, room
           <button
             type="button"
             onClick={() => setShowExtra(v => !v)}
-            className="w-full flex items-center justify-between px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold text-slate-500 hover:bg-slate-100 transition-all"
+            className="inline-flex items-center gap-1.5 text-sm font-bold text-slate-500 hover:text-slate-700 transition-colors px-1 py-1"
           >
-            <span className="flex items-center gap-2">
-              {!showExtra && (f.city || f.phone || notes) && (
-                <span className="w-2 h-2 rounded-full bg-blue-500 shrink-0" />
-              )}
-              <span>{t(lang, 'booking.extraDetails')}</span>
-              <span className="text-[10px] font-normal text-slate-400">{t(lang, 'booking.extraDetailsHint')}</span>
-            </span>
-            {showExtra ? <CaretUp size={14} weight="bold" /> : <CaretDown size={14} weight="bold" />}
+            <span>{t(lang, 'booking.extraDetails')}</span>
+            {!showExtra && (f.city || f.phone || notes) && (
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0" />
+            )}
+            {showExtra ? <CaretUp size={12} weight="bold" /> : <CaretDown size={12} weight="bold" />}
           </button>
           {showExtra && (
             <div className="space-y-3 px-1">
@@ -503,16 +500,13 @@ export function BookingDetailsModal({
             <button
               type="button"
               onClick={() => setShowExtra(v => !v)}
-              className="w-full flex items-center justify-between px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold text-slate-500 hover:bg-slate-100 transition-all"
+              className="inline-flex items-center gap-1.5 text-sm font-bold text-slate-500 hover:text-slate-700 transition-colors px-1 py-1"
             >
-              <span className="flex items-center gap-2">
-                {!showExtra && (f.city || f.phone || editNotes) && (
-                  <span className="w-2 h-2 rounded-full bg-blue-500 shrink-0" />
-                )}
-                <span>{t(lang, 'booking.extraDetails')}</span>
-                <span className="text-[10px] font-normal text-slate-400">{t(lang, 'booking.extraDetailsHint')}</span>
-              </span>
-              {showExtra ? <CaretUp size={14} weight="bold" /> : <CaretDown size={14} weight="bold" />}
+              <span>{t(lang, 'booking.extraDetails')}</span>
+              {!showExtra && (f.city || f.phone || editNotes) && (
+                <span className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0" />
+              )}
+              {showExtra ? <CaretUp size={12} weight="bold" /> : <CaretDown size={12} weight="bold" />}
             </button>
             {showExtra && (
               <div className="space-y-3 px-1">

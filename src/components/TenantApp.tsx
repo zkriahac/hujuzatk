@@ -25,7 +25,7 @@ import OnboardingTour, { type OnboardingStep } from './OnboardingTour';
 import { apolloClient } from '../lib/apolloClient';
 import { COMPLETE_ONBOARDING_MUTATION, GET_BOOKINGS_QUERY, BULK_DELETE_BOOKINGS_MUTATION, SYNC_ALL_CHANNELS_MUTATION } from '../lib/graphql';
 import type { SourceFilter } from './ListView';
-import { AddBookingModal, BookingDetailsModal, InvoiceModal } from './Modals';
+import { AddBookingModal, BookingDetailsModal, InvoiceModal, ImportBookingsModal } from './Modals';
 
 const ONBOARDING_LOCAL_KEY = 'hujuzatk_onboarded_local';
 
@@ -118,6 +118,7 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
   const [loadedMonths, setLoadedMonths] = useState<Set<string>>(new Set());
   const [selectedDateStr, setSelectedDateStr] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
   const [addModalInitialDate, setAddModalInitialDate] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
   const [addModalInitialRoom, setAddModalInitialRoom] = useState<string>(
     session.tenant.rooms?.[0]?.id ?? DEFAULT_ROOMS[0].id,
@@ -805,6 +806,7 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
             listSearchTerm={listSearchTerm}
             setListSearchTerm={setListSearchTerm}
             setShowAddModal={setShowAddModal}
+            onImportClick={() => setShowImportModal(true)}
             setSelectedBooking={setSelectedBooking}
             listContainerRef={listContainerRef}
             rooms={rooms}
@@ -850,6 +852,14 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
       </main>
       </div>
       {/* ── End main content column ─────────────────────────────── */}
+
+      {showImportModal && (
+        <ImportBookingsModal
+          onClose={() => setShowImportModal(false)}
+          rooms={rooms}
+          lang={lang}
+        />
+      )}
 
       {showAddModal && (
         <AddBookingModal

@@ -446,13 +446,13 @@ export default function CalendarView({
         // w-* utilities) to dodge any breakpoint mismatch with the cell at zoom levels.
         style={{
           width: isMobile ? 48 : 96,
-          height: isMobile ? 28 : 48,
+          height: isMobile ? 28 : 42,
         }}
       >
         <CornerActionMenu
           isRtl={isRtl}
-          radius={isMobile ? 110 : 150}
-          itemSize={isMobile ? 26 : 40}
+          radius={isMobile ? 50 : 75}
+          itemSize={isMobile ? 30 : 40}
           items={[
             {
               icon: <CloudArrowDown size={16} weight="bold" />,
