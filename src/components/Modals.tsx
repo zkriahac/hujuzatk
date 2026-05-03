@@ -3,7 +3,7 @@ import { format, addDays, parseISO } from 'date-fns';
 import {
   X, Sparkle, Users, Minus, Plus, CreditCard, FileText, Printer,
   PencilSimple, Prohibit, Trash, Check, WarningCircle, CaretDown, CaretUp, Upload, DownloadSimple,
-  ArrowSquareOut,
+  ArrowSquareOut, Lock, ArrowsClockwise,
 } from 'phosphor-react';
 import { useBulkImportBookings } from '../hooks/useGraphQL';
 import { cn } from '../utils/cn';
@@ -448,21 +448,43 @@ export function BookingDetailsModal({
               value={f.idNumber}
               onChange={(e) => setF({ ...f, idNumber: e.target.value })}
             />
-            {/* Source — locked when the booking came from a channel sync (externalChannel
-                set). Synced bookings get their source from the iCal feed, editing it would
-                drift from the channel state. Manual bookings stay editable. */}
+            {/* Source — synced bookings render as a plain read-only badge (no select
+                chevron, since there's nothing to choose from), so the UI doesn't suggest
+                editability. Channel-coloured to match the reservation pill. Manual
+                bookings keep the editable select. */}
             {(() => {
-              const isSynced = !!(booking as any).externalChannel;
+              const channel: string | null = (booking as any).externalChannel ?? null;
+              if (channel) {
+                const channelLabel =
+                  channel === 'airbnb'      ? 'Airbnb'
+                : channel === 'gathern'     ? 'Gathern'
+                : channel === 'booking.com' ? 'Booking.com'
+                : channel.charAt(0).toUpperCase() + channel.slice(1);
+                const tone =
+                  channel === 'airbnb'      ? { bg: 'bg-rose-50',    fg: 'text-rose-700',    icon: 'text-rose-500',    border: 'border-rose-100' }
+                : channel === 'gathern'     ? { bg: 'bg-emerald-50', fg: 'text-emerald-700', icon: 'text-emerald-500', border: 'border-emerald-100' }
+                : channel === 'booking.com' ? { bg: 'bg-blue-50',    fg: 'text-blue-700',    icon: 'text-blue-500',    border: 'border-blue-100' }
+                : { bg: 'bg-slate-50', fg: 'text-slate-700', icon: 'text-slate-400', border: 'border-slate-100' };
+                return (
+                  <div
+                    className={cn('w-full rounded-2xl px-4 py-2.5 text-sm font-bold flex items-center gap-2.5 border', tone.bg, tone.fg, tone.border)}
+                    title={t(lang, 'booking.sourceLocked')}
+                    aria-disabled="true"
+                  >
+                    <ArrowsClockwise size={14} weight="bold" className={tone.icon} />
+                    <span>{channelLabel}</span>
+                    <span className="ms-auto inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-widest opacity-70">
+                      <Lock size={11} weight="bold" />
+                      {t(lang, 'booking.synced')}
+                    </span>
+                  </div>
+                );
+              }
               return (
                 <select
-                  className={cn(
-                    'w-full bg-slate-50 border-slate-100 rounded-2xl px-4 py-2.5 text-sm font-bold transition-all',
-                    isSynced ? 'cursor-not-allowed opacity-70' : 'focus:ring-2 focus:ring-emerald-500',
-                  )}
+                  className="w-full bg-slate-50 border-slate-100 rounded-2xl px-4 py-2.5 text-sm font-bold transition-all focus:ring-2 focus:ring-emerald-500"
                   value={f.source}
                   onChange={(e) => setF({ ...f, source: e.target.value })}
-                  disabled={isSynced}
-                  title={isSynced ? t(lang, 'booking.sourceLocked') : undefined}
                 >
                   <option value="">{t(lang, 'booking.source')}</option>
                   <option value="Direct">Direct</option>
