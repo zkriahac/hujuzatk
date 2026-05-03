@@ -50,7 +50,6 @@ model Tenant {
   settings             TenantSettings?
   channelIntegrations  ChannelIntegration[]
   expenses             Expense[]
-  deletedExternalBookings DeletedExternalBooking[]
 
   @@index([email])
   @@index([subscriptionStatus])
@@ -262,22 +261,6 @@ model MonthlyOccupancyCache {
   updatedAt      DateTime @updatedAt
 
   @@unique([tenantId, roomId, year, month])
-  @@index([tenantId])
-}
-
-// ============= TOMBSTONES FOR USER-DELETED SYNCED BOOKINGS =============
-// When a user deletes a booking that came from a channel sync (has externalId),
-// we record a tombstone here. The next sync skips events whose UID is in this
-// table for the same tenant — prevents the "deleted, then resynced and came
-// back" surprise. Manual bookings (no externalId) skip this entirely.
-model DeletedExternalBooking {
-  id         String   @id @default(uuid())
-  tenantId   String
-  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  externalId String
-  deletedAt  DateTime @default(now())
-
-  @@unique([tenantId, externalId])
   @@index([tenantId])
 }
 

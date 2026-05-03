@@ -198,31 +198,6 @@ export async function performSync(integration: any, tenantId: string, mode: Sync
     blocksRemoved = sweep.count;
   }
 
-  // ── Tombstone filter (H1) ──
-  // Skip events whose UID was tombstoned by a user delete. Prevents the "I deleted
-  // it but it came back on next sync" surprise — without permanent tombstones, the
-  // findFirst below would return null and the create branch would re-import the row.
-  // Wrapped in try/catch so a missing table (deploy-before-SQL window) degrades
-  // gracefully to the old behavior instead of crashing the whole sync.
-  if (events.length > 0) {
-    try {
-      const uids = events.map((e) => e.uid);
-      const tombstones = await prisma.deletedExternalBooking.findMany({
-        where: { tenantId, externalId: { in: uids } },
-        select: { externalId: true },
-      });
-      if (tombstones.length > 0) {
-        const tombstonedSet = new Set(tombstones.map((t) => t.externalId));
-        const before = events.length;
-        events = events.filter((e) => !tombstonedSet.has(e.uid));
-        skipped += before - events.length;
-      }
-    } catch (err: any) {
-      // Table doesn't exist yet — log once, proceed without tombstone filtering.
-      console.warn(`[performSync] tombstone read failed (run the SQL migration?): ${err.message}`);
-    }
-  }
-
   // ── Batch lookup (C1) ──
   // One findMany instead of N findFirst calls — was the largest performance hot
   // spot. With a 100-event feed this drops 100 sequential round trips to one.
@@ -328,6 +303,41 @@ export async function performSync(integration: any, tenantId: string, mode: Sync
     } catch (err: any) {
       errors.push(`UID ${event.uid}: ${err.message}`);
     }
+  }
+
+  // ── Orphan cancel ──
+  // The channel side is the source of truth. If a booking's UID is no longer in
+  // the feed (host deleted it on Airbnb / Gathern), mark our copy as canceled.
+  // Scoped to future bookings only — old completed bookings naturally age out of
+  // iCal feeds, so missing-from-feed != deleted for those.
+  try {
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const feedUids = new Set(events.map((e) => e.uid));
+    const liveOrphans = await prisma.booking.findMany({
+      where: {
+        tenantId,
+        room: integration.roomId,
+        externalChannel: integration.channelName,
+        externalId: { not: null },
+        status: { not: 'canceled' },
+        checkOut: { gte: todayStart },
+      },
+      select: { id: true, externalId: true },
+    });
+    const toCancel = liveOrphans
+      .filter((b) => b.externalId && !feedUids.has(b.externalId))
+      .map((b) => b.id);
+    if (toCancel.length > 0) {
+      await prisma.booking.updateMany({
+        where: { id: { in: toCancel } },
+        data: { status: 'canceled' },
+      });
+      canceled += toCancel.length;
+    }
+  } catch (err: any) {
+    // Don't fail the whole sync if the orphan sweep blows up — log and move on.
+    errors.push(`orphan cancel failed: ${err.message}`);
   }
 
   // Soft verification — flag the integration as 'suspicious' when the feed looks off.
