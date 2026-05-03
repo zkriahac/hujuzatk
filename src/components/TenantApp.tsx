@@ -20,9 +20,11 @@ import IntegrationsView from './IntegrationsView';
 import ExpenseView from './ExpenseView';
 import AccountSwitcher from './AccountSwitcher';
 import PwaInstallPrompt from './PwaInstallPrompt';
+import SyncResultModal from './SyncResultModal';
 import OnboardingTour, { type OnboardingStep } from './OnboardingTour';
 import { apolloClient } from '../lib/apolloClient';
-import { COMPLETE_ONBOARDING_MUTATION, GET_BOOKINGS_QUERY } from '../lib/graphql';
+import { COMPLETE_ONBOARDING_MUTATION, GET_BOOKINGS_QUERY, BULK_DELETE_BOOKINGS_MUTATION, SYNC_ALL_CHANNELS_MUTATION } from '../lib/graphql';
+import type { SourceFilter } from './ListView';
 import { AddBookingModal, BookingDetailsModal, InvoiceModal } from './Modals';
 
 const ONBOARDING_LOCAL_KEY = 'hujuzatk_onboarded_local';
@@ -133,6 +135,8 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
 
   const [listSearchTerm, setListSearchTerm] = useState('');
   const [listFilter, setListFilter] = useState<ListFilter>('today_checkin');
+  const [sourceFilter, setSourceFilter] = useState<SourceFilter>('all');
+  const [bulkDeleting, setBulkDeleting] = useState(false);
   const [visibleListCount, setVisibleListCount] = useState(30);
 
   // Server-side pagination for 'all' and 'past' tabs
@@ -275,6 +279,123 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
     }
   };
 
+  // Bulk delete — wired to ListView "Delete selected" button.
+  //   1. Server delete (returns deleted-row count, not true/false — diagnoses stale rows)
+  //   2. Evict each Booking from Apollo's normalized cache + GC dangling refs
+  //   3. Filter the local React state so the UI reflects immediately
+  //   4. If server count < requested count, alert the user — otherwise silent success
+  const handleBulkDelete = async (ids: string[]) => {
+    if (!ids.length) return;
+    setBulkDeleting(true);
+    try {
+      console.log(`[bulkDelete] sending ${ids.length} ids:`, ids);
+      const { data, errors } = await apolloClient.mutate({
+        mutation: BULK_DELETE_BOOKINGS_MUTATION,
+        variables: { ids },
+        errorPolicy: 'all',
+      });
+      if (errors?.length) throw errors[0];
+      const deletedCount = Number(data?.bulkDeleteBookings ?? 0);
+      console.log(`[bulkDelete] server deleted ${deletedCount}/${ids.length}`);
+
+      // Step 2 — evict from Apollo cache (so cached queries don't re-hydrate)
+      ids.forEach((id) => apolloClient.cache.evict({ id: `Booking:${id}` }));
+      apolloClient.cache.gc();
+
+      // Step 3 — drop them from React state regardless of count, so phantom rows
+      // disappear from the UI even when the server already deleted them.
+      const idSet = new Set(ids);
+      setBookings((prev) => prev.filter((b) => !idSet.has(b.id)));
+      setServerBookings((prev) => prev.filter((b) => !idSet.has(b.id)));
+
+      // Step 4 — surface mismatches.
+      if (deletedCount === 0) {
+        alert(`Server reported 0 rows deleted. The ${ids.length} selected bookings were either already deleted or belong to a different account.`);
+      } else if (deletedCount < ids.length) {
+        alert(`Deleted ${deletedCount} of ${ids.length}. The other ${ids.length - deletedCount} were already gone (stale rows have been cleaned from your view).`);
+      }
+    } catch (err: any) {
+      console.error('Bulk delete failed:', err);
+      alert(err?.message || t(lang, 'misc.errorDeleting') || 'Delete failed.');
+    } finally {
+      setBulkDeleting(false);
+    }
+  };
+
+  // Two distinct calendar actions:
+  //   • refreshCalendar — local-only reload from DB. Fast (~500ms). For "I deleted
+  //     bookings in another tab" cases. Resets calRange + clears bookings + scrolls today.
+  //   • syncCalendar    — channel sync (Airbnb/Gathern/Booking.com) THEN refresh.
+  //     Slow (5–30s). Shows the SyncResultModal if something changed.
+  // Sync failure is non-blocking (e.g. integrations disabled) — local reload still runs.
+  const [refreshingCalendar, setRefreshingCalendar] = useState(false);
+  const [syncingCalendar, setSyncingCalendar] = useState(false);
+  const [calendarSyncResults, setCalendarSyncResults] = useState<any[] | null>(null);
+
+  const localReloadCalendar = async () => {
+    // Reset to a clean slate centered on today
+    const DEFAULT_BEFORE = 1;
+    const DEFAULT_AFTER = 2;
+    setCalRange({ before: DEFAULT_BEFORE, after: DEFAULT_AFTER });
+    setLoadedMonths(new Set());
+    setBookings([]); // Fully clear so server-side deletions disappear from UI
+
+    const now = startOfMonth(new Date());
+    const months: Date[] = [];
+    for (let m = -DEFAULT_BEFORE; m <= DEFAULT_AFTER; m++) {
+      months.push(addMonths(now, m));
+    }
+    await Promise.all(months.map((d) => loadMonthBookings(d, true)));
+
+    // Evict cache so any subsequent cache-first lookups can't re-introduce stale rows
+    apolloClient.cache.evict({ fieldName: 'getBookingsByDateRange' });
+    apolloClient.cache.gc();
+  };
+
+  const refreshCalendar = async () => {
+    if (refreshingCalendar || syncingCalendar) return;
+    setRefreshingCalendar(true);
+    try {
+      await localReloadCalendar();
+    } finally {
+      setRefreshingCalendar(false);
+    }
+  };
+
+  const syncCalendar = async () => {
+    if (refreshingCalendar || syncingCalendar) return;
+    setSyncingCalendar(true);
+    try {
+      // 1) Channel sync (best-effort)
+      if (session.tenant.integrationsEnabled !== false) {
+        try {
+          const { data } = await apolloClient.mutate({
+            mutation: SYNC_ALL_CHANNELS_MUTATION,
+            variables: { mode: 'future' },
+          });
+          const results = (data as any)?.syncAllChannels;
+          if (results && results.length > 0) {
+            const totals = results.reduce(
+              (acc: any, r: any) => ({
+                changed: acc.changed + r.imported + r.updated + r.canceled + r.blocksRemoved,
+                errors: acc.errors + (r.errors?.length || 0),
+              }),
+              { changed: 0, errors: 0 },
+            );
+            // Only pop the modal if something actually happened
+            if (totals.changed > 0 || totals.errors > 0) {
+              setCalendarSyncResults(results);
+            }
+          }
+        } catch { /* silent — proceed to local reload */ }
+      }
+      // 2) Local reload (same as refreshCalendar)
+      await localReloadCalendar();
+    } finally {
+      setSyncingCalendar(false);
+    }
+  };
+
   const rooms = session.tenant.rooms?.length ? session.tenant.rooms : DEFAULT_ROOMS;
 
   const handleAddBooking = async (newBooking: any) => {
@@ -349,8 +470,14 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
         return true;
       });
     }
+    // Source filter: only meaningful on the "all" tab; for other tabs we leave the set alone.
+    if (listFilter === 'all' && sourceFilter !== 'all') {
+      filtered = filtered.filter((b: any) =>
+        sourceFilter === 'synced' ? !!b.externalChannel : !b.externalChannel,
+      );
+    }
     return filtered.sort((a: Booking, b: Booking) => b.checkIn.localeCompare(a.checkIn));
-  }, [bookings, listSearchTerm, listFilter]);
+  }, [bookings, listSearchTerm, listFilter, sourceFilter]);
 
   const visibleBookings = filteredBookings.slice(0, visibleListCount);
   const listContainerRef = useRef<HTMLDivElement | null>(null);
@@ -488,9 +615,82 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
   };
 
 
+  // Sidebar nav items (desktop only). Admin sees only the admin link.
+  const sidebarItems: View[] = session.isAdmin
+    ? ['admin']
+    : (() => {
+        const base: View[] = ['calendar', 'list', 'expenses', 'reports'];
+        if (session.tenant.integrationsEnabled !== false) base.push('integrations');
+        base.push('settings');
+        return base;
+      })();
+  const ICONS: Record<View, any> = {
+    calendar: CalendarBlank, list: ListBullets, reports: ChartPie,
+    integrations: ArrowsClockwise, expenses: CurrencyCircleDollar,
+    settings: GearSix, admin: ShieldCheck,
+  };
+
   return (
-    <div className={cn('bg-slate-50 text-slate-900 font-sans selection:bg-emerald-100', currentView === 'calendar' ? 'fixed inset-0 flex flex-col overflow-hidden' : 'min-h-screen', dir === 'rtl' && 'rtl')} dir={dir}>
-      <nav className="bg-white border-b border-slate-200 sticky top-0 z-100 h-12 sm:h-14">
+    <div className={cn('bg-slate-50 text-slate-900 font-sans selection:bg-emerald-100', currentView === 'calendar' ? 'fixed inset-0 flex flex-row overflow-hidden' : 'min-h-screen lg:flex lg:flex-row', dir === 'rtl' && 'rtl')} dir={dir}>
+      {/* ── Desktop sidebar (lg+) ─────────────────────────────────── */}
+      <aside
+        className={cn(
+          'hidden lg:flex flex-col w-60 shrink-0 bg-white border-slate-200 z-40',
+          isRtl ? 'border-l' : 'border-r',
+          currentView === 'calendar' ? 'h-full' : 'lg:sticky lg:top-0 lg:h-screen',
+        )}
+      >
+        {/* Brand — wordmark at the top. Current workspace name lives in the AccountSwitcher
+            at the bottom, so we don't duplicate it here. */}
+        <div className={cn('h-14 px-5 flex items-center gap-2.5 border-b border-slate-100 shrink-0')}>
+          <img src="/logo.svg" alt="Hujuzatk" className="w-9 h-9 shrink-0" />
+          <span className="font-black text-slate-900 text-base leading-none tracking-tight" style={{ letterSpacing: '-0.02em' }}>
+            Hujuzatk
+          </span>
+        </div>
+        {/* Nav items */}
+        <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-0.5">
+          {sidebarItems.map((v) => {
+            const Icon = ICONS[v];
+            const active = currentView === v;
+            return (
+              <button
+                key={v}
+                data-tour={`nav-${v}`}
+                onClick={() => { setCurrentView(v); trackViewChange(v); }}
+                className={cn(
+                  'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[12px] font-bold transition-colors text-start',
+                  active
+                    ? 'bg-emerald-50 text-emerald-700 shadow-sm'
+                    : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50',
+                )}
+              >
+                <Icon size={17} weight={active ? 'fill' : 'bold'} className="shrink-0" />
+                <span className="truncate">{t(lang, `nav.${v}`)}</span>
+              </button>
+            );
+          })}
+        </nav>
+        {/* Account switcher at the bottom — flat mode renders inline (no popup that overflows
+            below the viewport at the sidebar's bottom edge). */}
+        {!session.isAdmin && (
+          <div className="border-t border-slate-100 p-2 shrink-0 max-h-[60vh] overflow-y-auto">
+            <AccountSwitcher
+              lang={lang}
+              isRtl={isRtl}
+              currentTenantId={session.tenantId}
+              session={session}
+              onLogout={handleLogout}
+              onNavigate={(v) => setCurrentView(v)}
+              flat
+            />
+          </div>
+        )}
+      </aside>
+
+      {/* ── Main content column ──────────────────────────────────── */}
+      <div className={cn('flex-1 flex flex-col min-w-0', currentView === 'calendar' && 'min-h-0')}>
+      <nav className="lg:hidden bg-white border-b border-slate-200 sticky top-0 z-100 h-12 sm:h-14">
         <div className="px-3 sm:px-6 flex justify-between h-full items-center gap-2">
           <div className="flex items-center gap-2 min-w-0">
             <img src="/logo.svg" alt="Logo" className="w-8 h-8 sm:w-9 sm:h-9 shrink-0" />
@@ -567,6 +767,10 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
             addModalInitialDate={addModalInitialDate}
             addModalInitialRoom={addModalInitialRoom}
             jumpToToday={jumpToToday}
+            onRefresh={refreshCalendar}
+            onSync={syncCalendar}
+            refreshing={refreshingCalendar}
+            syncing={syncingCalendar}
             onLoadMorePast={loadMorePast}
             onLoadMoreFuture={loadMoreFuture}
             lang={lang}
@@ -575,17 +779,29 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
         </div>
       )}
       <main className={cn('container mx-auto p-2 pt-2', currentView === 'calendar' && 'hidden')}>
-        {currentView === 'list' && (
+        {currentView === 'list' && (() => {
+          // Apply the source filter to server-mode bookings too (only relevant on the "all" tab,
+          // which is one of the two server-mode tabs)
+          const filteredServer = (useServerMode && listFilter === 'all' && sourceFilter !== 'all')
+            ? serverBookings.filter((b: any) => sourceFilter === 'synced' ? !!b.externalChannel : !b.externalChannel)
+            : serverBookings;
+          const listBookings = useServerMode ? filteredServer : visibleBookings;
+          const listFull = useServerMode ? filteredServer : filteredBookings;
+          return (
           <ListView
-            bookings={useServerMode ? serverBookings : visibleBookings}
-            fullFiltered={useServerMode ? serverBookings : filteredBookings}
-            visibleCount={useServerMode ? serverBookings.length : visibleListCount}
-            totalCount={useServerMode ? serverBookings.length : filteredBookings.length}
+            bookings={listBookings}
+            fullFiltered={listFull}
+            visibleCount={useServerMode ? filteredServer.length : visibleListCount}
+            totalCount={useServerMode ? filteredServer.length : filteredBookings.length}
             onLoadMore={useServerMode ? handleServerLoadMore : () => setVisibleListCount(prev => prev + 50)}
             serverHasMore={useServerMode && serverHasMore}
             serverLoading={serverLoading}
             listFilter={listFilter}
             setListFilter={setListFilter}
+            sourceFilter={sourceFilter}
+            setSourceFilter={setSourceFilter}
+            onBulkDelete={handleBulkDelete}
+            bulkDeleting={bulkDeleting}
             listSearchTerm={listSearchTerm}
             setListSearchTerm={setListSearchTerm}
             setShowAddModal={setShowAddModal}
@@ -596,7 +812,8 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
             lang={lang}
             tz={tz}
           />
-        )}
+          );
+        })()}
         {currentView === 'reports' && (
           <ReportsView
             rooms={rooms}
@@ -631,6 +848,8 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
           <AdminView lang={lang} tz={tz} />
         )}
       </main>
+      </div>
+      {/* ── End main content column ─────────────────────────────── */}
 
       {showAddModal && (
         <AddBookingModal
@@ -670,6 +889,7 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
           tz={tz}
           dir={dir}
           onClose={() => setShowInvoiceModal(false)}
+          rooms={rooms}
           company={{
             companyName: session.tenant.companyName,
             companyAddress: session.tenant.companyAddress,
@@ -683,6 +903,15 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
       )}
 
       <PwaInstallPrompt lang={lang} isRtl={isRtl} />
+
+      <SyncResultModal
+        open={!!calendarSyncResults}
+        onClose={() => setCalendarSyncResults(null)}
+        results={calendarSyncResults ?? []}
+        rooms={rooms}
+        lang={lang}
+        isRtl={isRtl}
+      />
 
       {showTour && (
         <OnboardingTour

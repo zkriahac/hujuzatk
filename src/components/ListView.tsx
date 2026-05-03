@@ -1,9 +1,12 @@
+import { useState, useMemo, useEffect } from 'react';
 import { parseISO, isSameDay, startOfToday } from 'date-fns';
-import { MagnifyingGlass, Users, Eye, List, ArrowSquareIn, ArrowSquareOut, CheckCircle, Archive, XCircle } from 'phosphor-react';
+import { MagnifyingGlass, Users, Eye, List, ArrowSquareIn, ArrowSquareOut, CheckCircle, Archive, XCircle, Trash, ArrowsClockwise, PencilSimple, X as XIcon } from 'phosphor-react';
 import { cn } from '../utils/cn';
 import { t, type Language } from '../lib/i18n';
 import { formatTz } from '../utils/formatTz';
 import { type ListFilter, getEffectiveStatus } from '../utils/constants';
+
+export type SourceFilter = 'all' | 'synced' | 'manual';
 
 interface ListViewProps {
   bookings: any[];
@@ -13,6 +16,10 @@ interface ListViewProps {
   onLoadMore: () => void;
   listFilter: ListFilter;
   setListFilter: (f: ListFilter) => void;
+  sourceFilter: SourceFilter;
+  setSourceFilter: (f: SourceFilter) => void;
+  onBulkDelete: (ids: string[]) => Promise<void>;
+  bulkDeleting?: boolean;
   listSearchTerm: string;
   setListSearchTerm: (s: string) => void;
   setShowAddModal: (v: boolean) => void;
@@ -34,6 +41,10 @@ export default function ListView({
   onLoadMore,
   listFilter,
   setListFilter,
+  sourceFilter,
+  setSourceFilter,
+  onBulkDelete,
+  bulkDeleting = false,
   listSearchTerm,
   setListSearchTerm,
   setShowAddModal,
@@ -47,6 +58,54 @@ export default function ListView({
   tz,
 }: ListViewProps) {
   const roomNameMap = Object.fromEntries(rooms.map((r: any) => [r.id, r.name]));
+
+  // Selection only meaningful on the "all" tab where source filter + bulk-delete live.
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+
+  // Reset selection whenever the underlying list changes (filter / search / page reload).
+  useEffect(() => {
+    setSelected(new Set());
+  }, [listFilter, sourceFilter, listSearchTerm]);
+
+  const visibleIds = useMemo(() => bookings.map((b: any) => b.id as string), [bookings]);
+  const allVisibleSelected = visibleIds.length > 0 && visibleIds.every((id) => selected.has(id));
+
+  const toggleOne = (id: string) =>
+    setSelected((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+
+  const toggleAllVisible = () =>
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (allVisibleSelected) {
+        visibleIds.forEach((id) => next.delete(id));
+      } else {
+        visibleIds.forEach((id) => next.add(id));
+      }
+      return next;
+    });
+
+  const clearSelection = () => setSelected(new Set());
+
+  const handleBulkDelete = async () => {
+    const ids = Array.from(selected);
+    if (ids.length === 0) return;
+    // Tailor confirmation copy: if every selected booking is a sync row, use the synced
+    // warning (re-import notice); otherwise use the manual/all warning.
+    const allSynced = ids.every((id) => {
+      const b = fullFiltered.find((x: any) => x.id === id);
+      return b && !!b.externalChannel;
+    });
+    const label = allSynced
+      ? t(lang, 'list.bulkDeleteSyncedConfirm')
+      : t(lang, 'list.bulkDeleteAllConfirm');
+    if (!confirm(label.replace('{n}', String(ids.length)))) return;
+    await onBulkDelete(ids);
+    clearSelection();
+  };
 
   const FILTER_META: { id: ListFilter; Icon: any; active: string }[] = [
     { id: 'today_checkin',  Icon: ArrowSquareIn,  active: 'bg-emerald-500 text-white shadow-sm' },
@@ -97,6 +156,68 @@ export default function ListView({
         </div>
       </div>
 
+      {/* Source filter (only shown on the "all" tab) */}
+      {listFilter === 'all' && (
+        <div className="bg-white p-2 rounded-2xl border border-slate-200 shadow-sm flex">
+          <div className="flex gap-1 bg-slate-50 p-1 rounded-xl flex-1">
+            {([
+              { id: 'all',    Icon: List },
+              { id: 'synced', Icon: ArrowsClockwise },
+              { id: 'manual', Icon: PencilSimple },
+            ] as const).map(({ id, Icon }) => (
+              <button
+                key={id}
+                onClick={() => setSourceFilter(id)}
+                className={cn(
+                  'flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all whitespace-nowrap',
+                  sourceFilter === id
+                    ? 'bg-white text-slate-900 shadow-sm'
+                    : 'text-slate-400 hover:text-slate-600',
+                )}
+              >
+                <Icon size={12} weight="bold" />
+                {t(lang, `list.source.${id}`)}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Selection bar — appears only when something is checked.
+          Sticky-ish look (has stronger shadow) so it's clear an action is pending. */}
+      {listFilter === 'all' && selected.size > 0 && (
+        <div className="bg-rose-50 border border-rose-200 rounded-2xl px-4 py-3 flex flex-wrap items-center justify-between gap-3 shadow-md sticky top-0 z-30">
+          <div className="flex items-center gap-3">
+            <span className="grid place-items-center w-8 h-8 rounded-full bg-rose-600 text-white text-xs font-black tabular-nums">
+              {selected.size}
+            </span>
+            <span className="text-sm font-bold text-rose-900">
+              {t(lang, 'list.selectedCount').replace('{n}', String(selected.size))}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={clearSelection}
+              disabled={bulkDeleting}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-[11px] font-black uppercase tracking-widest bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 transition-all"
+            >
+              <XIcon size={12} weight="bold" />
+              {t(lang, 'list.clearSelection')}
+            </button>
+            <button
+              onClick={handleBulkDelete}
+              disabled={bulkDeleting}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-[11px] font-black uppercase tracking-widest bg-rose-600 text-white hover:bg-rose-700 active:scale-95 disabled:opacity-60 disabled:cursor-wait transition-all"
+            >
+              <Trash size={13} weight="bold" />
+              {bulkDeleting
+                ? t(lang, 'list.deleting')
+                : t(lang, 'list.deleteSelected').replace('{n}', String(selected.size))}
+            </button>
+          </div>
+        </div>
+      )}
+
       <div
         className="bg-white rounded-2xl border border-slate-200 shadow-xl overflow-auto max-h-[75vh] scrollbar-hide"
         ref={listContainerRef}
@@ -104,6 +225,17 @@ export default function ListView({
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-slate-50 border-b border-slate-100 text-[11px] font-black uppercase tracking-[0.2em] text-slate-400">
+              {listFilter === 'all' && (
+                <th className="px-3 py-3 w-10">
+                  <input
+                    type="checkbox"
+                    checked={allVisibleSelected}
+                    onChange={toggleAllVisible}
+                    aria-label={t(lang, 'list.selectAllVisible')}
+                    className="w-4 h-4 rounded border-slate-300 text-rose-600 focus:ring-rose-500 cursor-pointer"
+                  />
+                </th>
+              )}
               <th className="px-4 py-3 text-start">{t(lang, 'list.guest')}</th>
               <th className="px-4 py-3 text-start w-16">{t(lang, 'list.room')}</th>
               <th className="px-4 py-3 text-start min-w-40">{t(lang, 'list.dates')}</th>
@@ -116,7 +248,7 @@ export default function ListView({
           <tbody className="divide-y divide-slate-50">
             {bookings.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-6 py-20 text-center">
+                <td colSpan={listFilter === 'all' ? 8 : 7} className="px-6 py-20 text-center">
                   <div className="flex flex-col items-center gap-4 text-slate-300">
                     <Users size={64} weight="light" />
                     <p className="font-bold uppercase text-[11px] tracking-[0.2em]">
@@ -153,8 +285,23 @@ export default function ListView({
                 return (
                   <tr
                     key={b.id}
-                    className={cn('group hover:bg-slate-50 transition-colors', b.status === 'CANCELED' && 'opacity-60')}
+                    className={cn(
+                      'group hover:bg-slate-50 transition-colors',
+                      b.status === 'CANCELED' && 'opacity-60',
+                      selected.has(b.id) && 'bg-rose-50/60',
+                    )}
                   >
+                    {listFilter === 'all' && (
+                      <td className="px-3 py-3 align-top">
+                        <input
+                          type="checkbox"
+                          checked={selected.has(b.id)}
+                          onChange={() => toggleOne(b.id)}
+                          aria-label={t(lang, 'list.selectRow')}
+                          className="w-4 h-4 rounded border-slate-300 text-rose-600 focus:ring-rose-500 cursor-pointer mt-1"
+                        />
+                      </td>
+                    )}
                     <td className="px-4 py-3">
                       <div className="font-black text-slate-900 text-sm leading-tight flex items-center gap-1.5">
                         {b.bookingNumber != null && (

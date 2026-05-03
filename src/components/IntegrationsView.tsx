@@ -13,6 +13,7 @@ import {
   SYNC_CHANNEL_MUTATION,
   SYNC_ALL_CHANNELS_MUTATION,
 } from '../lib/graphql';
+import SyncResultModal, { type SyncResultRow } from './SyncResultModal';
 
 interface IntegrationsViewProps {
   session: SessionUser;
@@ -46,6 +47,7 @@ interface ChannelIntegration {
   icalUrlMasked: string;
   label: string | null;
   isActive: boolean;
+  syncBlocks: boolean;
   lastSyncedAt: string | null;
   lastSyncStatus: string | null;
   lastSyncMessage: string | null;
@@ -100,10 +102,14 @@ export default function IntegrationsView({ session, lang, onNavigateToSettings }
   const findIntegration = (roomId: string, channel: ChannelKey): ChannelIntegration | null =>
     integrations.find(i => i.roomId === roomId && i.channelName === channel) ?? null;
 
-  const handleSync = async (id: string) => {
+  const [syncResults, setSyncResults] = useState<SyncResultRow[] | null>(null);
+
+  const handleSync = async (id: string, mode: 'future' | 'all' = 'future') => {
     setSyncingIds(prev => new Set(prev).add(id));
     try {
-      await apolloClient.mutate({ mutation: SYNC_CHANNEL_MUTATION, variables: { id } });
+      const { data } = await apolloClient.mutate({ mutation: SYNC_CHANNEL_MUTATION, variables: { id, mode } });
+      const result = (data as any)?.syncChannel as SyncResultRow | undefined;
+      if (result) setSyncResults([result]);
       await loadIntegrations();
     } catch (err: any) {
       alert(err.graphQLErrors?.[0]?.message || err.message || 'Sync failed');
@@ -112,15 +118,20 @@ export default function IntegrationsView({ session, lang, onNavigateToSettings }
     }
   };
 
-  const handleSyncAll = async () => {
+  const [syncingAllMode, setSyncingAllMode] = useState<'future' | 'all' | null>(null);
+  const handleSyncAll = async (mode: 'future' | 'all' = 'future') => {
     setSyncingAll(true);
+    setSyncingAllMode(mode);
     try {
-      await apolloClient.mutate({ mutation: SYNC_ALL_CHANNELS_MUTATION });
+      const { data } = await apolloClient.mutate({ mutation: SYNC_ALL_CHANNELS_MUTATION, variables: { mode } });
+      const results = (data as any)?.syncAllChannels as SyncResultRow[] | undefined;
+      if (results && results.length > 0) setSyncResults(results);
       await loadIntegrations();
     } catch (err: any) {
       alert(err.graphQLErrors?.[0]?.message || err.message || 'Sync failed');
     } finally {
       setSyncingAll(false);
+      setSyncingAllMode(null);
     }
   };
 
@@ -134,7 +145,7 @@ export default function IntegrationsView({ session, lang, onNavigateToSettings }
     }
   };
 
-  const handleSave = async (input: { id?: string; channel: ChannelKey; roomId: string; icalUrl: string; label: string }) => {
+  const handleSave = async (input: { id?: string; channel: ChannelKey; roomId: string; icalUrl: string; label: string; syncBlocks: boolean }) => {
     await apolloClient.mutate({
       mutation: SAVE_CHANNEL_INTEGRATION_MUTATION,
       variables: {
@@ -144,6 +155,7 @@ export default function IntegrationsView({ session, lang, onNavigateToSettings }
           roomId: input.roomId,
           icalUrl: input.icalUrl.trim(),
           label: input.label.trim() || null,
+          syncBlocks: input.syncBlocks,
         },
       },
     });
@@ -181,14 +193,28 @@ export default function IntegrationsView({ session, lang, onNavigateToSettings }
           <p className="text-sm text-slate-400 mt-1 max-w-2xl">{t(lang, 'integrations.icalInstructions')}</p>
         </div>
         {integrations.length > 0 && (
-          <button
-            onClick={handleSyncAll}
-            disabled={syncingAll}
-            className="flex items-center gap-2 px-4 py-2 rounded-2xl border border-slate-200 bg-white text-slate-700 text-sm font-black hover:bg-slate-50 disabled:opacity-50 transition-all"
-          >
-            <ArrowsClockwise size={16} className={syncingAll ? 'animate-spin' : ''} />
-            {syncingAll ? t(lang, 'integrations.syncing') : t(lang, 'integrations.syncAll')}
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Default: future-only sync. Fast. Used by the nightly cron too. */}
+            <button
+              onClick={() => handleSyncAll('future')}
+              disabled={syncingAll}
+              title={t(lang, 'integrations.syncFutureTip')}
+              className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-emerald-600 text-white text-sm font-black hover:bg-emerald-700 disabled:opacity-50 transition-all"
+            >
+              <ArrowsClockwise size={16} className={syncingAll && syncingAllMode === 'future' ? 'animate-spin' : ''} />
+              {syncingAll && syncingAllMode === 'future' ? t(lang, 'integrations.syncing') : t(lang, 'integrations.syncFuture')}
+            </button>
+            {/* Full re-sync: includes past bookings. Heavier — used to back-fill or audit. */}
+            <button
+              onClick={() => handleSyncAll('all')}
+              disabled={syncingAll}
+              title={t(lang, 'integrations.syncAllTip')}
+              className="flex items-center gap-2 px-4 py-2 rounded-2xl border border-slate-200 bg-white text-slate-700 text-sm font-black hover:bg-slate-50 disabled:opacity-50 transition-all"
+            >
+              <ArrowsClockwise size={16} className={syncingAll && syncingAllMode === 'all' ? 'animate-spin' : ''} />
+              {syncingAll && syncingAllMode === 'all' ? t(lang, 'integrations.syncing') : t(lang, 'integrations.syncAll')}
+            </button>
+          </div>
         )}
       </div>
 
@@ -271,6 +297,15 @@ export default function IntegrationsView({ session, lang, onNavigateToSettings }
           onDelete={async (id) => { await handleDelete(id); setModal(null); }}
         />
       )}
+
+      <SyncResultModal
+        open={!!syncResults}
+        onClose={() => setSyncResults(null)}
+        results={syncResults ?? []}
+        rooms={rooms}
+        lang={lang}
+        isRtl={isRtl}
+      />
     </div>
   );
 }
@@ -335,7 +370,7 @@ function IntegrationModal(props: {
   state: ModalState;
   lang: Language;
   onClose: () => void;
-  onSave: (input: { id?: string; channel: ChannelKey; roomId: string; icalUrl: string; label: string }) => Promise<void>;
+  onSave: (input: { id?: string; channel: ChannelKey; roomId: string; icalUrl: string; label: string; syncBlocks: boolean }) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
 }) {
   const { state, lang, onClose, onSave, onDelete } = props;
@@ -346,6 +381,7 @@ function IntegrationModal(props: {
 
   const [icalUrl, setIcalUrl] = useState(state.existing ? '' : '');
   const [label, setLabel] = useState(state.existing?.label || '');
+  const [syncBlocks, setSyncBlocks] = useState(state.existing?.syncBlocks ?? false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -369,6 +405,7 @@ function IntegrationModal(props: {
         // Simplest: require URL re-entry on edit (masked URL never leaves the DB).
         icalUrl: url,
         label,
+        syncBlocks,
       });
     } catch (err: any) {
       setError(err.graphQLErrors?.[0]?.message || err.message || 'Failed to save');
@@ -443,6 +480,23 @@ function IntegrationModal(props: {
             />
             <p className="text-[11px] text-slate-400 mt-1.5">{t(lang, 'integrations.labelHint')}</p>
           </div>
+
+          {/* Sync blocks toggle — default OFF so the calendar isn't flooded with one-day
+              "[…block]" rows from Gathern/Airbnb. Turning it back ON makes the next sync
+              re-import them. Turning it OFF triggers a one-time sweep of previously-imported
+              blocks for this integration. */}
+          <label className="flex items-start gap-3 p-3 rounded-2xl bg-slate-50 border border-slate-100 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={syncBlocks}
+              onChange={(e) => setSyncBlocks(e.target.checked)}
+              className="mt-0.5 w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+            />
+            <div className="flex-1 min-w-0">
+              <div className="text-sm font-black text-slate-800 leading-tight">{t(lang, 'integrations.syncBlocks')}</div>
+              <div className="text-[11px] text-slate-500 mt-1 leading-relaxed">{t(lang, 'integrations.syncBlocksHint')}</div>
+            </div>
+          </label>
 
           {error && <p className="text-sm text-red-600 font-semibold">{error}</p>}
 

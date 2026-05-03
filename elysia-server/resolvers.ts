@@ -414,6 +414,20 @@ export const resolvers = {
 			const booking = await prisma.booking.findFirst({ where: { id, tenantId: context.user.tenantId } });
 			if (!booking) throw new GraphQLError('Booking not found', { extensions: { code: 'NOT_FOUND', http: { status: 404 } } });
 			await prisma.booking.delete({ where: { id } });
+			// Tombstone synced bookings so they don't get re-imported on next sync.
+			// Wrapped in try/catch so a missing table (deploy-before-SQL window) doesn't
+			// block the delete itself.
+			if (booking.externalId) {
+				try {
+					await prisma.deletedExternalBooking.upsert({
+						where: { tenantId_externalId: { tenantId: context.user.tenantId, externalId: booking.externalId } },
+						create: { tenantId: context.user.tenantId, externalId: booking.externalId },
+						update: { deletedAt: new Date() },
+					});
+				} catch (err: any) {
+					console.warn(`[deleteBooking] tombstone insert failed (run the SQL migration?): ${err.message}`);
+				}
+			}
 			await prisma.auditLog.create({ data: { tenantId: context.user.tenantId, action: 'BOOKING_DELETED', entityType: 'Booking', entityId: id, changes: { action: 'booking_deleted' } } });
 			return true;
 		},
@@ -455,8 +469,39 @@ export const resolvers = {
 		},
 		async bulkDeleteBookings(_: any, { ids }: { ids: string[] }, context: any) {
 			requireAuth(context);
-			await prisma.booking.deleteMany({ where: { id: { in: ids }, tenantId: context.user.tenantId } });
-			return true;
+			// 1) Capture externalIds BEFORE deleting so we can tombstone the synced ones.
+			//    Manual bookings (externalId == null) are skipped — there's nothing to
+			//    tombstone since they wouldn't get re-imported anyway.
+			const toDelete = await prisma.booking.findMany({
+				where: { id: { in: ids }, tenantId: context.user.tenantId },
+				select: { externalId: true },
+			});
+			const tombstoneRows = toDelete
+				.filter((b) => !!b.externalId)
+				.map((b) => ({ tenantId: context.user.tenantId, externalId: b.externalId as string }));
+
+			// 2) Actual delete. Returns the count so the client can tell whether the IDs
+			//    matched (count < ids.length means some IDs were stale or wrong tenant).
+			const result = await prisma.booking.deleteMany({
+				where: { id: { in: ids }, tenantId: context.user.tenantId },
+			});
+
+			// 3) Insert tombstones — `skipDuplicates` makes this idempotent if the
+			//    user already deleted+resynced+deleted the same row. Wrapped to survive
+			//    the deploy-before-SQL window.
+			if (tombstoneRows.length > 0) {
+				try {
+					await prisma.deletedExternalBooking.createMany({
+						data: tombstoneRows,
+						skipDuplicates: true,
+					});
+				} catch (err: any) {
+					console.warn(`[bulkDeleteBookings] tombstone insert failed (run the SQL migration?): ${err.message}`);
+				}
+			}
+
+			console.log(`[bulkDeleteBookings] tenant=${context.user.tenantId} requested=${ids.length} deleted=${result.count} tombstoned=${tombstoneRows.length}`);
+			return result.count;
 		},
 
 		// Tenant
@@ -656,6 +701,7 @@ export const resolvers = {
 						icalUrl: input.icalUrl,
 						...(label !== undefined && { label }),
 						...(input.isActive !== undefined && { isActive: input.isActive }),
+					...(input.syncBlocks !== undefined && { syncBlocks: input.syncBlocks }),
 					},
 				});
 			} else {
@@ -666,6 +712,7 @@ export const resolvers = {
 						roomId: input.roomId,
 						icalUrl: input.icalUrl,
 						label: label ?? null,
+						...(input.syncBlocks !== undefined && { syncBlocks: input.syncBlocks }),
 						isActive: input.isActive !== undefined ? input.isActive : true,
 					},
 				});
@@ -679,20 +726,22 @@ export const resolvers = {
 			await prisma.channelIntegration.delete({ where: { id } });
 			return true;
 		},
-		async syncChannel(_: any, { id }: any, context: any) {
+		async syncChannel(_: any, { id, mode }: { id: string; mode?: string }, context: any) {
 			requireAuth(context);
 			await assertIntegrationsAllowed(context.user.tenantId);
 			const integration = await prisma.channelIntegration.findFirst({ where: { id, tenantId: context.user.tenantId } });
 			if (!integration) throw new GraphQLError('Integration not found', { extensions: { code: 'NOT_FOUND' } });
-			return performSync(integration, context.user.tenantId);
+			const syncMode = mode === 'all' ? 'all' : 'future';
+			return performSync(integration, context.user.tenantId, syncMode);
 		},
-		async syncAllChannels(_: any, __: any, context: any) {
+		async syncAllChannels(_: any, { mode }: { mode?: string }, context: any) {
 			requireAuth(context);
 			await assertIntegrationsAllowed(context.user.tenantId);
 			const integrations = await prisma.channelIntegration.findMany({ where: { tenantId: context.user.tenantId, isActive: true } });
+			const syncMode = mode === 'all' ? 'all' : 'future';
 			const results = [];
 			for (const integration of integrations) {
-				results.push(await performSync(integration, context.user.tenantId));
+				results.push(await performSync(integration, context.user.tenantId, syncMode));
 			}
 			return results;
 		},

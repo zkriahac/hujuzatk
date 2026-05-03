@@ -61,6 +61,8 @@ export interface Booking {
   deposit: number;
   remaining?: number; // Balance due
   notes?: string;
+  externalChannel?: string | null; // 'airbnb' | 'gathern' | 'booking.com' when synced via iCal
+  externalUrl?: string | null;     // Reservation URL parsed from iCal description (clickable in view)
   createdAt: string; // ISO DateTime
   updatedAt?: string; // ISO DateTime
   status: BookingStatus;

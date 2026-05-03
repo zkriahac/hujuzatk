@@ -14,21 +14,23 @@ interface Props {
   session: SessionUser;
   onLogout: () => void;
   onNavigate: (v: 'settings' | 'integrations') => void;
+  /** Render flat (no popup) — used inside the desktop sidebar so the menu doesn't overflow viewport. */
+  flat?: boolean;
 }
 
-export default function AccountSwitcher({ lang, isRtl, currentTenantId, session, onLogout, onNavigate }: Props) {
+export default function AccountSwitcher({ lang, isRtl, currentTenantId, session, onLogout, onNavigate, flat = false }: Props) {
   const [open, setOpen] = useState(false);
   const [showSwitch, setShowSwitch] = useState(false);
   const ref = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    if (!open) return;
+    if (flat || !open) return;
     const onClick = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
     };
     document.addEventListener('mousedown', onClick);
     return () => document.removeEventListener('mousedown', onClick);
-  }, [open]);
+  }, [open, flat]);
 
   const daysUntilExpiry = session.tenant.validUntil
     ? Math.ceil((new Date(session.tenant.validUntil).getTime() - Date.now()) / 86400000)
@@ -49,47 +51,41 @@ export default function AccountSwitcher({ lang, isRtl, currentTenantId, session,
 
   const initial = (session.tenant.name || 'H')[0].toUpperCase();
 
-  return (
-    <div className="relative" ref={ref}>
-      <button
-        onClick={() => setOpen(o => !o)}
-        className="flex items-center gap-1.5 px-2.5 py-2.5 rounded-lg bg-emerald-50 text-emerald-700 text-[10px] sm:text-[11px] font-black uppercase tracking-widest hover:bg-emerald-100 transition-colors"
-        aria-label={t(lang, 'account.switch')}
-      >
-        <UserGear size={18} weight="bold" />
-      </button>
-
-      {open && (
-        <div className="absolute top-full mt-2 z-100 bg-white rounded-2xl border border-slate-200 shadow-2xl py-2 w-72 end-0">
-
-          {/* ── Profile card ── */}
-          <div className="px-4 py-3 flex items-start gap-3">
-            <div className="w-10 h-10 rounded-full bg-emerald-600 text-white font-black text-lg flex items-center justify-center shrink-0">
-              {initial}
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="font-black text-slate-900 text-sm truncate leading-tight">{session.tenant.name}</div>
-              {session.tenant.companyName && (
-                <div className="text-xs text-slate-500 font-semibold truncate mt-0.5">{session.tenant.companyName}</div>
-              )}
-              <div className="text-[10px] text-slate-400 truncate mt-0.5">{session.tenant.email}</div>
-              <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
-                <span className={cn('inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-black uppercase', statusColor)}>
-                  <span className={cn('w-1.5 h-1.5 rounded-full', statusDot)} />
-                  {t(lang, `status.${status.toLowerCase()}`)}
-                </span>
-                {session.tenant.plan && (
-                  <span className="inline-flex items-center text-[10px] px-2 py-0.5 rounded-full font-black uppercase bg-slate-100 text-slate-600">
-                    {session.tenant.plan.toUpperCase()}
-                  </span>
-                )}
-              </div>
-            </div>
+  // ── Shared menu body (used in both popup and flat modes) ──
+  const MenuBody = (
+    <>
+      {/* Profile card */}
+      <div className={cn('flex items-start gap-3', flat ? 'px-2 py-2' : 'px-4 py-3')}>
+        <div className={cn('rounded-full bg-emerald-600 text-white font-black flex items-center justify-center shrink-0',
+          flat ? 'w-9 h-9 text-base' : 'w-10 h-10 text-lg')}>
+          {initial}
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="font-black text-slate-900 text-sm truncate leading-tight">{session.tenant.name}</div>
+          {session.tenant.companyName && (
+            <div className="text-xs text-slate-500 font-semibold truncate mt-0.5">{session.tenant.companyName}</div>
+          )}
+          <div className="text-[10px] text-slate-400 truncate mt-0.5">{session.tenant.email}</div>
+          <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+            <span className={cn('inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-black uppercase', statusColor)}>
+              <span className={cn('w-1.5 h-1.5 rounded-full', statusDot)} />
+              {t(lang, `status.${status.toLowerCase()}`)}
+            </span>
+            {session.tenant.plan && (
+              <span className="inline-flex items-center text-[10px] px-2 py-0.5 rounded-full font-black uppercase bg-slate-100 text-slate-600">
+                {session.tenant.plan.toUpperCase()}
+              </span>
+            )}
           </div>
+        </div>
+      </div>
 
-          <div className="border-t border-slate-100 my-1" />
+      <div className="border-t border-slate-100 my-1" />
 
-          {/* ── Navigation shortcuts ── */}
+      {/* Navigation shortcuts — in flat mode, settings/integrations are already in the
+          sidebar's main nav, so we hide them here to avoid duplication. */}
+      {!flat && (
+        <>
           <button
             onClick={() => { onNavigate('settings'); setOpen(false); }}
             className="w-full px-4 py-2.5 text-[11px] font-black uppercase tracking-widest text-slate-500 hover:text-slate-800 hover:bg-slate-50 transition-colors flex items-center gap-2.5 text-start"
@@ -106,28 +102,71 @@ export default function AccountSwitcher({ lang, isRtl, currentTenantId, session,
               {t(lang, 'nav.integrations')}
             </button>
           )}
-
           <div className="border-t border-slate-100 my-1" />
+        </>
+      )}
 
-          {/* ── Switch account ── */}
-          <button
-            onClick={() => { setShowSwitch(true); setOpen(false); }}
-            className="w-full px-4 py-2.5 text-[11px] font-black uppercase tracking-widest text-slate-500 hover:text-slate-800 hover:bg-slate-50 transition-colors flex items-center gap-2.5 text-start"
-          >
-            <Users size={15} weight="bold" />
-            {t(lang, 'account.switch')}
-          </button>
+      {/* Switch account */}
+      <button
+        onClick={() => { setShowSwitch(true); setOpen(false); }}
+        className={cn(
+          'w-full text-[11px] font-black uppercase tracking-widest text-slate-500 hover:text-slate-800 hover:bg-slate-50 transition-colors flex items-center gap-2.5 text-start',
+          flat ? 'px-3 py-2.5 rounded-xl' : 'px-4 py-2.5',
+        )}
+      >
+        <Users size={15} weight="bold" />
+        {t(lang, 'account.switch')}
+      </button>
 
-          <div className="border-t border-slate-100 my-1" />
+      {!flat && <div className="border-t border-slate-100 my-1" />}
 
-          {/* ── Logout ── */}
-          <button
-            onClick={() => { onLogout(); setOpen(false); }}
-            className="w-full px-4 py-2.5 text-[11px] font-black uppercase tracking-widest text-red-500 hover:bg-red-50 transition-colors flex items-center gap-2.5 text-start"
-          >
-            <SignOut size={15} weight="bold" />
-            {t(lang, 'misc.logout')}
-          </button>
+      {/* Logout */}
+      <button
+        onClick={() => { onLogout(); setOpen(false); }}
+        className={cn(
+          'w-full text-[11px] font-black uppercase tracking-widest text-red-500 hover:bg-red-50 transition-colors flex items-center gap-2.5 text-start',
+          flat ? 'px-3 py-2.5 rounded-xl mt-0.5' : 'px-4 py-2.5',
+        )}
+      >
+        <SignOut size={15} weight="bold" />
+        {t(lang, 'misc.logout')}
+      </button>
+    </>
+  );
+
+  // ── Flat mode (sidebar footer) — no popup, no toggle button ──
+  if (flat) {
+    return (
+      <div className="space-y-0">
+        {MenuBody}
+        {showSwitch && (
+          <SwitchAccountModal
+            lang={lang}
+            isRtl={isRtl}
+            currentTenantId={currentTenantId}
+            session={session}
+            onClose={() => setShowSwitch(false)}
+            onSwitch={(id) => { setActive(id); setShowSwitch(false); }}
+          />
+        )}
+      </div>
+    );
+  }
+
+  // ── Popup mode (mobile top bar) ──
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="flex items-center gap-1.5 px-2.5 py-2.5 rounded-lg bg-emerald-50 text-emerald-700 text-[10px] sm:text-[11px] font-black uppercase tracking-widest hover:bg-emerald-100 transition-colors"
+        aria-label={t(lang, 'account.switch')}
+      >
+        <UserGear size={18} weight="bold" />
+      </button>
+
+      {open && (
+        <div className="absolute top-full mt-2 z-100 bg-white rounded-2xl border border-slate-200 shadow-2xl py-2 w-72 end-0">
+          {MenuBody}
         </div>
       )}
 

@@ -1,9 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { format, isSameDay, startOfToday, differenceInDays, differenceInCalendarMonths, parseISO } from 'date-fns';
-import { Minus, Plus, ArrowUp, ArrowDown, CircleNotch, CalendarCheck } from 'phosphor-react';
+import { Minus, Plus, ArrowUp, ArrowDown, CircleNotch, CalendarCheck, ArrowsClockwise, CloudArrowDown, MagnifyingGlassMinus, MagnifyingGlassPlus } from 'phosphor-react';
 import { cn } from '../utils/cn';
 import { t, type Language } from '../lib/i18n';
 import { formatTz } from '../utils/formatTz';
+import CornerActionMenu, { type ActionItem } from './CornerActionMenu';
 
 // Room group color palettes — header bg/text and booking cell bg/border/text
 export const ROOM_GROUP_PALETTES = [
@@ -19,12 +20,21 @@ export const ROOM_GROUP_PALETTES = [
 
 // Visual overlay applied on top of the room-palette per booking status. Room hue still wins
 // for normal upcoming/active bookings (empty overlay); other statuses get a distinguishing
-// treatment so users can tell at a glance what's canceled / completed / a no-show.
+// treatment so users can tell at a glance what's canceled / a no-show.
+// IMPORTANT: don't use `opacity-*` or filter classes (saturate, grayscale) on these
+// slices — each slice is its own absolutely-positioned div, and opacity creates a
+// stacking context. Two adjacent slices each with opacity 0.6 blend at the 1–2px
+// overlap to ~0.84, producing a visible darker stripe at every cell boundary that
+// looks like per-cell borders. Use explicit muted color overrides instead.
+//
+// COMPLETED has no override on purpose — past bookings render in their normal room
+// palette, same as upcoming. The visual cue for "what's happening now" is a thicker
+// border applied per-render to active + imminent (checkIn within 1 day) bookings.
 export const STATUS_OVERLAY: Record<string, string> = {
   UPCOMING: '',
-  ACTIVE: 'ring-2 ring-emerald-500 ring-inset',
-  COMPLETED: 'opacity-60 saturate-50',
-  CANCELED: 'opacity-50 line-through bg-red-50! border-red-300! text-red-700!',
+  ACTIVE: '',
+  COMPLETED: '',
+  CANCELED: 'line-through bg-red-50! border-red-300! text-red-700!',
   'NO-SHOW': 'bg-amber-100! border-amber-400! text-amber-800!',
 };
 
@@ -57,6 +67,12 @@ interface CalendarViewProps {
   addModalInitialDate?: string;
   addModalInitialRoom?: string;
   jumpToToday: () => void;
+  /** Local reload — re-fetches bookings from DB only. Fast (~500ms). */
+  onRefresh?: () => Promise<void> | void;
+  /** Channel sync — hits Airbnb/Gathern/Booking.com iCal feeds, then reloads. Slow (5–30s). */
+  onSync?: () => Promise<void> | void;
+  refreshing?: boolean;
+  syncing?: boolean;
   onLoadMorePast: () => Promise<void>;
   onLoadMoreFuture: () => Promise<void>;
   lang: Language;
@@ -80,6 +96,10 @@ export default function CalendarView({
   addModalInitialDate,
   addModalInitialRoom,
   jumpToToday,
+  onRefresh,
+  onSync,
+  refreshing,
+  syncing,
   onLoadMorePast,
   onLoadMoreFuture,
   lang,
@@ -156,6 +176,14 @@ export default function CalendarView({
   const roomPaletteMap = useMemo(() => buildRoomPaletteMap(rooms), [rooms]);
   const isRtl = lang === 'ar';
 
+  // Today / tomorrow date strings — used to highlight bookings that are currently
+  // active (today is between checkIn and checkOut) or starting tomorrow.
+  // Those slices get a thicker border so the user can spot what's happening right now.
+  const todayStr = format(new Date(), 'yyyy-MM-dd');
+  const tomorrowDate = new Date();
+  tomorrowDate.setDate(tomorrowDate.getDate() + 1);
+  const tomorrowStr = format(tomorrowDate, 'yyyy-MM-dd');
+
   return (
     <div className="relative h-full">
       <div className="bg-white sm:rounded-2xl sm:border sm:border-slate-200 sm:shadow-xl overflow-hidden flex flex-col h-full">
@@ -163,17 +191,20 @@ export default function CalendarView({
           <table className="border-separate border-spacing-0">
             <thead className="sticky top-0 z-40 bg-slate-50">
               <tr>
-                <th className={cn('w-10 sm:w-24 p-0 border-b border-slate-200 sticky z-50 bg-slate-50', isRtl ? 'right-0 border-l' : 'left-0 border-r')}>
-                  <button
-                    type="button"
-                    onClick={jumpToToday}
-                    title={t(lang, 'calendar.jumpToday')}
-                    aria-label={t(lang, 'calendar.jumpToday')}
-                    className="w-full h-full py-2 sm:py-3 flex items-center justify-center text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 active:scale-95 transition-all"
-                  >
-                    <CalendarCheck size={16} weight="bold" className="sm:hidden" />
-                    <CalendarCheck size={18} weight="bold" className="hidden sm:block" />
-                  </button>
+                <th
+                  className={cn(
+                    // min-w / max-w lock the cell to its design width — the table has
+                    // table-layout: auto, and since every other column has rigid inline
+                    // widths, any extra wrapper width otherwise spills into this corner.
+                    'w-12 min-w-12 max-w-12 sm:w-24 sm:min-w-24 sm:max-w-24',
+                    'p-0 border-b border-slate-200 sticky z-50 bg-slate-50',
+                    isRtl ? 'right-0 border-l' : 'left-0 border-r',
+                  )}
+                  style={{ width: isMobile ? 48 : 96, minWidth: isMobile ? 48 : 96, maxWidth: isMobile ? 48 : 96 }}
+                >
+                  {/* The actual menu trigger lives outside the table (positioned absolutely
+                      over this corner) so the fan-out items aren't clipped by the cell.
+                      We leave this <th> as a sticky placeholder that anchors the corner. */}
                 </th>
                 {rooms.map((r: any) => (
                   <th
@@ -213,11 +244,13 @@ export default function CalendarView({
                   <React.Fragment key={dStr}>
                     {isFirst && (
                       <tr aria-hidden="true">
+                        {/* Bold month-boundary line is restricted to the date column only —
+                            the room columns shouldn't be cut by a horizontal line because
+                            it visually breaks multi-day booking bars that cross the month. */}
                         <td
-                          colSpan={rooms.length + 1}
                           className={cn(
-                            'p-0 border-t-2 border-slate-900',
-                            // Year boundary → tiny label strip. Month-only boundary → just the bold line.
+                            'p-0 border-t-2 border-slate-900 sticky z-30',
+                            isRtl ? 'right-0' : 'left-0',
                             isFirstOfYear ? 'bg-slate-50' : 'h-0 leading-[0]',
                           )}
                         >
@@ -227,13 +260,20 @@ export default function CalendarView({
                             </div>
                           )}
                         </td>
+                        {/* Room columns get no border — bookings spanning the month boundary
+                            stay visually continuous. For year boundaries we still tint the
+                            strip slate-50 so the row reads as one band. */}
+                        <td
+                          colSpan={rooms.length}
+                          className={cn('p-0', isFirstOfYear ? 'bg-slate-50' : 'h-0 leading-[0]')}
+                        />
                       </tr>
                     )}
                     <tr style={{ height: rowH }} className="group" data-today={isToday ? 'true' : 'false'} data-date={dStr}>
                       <td
                         onClick={() => setSelectedDateStr(dStr)}
                         className={cn(
-                          'w-10 sm:w-24 border-slate-200 text-center text-[10px] sm:text-[12px] font-black cursor-pointer sticky z-30 transition-colors p-0 sm:p-2 whitespace-nowrap',
+                          'w-12 sm:w-24 border-slate-200 text-center text-[10px] sm:text-[12px] font-black cursor-pointer sticky z-30 transition-colors p-0 sm:p-2 whitespace-nowrap',
                           isRtl ? 'right-0 border-l' : 'left-0 border-r',
                           isToday
                             ? 'bg-emerald-600 text-white shadow-xl scale-105 z-40'
@@ -243,7 +283,7 @@ export default function CalendarView({
                           selectedDateStr === dStr && !isToday && 'bg-emerald-50 text-emerald-600 border-l-4 border-l-emerald-600',
                         )}
                       >
-                        <span className="sm:hidden">{format(date, 'dd')}<span className="text-[6px] block leading-none">{formatTz(date, 'MMM', tz, lang)}</span></span>
+                        <span className="sm:hidden">{format(date, 'dd')}<span className="text-[9px] block leading-none">{formatTz(date, 'MMM', tz, lang)}</span></span>
                         <span className="hidden sm:inline">{formatTz(date, 'dd MMM', tz, lang)}</span>
                       </td>
                       {rooms.map((r: any) => {
@@ -297,6 +337,11 @@ export default function CalendarView({
                               const statusOverlay = STATUS_OVERLAY[(b.status || '').toUpperCase()] || '';
                               const checkInStr = b.checkIn.split('T')[0];
                               const checkOutStr = b.checkOut.split('T')[0];
+                              // Imminent = currently active OR checkIn is tomorrow.
+                              // We compare strings so timezone shifts don't sneak in.
+                              const isActiveNow = todayStr >= checkInStr && todayStr < checkOutStr;
+                              const startsTomorrow = checkInStr === tomorrowStr;
+                              const isImminent = (isActiveNow || startsTomorrow) && b.status?.toUpperCase() !== 'CANCELED';
                               const isFirst = dStr === checkInStr;
                               // Last night = day right before checkout
                               const prevDay = new Date(dStr + 'T12:00:00');
@@ -327,6 +372,10 @@ export default function CalendarView({
                                     palette.bg,
                                     palette.border,
                                     palette.text,
+                                    // Bold edge for "happening right now / starts tomorrow".
+                                    // Goes through the same merge logic, so multi-day imminent
+                                    // bookings get a thick continuous bar — not per-cell rings.
+                                    isImminent && 'border-2',
                                     // Merge visual: round only outer edges, strip interior borders so slices look continuous
                                     isSingle
                                       ? 'inset-y-0.5 rounded-md'
@@ -384,40 +433,63 @@ export default function CalendarView({
         </div>
       </div>
 
-      {/* Floating zoom + (conditional) today cluster — small, low-opacity until hovered.
-          The "today" icon only appears when the user has scrolled ≥ 2 months away from
-          today, so on initial load the cluster is just the two zoom buttons. */}
-      <div className={cn(
-        'fixed bottom-4 z-50 flex items-center gap-1 bg-white/80 backdrop-blur rounded-full shadow-lg border border-slate-200 p-1 transition-opacity hover:opacity-100',
-        farFromToday ? 'opacity-90' : 'opacity-30',
-        isRtl ? 'left-4' : 'right-4',
-      )}>
-        <button
-          onClick={() => setZoomAndSave(z => Math.max(1, z - 1))}
-          disabled={zoom === 1}
-          aria-label="Zoom out"
-          className="w-8 h-8 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-100 disabled:opacity-30 transition-all"
-        >
-          <Minus size={14} weight="bold" />
-        </button>
-        <button
-          onClick={() => setZoomAndSave(z => Math.min(3, z + 1))}
-          disabled={zoom === 3}
-          aria-label="Zoom in"
-          className="w-8 h-8 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-100 disabled:opacity-30 transition-all"
-        >
-          <Plus size={14} weight="bold" />
-        </button>
-        {farFromToday && (
-          <button
-            onClick={jumpToToday}
-            aria-label={t(lang, 'calendar.jumpToday')}
-            title={t(lang, 'calendar.jumpToday')}
-            className="w-8 h-8 rounded-full flex items-center justify-center text-emerald-600 hover:bg-emerald-50 transition-all"
-          >
-            <CalendarCheck size={16} weight="bold" />
-          </button>
+      {/* Fan-out action menu — sized to match the corner cell exactly so the trigger
+          flex-centers inside the cell at every breakpoint (28×56 mobile, 48×96 desktop).
+          Items fan out into the calendar interior in a 90° arc. */}
+      <div
+        className={cn(
+          'absolute z-[60] flex items-center justify-center',
+          isRtl ? 'right-0 top-0' : 'left-0 top-0',
         )}
+        // Inline width/height mirror the corner cell's LOCKED width above so the
+        // trigger flex-centers exactly within the cell. We use inline values (not
+        // w-* utilities) to dodge any breakpoint mismatch with the cell at zoom levels.
+        style={{
+          width: isMobile ? 48 : 96,
+          height: isMobile ? 28 : 48,
+        }}
+      >
+        <CornerActionMenu
+          isRtl={isRtl}
+          radius={isMobile ? 110 : 150}
+          itemSize={isMobile ? 26 : 40}
+          items={[
+            {
+              icon: <CloudArrowDown size={16} weight="bold" />,
+              label: t(lang, 'calendar.syncTip'),
+              onClick: async () => { if (onSync) await onSync(); jumpToToday(); },
+              disabled: syncing || refreshing,
+              spin: syncing,
+              tone: 'emerald',
+            },
+            {
+              icon: <ArrowsClockwise size={16} weight="bold" />,
+              label: t(lang, 'calendar.refreshTip'),
+              onClick: async () => { if (onRefresh) await onRefresh(); jumpToToday(); },
+              disabled: refreshing || syncing,
+              spin: refreshing,
+            },
+            {
+              icon: <MagnifyingGlassPlus size={16} weight="bold" />,
+              label: 'Zoom in',
+              onClick: () => setZoomAndSave((z) => Math.min(3, z + 1)),
+              disabled: zoom === 3,
+            },
+            {
+              icon: <MagnifyingGlassMinus size={16} weight="bold" />,
+              label: 'Zoom out',
+              onClick: () => setZoomAndSave((z) => Math.max(1, z - 1)),
+              disabled: zoom === 1,
+            },
+            {
+              icon: <CalendarCheck size={16} weight="bold" />,
+              label: t(lang, 'calendar.jumpToday'),
+              onClick: jumpToToday,
+              hidden: !farFromToday,
+              tone: 'emerald',
+            },
+          ] satisfies ActionItem[]}
+        />
       </div>
     </div>
   );

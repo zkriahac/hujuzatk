@@ -128,8 +128,25 @@ body {
 
 [dir="rtl"], [dir="rtl"] * { font-family: var(--font-ar); }
 
-/* Native <select> chevron breathing room */
-select { padding-inline-end: 2.5rem; }
+/* Custom select chevron — replaces the cramped native UA chevron with an SVG
+   we can position precisely. Native chevron is suppressed via `appearance: none`
+   on every browser. Padding leaves space; bg-image draws the new chevron 14px
+   from the inline-end edge so it never feels glued to the border. */
+select {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a0b9' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  background-size: 12px 12px;
+  padding-inline-end: 2.75rem;
+}
+[dir="rtl"] select {
+  background-position: left 14px center;
+}
+/* IE10+ extra: hide the native arrow that `appearance: none` doesn't catch. */
+select::-ms-expand { display: none; }
 
 /* ============================================================
    Typography helpers (Variant B design DNA)

@@ -94,6 +94,9 @@ export const typeDefs = `
     status: BookingStatus!
     source: String
     notes: String
+    externalChannel: String
+    externalUrl: String
+    externalReservationId: String
     createdAt: DateTime!
     updatedAt: DateTime!
     createdBy: String
@@ -182,6 +185,7 @@ export const typeDefs = `
     icalUrlMasked: String!
     label: String
     isActive: Boolean!
+    syncBlocks: Boolean!
     lastSyncedAt: DateTime
     lastSyncStatus: String
     lastSyncMessage: String
@@ -198,6 +202,7 @@ export const typeDefs = `
     updated: Int!
     canceled: Int!
     skipped: Int!
+    blocksRemoved: Int!
     errors: [String!]!
     success: Boolean!
     message: String!
@@ -210,6 +215,7 @@ export const typeDefs = `
     icalUrl: String!
     label: String
     isActive: Boolean
+    syncBlocks: Boolean
   }
 
   type Expense {
@@ -278,7 +284,7 @@ export const typeDefs = `
     updateBooking(id: ID!, input: UpdateBookingInput!): Booking!
     deleteBooking(id: ID!): Boolean!
     bulkImportBookings(bookings: [BookingInput!]!): [Booking!]!
-    bulkDeleteBookings(ids: [ID!]!): Boolean!
+    bulkDeleteBookings(ids: [ID!]!): Int!
     createAdminSubscription(tenantId: ID!, days: Int!): Tenant!
     cancelSubscription(tenantId: ID!): Boolean!
     adminUpdateTenant(tenantId: ID!, input: UpdateTenantInput!): Tenant!
@@ -288,8 +294,8 @@ export const typeDefs = `
     updateGlobalSettings(input: UpdateGlobalSettingsInput!): GlobalSettings!
     saveChannelIntegration(input: SaveChannelIntegrationInput!): ChannelIntegration!
     deleteChannelIntegration(id: ID!): Boolean!
-    syncChannel(id: ID!): SyncResult!
-    syncAllChannels: [SyncResult!]!
+    syncChannel(id: ID!, mode: String): SyncResult!
+    syncAllChannels(mode: String): [SyncResult!]!
     adminSetIntegrationsEnabled(tenantId: ID!, enabled: Boolean!): Tenant!
     adminSetPlan(tenantId: ID!, plan: String!): Tenant!
     completeOnboarding: Tenant!

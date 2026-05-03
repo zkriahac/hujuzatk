@@ -1,12 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
-  Calendar, FileText, Globe, ChartBar, DeviceMobile, Receipt,
+  Calendar, FileText, Globe, ChartBar, DeviceMobile, Receipt, CaretDown,
   ArrowRight, Check, Sparkle, List, X, Play, Pause,
   ArrowsClockwise, Wallet,
 } from 'phosphor-react';
 import { authService } from '../lib/authService';
 import { trackCTA, trackWorkspaceSearch } from '../lib/analytics';
+import { cn } from '../utils/cn';
 import PromoPopup from '../components/PromoPopup';
 import {
   isPromoActive, PROMO_DISMISS_KEY, PROMO_DISMISS_COOLDOWN_DAYS,
@@ -31,7 +32,7 @@ const content = {
       cta2: 'Watch video',
       trust: 'Trusted by chalet owners, guesthouses, and serviced-apartment operators',
     },
-    logos: { intro: 'Integrates with major platforms', items: ['Airbnb', 'Booking.com', 'Gathern', 'iCal'] },
+    logos: { intro: 'Integrates with major platforms', items: ['Airbnb', 'Booking.com', 'Gathern'] },
     features: {
       eyebrow: 'Powerful features',
       title: 'Everything you need in one place',
@@ -133,7 +134,7 @@ const content = {
       cta2: 'شاهد الفيديو',
       trust: 'موثوق من ملاك الشاليهات والاستراحات والشقق المخدومة',
     },
-    logos: { intro: 'نتكامل مع المنصات الكبرى', items: ['Airbnb', 'Booking.com', 'جاذبين', 'iCal', 'Expedia', 'VRBO'] },
+    logos: { intro: 'نتكامل مع المنصات الكبرى', items: ['Airbnb', 'Booking.com', 'جاذبين'] },
     features: {
       eyebrow: 'مميزات قوية',
       title: 'كل ما تحتاجه في مكان واحد',
@@ -235,7 +236,7 @@ const content = {
       cta2: 'Videoyu izle',
       trust: 'Şale sahipleri, pansiyon işletmecileri ve hizmet daireleri tarafından tercih edildi',
     },
-    logos: { intro: 'Büyük platformlarla entegre çalışır', items: ['Airbnb', 'Booking.com', 'Gathern', 'iCal', 'Expedia', 'VRBO'] },
+    logos: { intro: 'Büyük platformlarla entegre çalışır', items: ['Airbnb', 'Booking.com', 'Gathern'] },
     features: {
       eyebrow: 'Güçlü özellikler',
       title: 'İhtiyacınız olan her şey tek yerde',
@@ -340,7 +341,7 @@ function HZLogo({ size = 36, mono = false, color }: { size?: number; mono?: bool
           stroke="#fff" strokeWidth="2.4" strokeLinecap="round" fill="none" />
         <circle cx="14" cy="22" r="1.6" fill="#fff" />
       </svg>
-      <span style={{ fontWeight: 700, fontSize: size * 0.6, color: c, letterSpacing: '-0.02em' }}>hujuzatk</span>
+      <span style={{ fontWeight: 700, fontSize: size * 0.6, color: c, letterSpacing: '-0.02em' }}>Hujuzatk</span>
     </div>
   );
 }
@@ -491,8 +492,15 @@ type BadgeProps = {
   big?: string;
   delta?: string;
   statusDot?: boolean;
+  /** Smaller variant for mobile — tighter padding and narrower min-width. */
+  compact?: boolean;
 };
-function BadgeChip({ wrapStyle, rot = 0, floatAnim = 'hzFloatA', delay = '0s', accent, accentBg, icon, title, sub, big, delta, statusDot }: BadgeProps) {
+function BadgeChip({ wrapStyle, rot = 0, floatAnim = 'hzFloatA', delay = '0s', accent, accentBg, icon, title, sub, big, delta, statusDot, compact }: BadgeProps) {
+  // Auto-detect mobile: use the narrow variant when the viewport is narrow, regardless
+  // of the explicit `compact` prop. Avoids passing the flag through every call site.
+  const isNarrow = typeof window !== 'undefined' && window.innerWidth < 1024;
+  const isCompact = compact ?? isNarrow;
+  const iconBoxSize = isCompact ? 32 : 40;
   return (
     <div
       className="absolute"
@@ -507,25 +515,27 @@ function BadgeChip({ wrapStyle, rot = 0, floatAnim = 'hzFloatA', delay = '0s', a
       <div style={{
         background: 'rgba(255,255,255,0.98)',
         border: '1px solid var(--border)',
-        borderRadius: 16,
-        padding: '12px 16px',
+        borderRadius: isCompact ? 12 : 16,
+        padding: isCompact ? '8px 10px' : '12px 16px',
         boxShadow: '0 20px 40px -12px rgba(11,27,58,0.16), 0 4px 12px -4px rgba(11,27,58,0.08)',
-        minWidth: 200, maxWidth: 280,
+        minWidth: isCompact ? 0 : 200,
+        maxWidth: isCompact ? 160 : 280,
       }}>
-        <div className="flex items-center gap-3">
+        <div className={cn('flex items-center', isCompact ? 'gap-2' : 'gap-3')}>
           <div className="grid place-items-center shrink-0" style={{
-            width: 40, height: 40, borderRadius: 12, background: accentBg, color: accent,
+            width: iconBoxSize, height: iconBoxSize, borderRadius: isCompact ? 10 : 12,
+            background: accentBg, color: accent,
           }}>
             {icon}
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5">
-              <div className="font-bold" style={{ fontSize: 13, color: 'var(--ink-900)' }}>{title}</div>
+              <div className="font-bold leading-tight" style={{ fontSize: isCompact ? 11 : 13, color: 'var(--ink-900)' }}>{title}</div>
               {statusDot && <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--brand-green)', flexShrink: 0, animation: 'hzPulse 1.8s ease-in-out infinite' }} />}
             </div>
-            {big && <div className="font-extrabold" style={{ fontSize: 20, color: 'var(--ink-900)', letterSpacing: '-0.02em', marginTop: 2 }}>{big}</div>}
-            {sub && <div style={{ fontSize: 11, color: 'var(--ink-500)', marginTop: 2 }}>{sub}</div>}
-            {delta && <div className="font-bold" style={{ fontSize: 11, color: accent, marginTop: 4 }}>{delta}</div>}
+            {big && <div className="font-extrabold" style={{ fontSize: isCompact ? 14 : 20, color: 'var(--ink-900)', letterSpacing: '-0.02em', marginTop: 2 }}>{big}</div>}
+            {sub && <div style={{ fontSize: isCompact ? 10 : 11, color: 'var(--ink-500)', marginTop: 2 }}>{sub}</div>}
+            {delta && <div className="font-bold" style={{ fontSize: isCompact ? 10 : 11, color: accent, marginTop: 4 }}>{delta}</div>}
           </div>
         </div>
       </div>
@@ -711,7 +721,7 @@ function InstallHolo({ lang }: { lang: Lang }) {
           ))}
         </div>
         <div className="absolute" style={{ insetInlineStart: 16, bottom: 14, fontSize: 8, color: 'rgba(255,255,255,0.7)', fontWeight: 600 }}>
-          {lang === 'ar' ? 'حجوزاتك' : 'hujuzatk'}
+          {lang === 'ar' ? 'حجوزاتك' : 'Hujuzatk'}
         </div>
       </div>
       <div className="absolute flex items-center gap-2" style={{
@@ -1100,6 +1110,7 @@ export function LandingPage() {
   const [lang, setLang] = useState<Lang>(detectLang);
   const [workspaceName, setWorkspaceName] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
+  const [showLangMenu, setShowLangMenu] = useState(false);
   const [showPromo, setShowPromo] = useState(false);
   const [videoOpen, setVideoOpen] = useState(false);
   const [loggedInUser, setLoggedInUser] = useState<{ name: string; email: string; slug: string } | null>(null);
@@ -1193,13 +1204,52 @@ export function LandingPage() {
           <div className="hidden md:flex items-center gap-1">
             <a href="#features" className="px-4 py-2 text-sm font-semibold" style={{ color: 'var(--ink-700)' }}>{c.nav.features}</a>
             <a href="#pricing"  className="px-4 py-2 text-sm font-semibold" style={{ color: 'var(--ink-700)' }}>{c.nav.pricing}</a>
-            <button
-              onClick={cycleLang}
-              className="px-3 py-1.5 text-xs font-bold mx-2"
-              style={{ borderRadius: 999, border: '1px solid var(--border)', color: 'var(--ink-700)', background: '#fff' }}
-            >
-              {lang === 'en' ? 'العربية' : lang === 'ar' ? 'Türkçe' : 'EN'}
-            </button>
+            {/* Language dropdown — three-language picker (EN / AR / TR). */}
+            <div className="relative mx-2">
+              <button
+                onClick={() => setShowLangMenu((v) => !v)}
+                aria-haspopup="listbox"
+                aria-expanded={showLangMenu}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold transition-colors hover:bg-slate-50"
+                style={{ borderRadius: 999, border: '1px solid var(--border)', color: 'var(--ink-700)', background: '#fff' }}
+              >
+                <Globe size={13} weight="bold" />
+                {{ en: 'EN', ar: 'العربية', tr: 'TR' }[lang]}
+                <CaretDown size={10} weight="bold" className={cn('transition-transform', showLangMenu && 'rotate-180')} />
+              </button>
+              {showLangMenu && (
+                <>
+                  {/* Click-outside catcher — z-[110] so it covers the hero hover zones
+                      but stays below the dropdown panel itself (z-[120]). */}
+                  <div className="fixed inset-0 z-[110]" onClick={() => setShowLangMenu(false)} />
+                  <div
+                    role="listbox"
+                    className="absolute top-full mt-1 z-[120] min-w-[140px] overflow-hidden"
+                    style={{
+                      borderRadius: 14,
+                      border: '1px solid var(--border)',
+                      background: '#fff',
+                      boxShadow: 'var(--sh-lg)',
+                      [isRtl ? 'right' : 'left']: 0,
+                    } as React.CSSProperties}
+                  >
+                    {(['en', 'ar', 'tr'] as Lang[]).map((l) => (
+                      <button
+                        key={l}
+                        onClick={() => { setLangTo(l); setShowLangMenu(false); }}
+                        className={cn(
+                          'w-full px-4 py-2.5 text-xs font-bold flex items-center justify-between gap-3 transition-colors',
+                          l === lang ? 'bg-emerald-50 text-emerald-700' : 'text-slate-700 hover:bg-slate-50',
+                        )}
+                      >
+                        <span>{{ en: 'English', ar: 'العربية', tr: 'Türkçe' }[l]}</span>
+                        {l === lang && <Check size={13} weight="bold" />}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
             {loggedInUser ? (
               <button
                 onClick={() => navigate(`/${loggedInUser.slug}`)}
@@ -1237,35 +1287,88 @@ export function LandingPage() {
             <div className="max-w-[1280px] mx-auto flex flex-col" style={{ padding: '12px 24px' }}>
               <a onClick={() => setMenuOpen(false)} href="#features" className="py-3 text-sm font-semibold" style={{ color: 'var(--ink-700)' }}>{c.nav.features}</a>
               <a onClick={() => setMenuOpen(false)} href="#pricing"  className="py-3 text-sm font-semibold" style={{ color: 'var(--ink-700)' }}>{c.nav.pricing}</a>
-              <button onClick={cycleLang} className="py-3 text-sm font-semibold text-start" style={{ color: 'var(--ink-700)' }}>
-                {lang === 'en' ? 'العربية' : lang === 'ar' ? 'Türkçe' : 'English'}
-              </button>
+
+              {/* Flat 3-button language group — sits in the mobile menu as a single-row
+                  picker so users see all three options at once and can tap directly. */}
+              <div className="my-2 p-1 rounded-2xl flex gap-1" style={{ background: 'var(--surface-alt)' }}>
+                {(['en', 'ar', 'tr'] as Lang[]).map((l) => (
+                  <button
+                    key={l}
+                    onClick={() => { setLangTo(l); setMenuOpen(false); }}
+                    className={cn(
+                      'flex-1 py-2 text-xs font-bold rounded-xl transition-colors',
+                      l === lang ? 'bg-white shadow-sm text-emerald-700' : 'text-slate-600 hover:bg-white/60',
+                    )}
+                  >
+                    {{ en: 'English', ar: 'العربية', tr: 'Türkçe' }[l]}
+                  </button>
+                ))}
+              </div>
+              {/* Auth CTAs styled as actual buttons (matches the desktop nav). Login is
+                  the secondary outline-style button; Start Free is the primary green button. */}
               {loggedInUser ? (
-                <button onClick={() => navigate(`/${loggedInUser.slug}`)} className="py-3 text-sm font-bold text-start" style={{ color: 'var(--brand-green-deep)' }}>
+                <button
+                  onClick={() => navigate(`/${loggedInUser.slug}`)}
+                  className="mt-2 py-3 text-sm font-bold text-center transition-all hover:-translate-y-0.5"
+                  style={{ background: 'var(--brand-green)', color: '#fff', borderRadius: 999, boxShadow: '0 8px 20px -8px rgba(14,159,110,.6)' }}
+                >
                   {c.open} {loggedInUser.name}
                 </button>
               ) : (
-                <>
-                  <Link to="/user?tab=login" className="py-3 text-sm font-bold" style={{ color: 'var(--brand-green-deep)' }}>{c.nav.login}</Link>
-                  <Link to="/user?tab=register" className="py-3 text-sm font-bold" style={{ color: 'var(--brand-green-deep)' }}>{c.nav.signup}</Link>
-                </>
+                <div className="mt-2 flex gap-2">
+                  <Link
+                    to="/user?tab=login"
+                    onClick={() => setMenuOpen(false)}
+                    className="flex-1 py-3 text-sm font-bold text-center transition-colors"
+                    style={{
+                      background: '#fff',
+                      border: '1.5px solid var(--ink-200)',
+                      color: 'var(--brand-green-deep)',
+                      borderRadius: 999,
+                    }}
+                  >
+                    {c.nav.login}
+                  </Link>
+                  <Link
+                    to="/user?tab=register"
+                    onClick={() => setMenuOpen(false)}
+                    className="flex-1 py-3 text-sm font-bold text-center transition-all hover:-translate-y-0.5"
+                    style={{
+                      background: 'var(--brand-green)',
+                      color: '#fff',
+                      borderRadius: 999,
+                      boxShadow: '0 8px 20px -8px rgba(14,159,110,.6)',
+                    }}
+                  >
+                    {c.nav.signup}
+                  </Link>
+                </div>
               )}
             </div>
           </div>
         )}
       </nav>
 
-      {/* ───────── Hero ───────── */}
+      {/* ───────── Hero ─────────
+          Decorative shapes use raw `left`/`right` (not insetInline*) so they stay in
+          the same physical positions regardless of text direction — purely aesthetic
+          backgrounds shouldn't mirror with language. Both sides get a soft tint so the
+          composition reads balanced in both LTR and RTL. */}
       <section className="relative overflow-hidden" style={{ background: 'var(--surface)', borderBottom: '1px solid var(--border)' }}>
-        <div className="absolute" style={{ insetInlineStart: -200, top: -120, width: 520, height: 520, borderRadius: '50%', background: 'var(--bg-cream)', opacity: 0.7, zIndex: 0 }} />
-        <div className="absolute" style={{ insetInlineEnd: -180, top: 280, width: 380, height: 380, borderRadius: '50%', background: 'var(--bg-mint)', opacity: 0.5, zIndex: 0 }} />
-        <div className="bg-dots absolute" style={{ insetInlineStart: 60, top: 200, width: 120, height: 120, opacity: 0.5, zIndex: 1 }} />
+        <div className="absolute" style={{ left: -200, top: -120, width: 520, height: 520, borderRadius: '50%', background: 'var(--bg-cream)', opacity: 0.5, zIndex: 0 }} />
+        <div className="absolute" style={{ right: -180, top: 280, width: 380, height: 380, borderRadius: '50%', background: 'var(--bg-mint)', opacity: 0.45, zIndex: 0 }} />
+        <div className="bg-dots absolute hidden md:block" style={{ left: 60, top: 200, width: 120, height: 120, opacity: 0.4, zIndex: 1 }} />
+        <div className="bg-dots absolute hidden md:block" style={{ right: 60, bottom: 100, width: 120, height: 120, opacity: 0.4, zIndex: 1 }} />
 
-        <div className="max-w-[1280px] mx-auto relative z-10" style={{ padding: '60px 24px 60px' }}>
+        <div className="max-w-[1280px] mx-auto relative z-10" style={{ padding: '48px 24px 32px' }}>
           {/* Headline */}
           <div className="hz-reveal text-center mx-auto" data-reveal="on" style={{ maxWidth: 880, marginBottom: 24 }}>
-            <span className="eyebrow inline-block" style={{ marginBottom: 20 }}>{c.hero.eyebrow}</span>
-            <h1 className="h-display" style={{ fontSize: isAr ? 64 : 76, margin: '0 0 20px', color: 'var(--ink-900)', lineHeight: 1.05 }}>
+            <span className="eyebrow inline-block" style={{ marginBottom: 16 }}>{c.hero.eyebrow}</span>
+            <h1 className="h-display" style={{
+              fontSize: isAr ? 'clamp(2.5rem, 6vw, 4.5rem)' : 'clamp(2.75rem, 6.5vw, 5rem)',
+              margin: '0 0 18px', color: 'var(--ink-900)',
+              lineHeight: isAr ? 1.25 : 1.05,
+            }}>
               {c.hero.title1}{' '}
               <span className="mark-underline">
                 {c.hero.mark}
@@ -1309,56 +1412,57 @@ export function LandingPage() {
             <p style={{ fontSize: 13, color: 'var(--ink-300)' }}>{c.hero.trust}</p>
           </div>
 
-          {/* Phone with floating BadgeChips */}
-          <div className="hidden lg:block relative" style={{ height: 700 }}>
-            <div className="absolute" style={{ insetInlineStart: '50%', top: 30, transform: 'translateX(-50%)', width: 540, height: 540, borderRadius: '50%', background: 'var(--bg-mint)', zIndex: 0 }} />
-            <div className="absolute" style={{ insetInlineStart: '50%', top: 80, transform: 'translateX(-50%)', width: 440, height: 440, borderRadius: '50%', background: 'rgba(255,255,255,0.6)', zIndex: 0 }} />
+          {/* Phone with floating BadgeChips — narrower container so chips hug the phone */}
+          <div className="hidden lg:block relative mx-auto" style={{ height: 640, marginTop: 16, maxWidth: 980 }}>
+            <div className="absolute" style={{ left: '50%', top: 30, transform: 'translateX(-50%)', width: 540, height: 540, borderRadius: '50%', background: 'var(--bg-mint)', zIndex: 0 }} />
+            <div className="absolute" style={{ left: '50%', top: 80, transform: 'translateX(-50%)', width: 440, height: 440, borderRadius: '50%', background: 'rgba(255,255,255,0.6)', zIndex: 0 }} />
 
             <span className="absolute" style={{ insetInlineStart: '30%', top: 60, width: 12, height: 12, borderRadius: '50%', background: 'var(--accent-coral)', zIndex: 1 }} />
             <span className="absolute" style={{ insetInlineEnd: '32%', top: 100, width: 10, height: 10, borderRadius: '50%', background: 'var(--brand-green)', zIndex: 1 }} />
             <span className="absolute" style={{ insetInlineStart: '20%', bottom: 60, width: 8, height: 8, borderRadius: '50%', background: 'var(--accent-blue)', zIndex: 1 }} />
 
-            <div className="absolute" style={{ insetInlineStart: '50%', top: 0, transform: 'translateX(-50%)', zIndex: 3, animation: 'hzRevealUp .8s cubic-bezier(.2,.7,.2,1) both' }}>
+            <div className="absolute" style={{ left: '50%', top: 0, transform: 'translateX(-50%)', zIndex: 3, animation: 'hzRevealUp .8s cubic-bezier(.2,.7,.2,1) both' }}>
               <PhoneFrame><CalendarScreenMock /></PhoneFrame>
             </div>
 
+            {/* Outer-side chips: insetInlineEnd in LTR pulls right; in RTL pulls left (auto-mirror) */}
             <BadgeChip
-              wrapStyle={{ top: 30, insetInlineEnd: '8%', zIndex: 5 }}
+              wrapStyle={{ top: 24, insetInlineEnd: 0, zIndex: 5 }}
               rot={3} floatAnim="hzFloatA" delay="0s"
               accent="var(--brand-green-deep)" accentBg="var(--brand-green-tint)"
               icon={<Calendar size={20} />}
               title={c.badges.cal.title} sub={c.badges.cal.sub}
             />
             <BadgeChip
-              wrapStyle={{ top: 70, insetInlineStart: '6%', zIndex: 5 }}
+              wrapStyle={{ top: 64, insetInlineStart: 0, zIndex: 5 }}
               rot={-4} floatAnim="hzFloatB" delay=".4s"
               accent="var(--accent-amber)" accentBg="var(--accent-amber-soft)"
               icon={<Receipt size={20} />}
               title={c.badges.inv.title} sub={c.badges.inv.sub}
             />
             <BadgeChip
-              wrapStyle={{ top: 280, insetInlineStart: '2%', zIndex: 5 }}
+              wrapStyle={{ top: 280, insetInlineStart: 0, zIndex: 5 }}
               rot={2} floatAnim="hzFloatC" delay=".7s"
               accent="var(--accent-coral)" accentBg="var(--accent-coral-soft)"
               icon={<ArrowsClockwise size={20} />}
               title={c.badges.sync.title} sub={c.badges.sync.sub} statusDot
             />
             <BadgeChip
-              wrapStyle={{ top: 320, insetInlineEnd: '3%', zIndex: 5 }}
+              wrapStyle={{ top: 320, insetInlineEnd: 0, zIndex: 5 }}
               rot={-3} floatAnim="hzFloatA" delay="1s"
               accent="var(--brand-green-deep)" accentBg="var(--brand-green-tint)"
               icon={<ChartBar size={20} />}
               title={c.badges.rev.title} big={c.badges.rev.big} delta={c.badges.rev.delta}
             />
             <BadgeChip
-              wrapStyle={{ bottom: 30, insetInlineStart: '10%', zIndex: 5 }}
+              wrapStyle={{ bottom: 24, insetInlineStart: 24, zIndex: 5 }}
               rot={-2} floatAnim="hzFloatB" delay=".2s"
               accent="var(--accent-blue)" accentBg="var(--accent-blue-soft)"
               icon={<Globe size={20} />}
               title={c.badges.rtl.title} sub={c.badges.rtl.sub}
             />
             <BadgeChip
-              wrapStyle={{ bottom: 50, insetInlineEnd: '10%', zIndex: 5 }}
+              wrapStyle={{ bottom: 40, insetInlineEnd: 24, zIndex: 5 }}
               rot={4} floatAnim="hzFloatC" delay=".55s"
               accent="var(--accent-purple)" accentBg="var(--accent-purple-soft)"
               icon={<DeviceMobile size={20} />}
@@ -1366,11 +1470,59 @@ export function LandingPage() {
             />
           </div>
 
-          {/* Mobile: just the phone, no floating chips */}
-          <div className="lg:hidden flex justify-center" style={{ marginTop: 24 }}>
-            <div style={{ transform: 'scale(0.85)', transformOrigin: 'center top' }}>
+          {/* Mobile: phone + 4 compact badge chips arranged tight around it.
+              Smaller scale (0.7) + smaller chips so the cluster fits a 360px viewport. */}
+          <div className="lg:hidden relative mx-auto" style={{ marginTop: 24, height: 540, maxWidth: 360 }}>
+            {/* Backdrop circle — `left: 50%` (raw, not insetInlineStart) so it stays
+                centered in BOTH text directions. insetInlineStart flips to `right` in
+                RTL, but translateX is direction-agnostic, so the combo would put the
+                element off-screen. */}
+            <div className="absolute" style={{
+              left: '50%', top: 30, transform: 'translateX(-50%)',
+              width: 320, height: 320, borderRadius: '50%',
+              background: 'var(--bg-mint)', zIndex: 0,
+            }} />
+
+            {/* Centered phone */}
+            <div className="absolute" style={{
+              left: '50%', top: 0,
+              transform: 'translateX(-50%) scale(0.7)',
+              transformOrigin: 'center top',
+              zIndex: 3,
+            }}>
               <PhoneFrame><CalendarScreenMock /></PhoneFrame>
             </div>
+
+            {/* Badge chips — tighter offsets, smaller min-widths, only 4 chips
+                (chosen to highlight the strongest selling points without crowding). */}
+            <BadgeChip
+              wrapStyle={{ top: 8, insetInlineEnd: 4, zIndex: 5 }}
+              rot={3} floatAnim="hzFloatA" delay="0s"
+              accent="var(--brand-green-deep)" accentBg="var(--brand-green-tint)"
+              icon={<Calendar size={16} />}
+              title={c.badges.cal.title} sub={c.badges.cal.sub}
+            />
+            <BadgeChip
+              wrapStyle={{ top: 64, insetInlineStart: 4, zIndex: 5 }}
+              rot={-4} floatAnim="hzFloatB" delay=".4s"
+              accent="var(--accent-amber)" accentBg="var(--accent-amber-soft)"
+              icon={<Receipt size={16} />}
+              title={c.badges.inv.title}
+            />
+            <BadgeChip
+              wrapStyle={{ bottom: 70, insetInlineStart: 0, zIndex: 5 }}
+              rot={2} floatAnim="hzFloatC" delay=".7s"
+              accent="var(--accent-coral)" accentBg="var(--accent-coral-soft)"
+              icon={<ArrowsClockwise size={16} />}
+              title={c.badges.sync.title} sub={c.badges.sync.sub} statusDot
+            />
+            <BadgeChip
+              wrapStyle={{ bottom: 30, insetInlineEnd: 0, zIndex: 5 }}
+              rot={-3} floatAnim="hzFloatA" delay="1s"
+              accent="var(--brand-green-deep)" accentBg="var(--brand-green-tint)"
+              icon={<ChartBar size={16} />}
+              title={c.badges.rev.title} big={c.badges.rev.big}
+            />
           </div>
 
           {/* Workspace shortcut */}
@@ -1407,20 +1559,35 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* ───────── Logos Marquee ───────── */}
-      <section style={{ padding: '60px 0', background: 'var(--surface)', overflow: 'hidden' }}>
+      {/* ───────── Logos strip — static row, fade-in stagger on viewport entry.
+          Only 3 supported channels (Airbnb / Gathern / Booking.com) so no scroll
+          needed — they fit on one line on every viewport. Each name pulses subtly
+          on a stagger so the row reads as alive without distracting motion. */}
+      <section style={{ padding: '60px 0', background: 'var(--surface)' }}>
         <div className="max-w-[1280px] mx-auto" style={{ padding: '0 24px' }}>
-          <p className="text-center" style={{ fontSize: 13, color: 'var(--ink-300)', marginBottom: 32, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+          <p className="text-center" style={{ fontSize: 13, color: 'var(--ink-300)', marginBottom: 28, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
             {c.logos.intro}
           </p>
-        </div>
-        <div className="relative" style={{
-          maskImage: 'linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent)',
-          WebkitMaskImage: 'linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent)',
-        }}>
-          <div className="hz-marquee-track flex" style={{ gap: 60, width: 'max-content', animation: 'hzMarquee 30s linear infinite' }}>
-            {[...c.logos.items, ...c.logos.items, ...c.logos.items].map((n, i) => (
-              <span key={i} className="whitespace-nowrap" style={{ fontSize: 22, fontWeight: 700, color: 'var(--ink-300)', letterSpacing: '-0.02em' }}>{n}</span>
+          <div className="flex flex-wrap items-center justify-center gap-x-10 sm:gap-x-16 gap-y-4">
+            {c.logos.items.map((n, i) => (
+              <span
+                key={i}
+                className="hz-reveal whitespace-nowrap"
+                data-reveal="on"
+                style={{
+                  fontSize: 22,
+                  fontWeight: 700,
+                  color: 'var(--ink-300)',
+                  letterSpacing: '-0.02em',
+                  // Each logo gets a longer transition delay so they enter in sequence;
+                  // the hz-reveal class handles the actual fade+lift.
+                  transitionDelay: `${i * 120}ms`,
+                  // Subtle infinite breathing animation, staggered per item.
+                  animation: `hzFadeIn 3s ease-in-out ${i * 0.6}s infinite alternate`,
+                }}
+              >
+                {n}
+              </span>
             ))}
           </div>
         </div>
@@ -1613,7 +1780,9 @@ export function LandingPage() {
         <div className="max-w-[1280px] mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-4" style={{ gap: 40, marginBottom: 40 }}>
             <div className="md:col-span-1">
-              <HZLogo size={32} mono color="#fff" />
+              {/* Footer: keep the green rect (mono=false default) so the white ح inside
+                  stays visible against the navy footer. Only the wordmark uses #fff. */}
+              <HZLogo size={32} color="#fff" />
               <p style={{ marginTop: 16, fontSize: 14, color: 'rgba(255,255,255,0.6)', lineHeight: 1.6, maxWidth: 320 }}>
                 {c.footer.tagline}
               </p>
@@ -1640,8 +1809,9 @@ export function LandingPage() {
             <div>
               <h4 className="font-bold" style={{ fontSize: 14, marginBottom: 16 }}>{c.footer.company}</h4>
               <ul className="flex flex-col" style={{ gap: 10, listStyle: 'none', padding: 0, margin: 0 }}>
-                <li><Link to="/story" style={{ fontSize: 14, color: 'rgba(255,255,255,0.6)' }}>{c.footer.companyLinks[1]}</Link></li>
-                <li><a href="https://wa.me/905523205496" target="_blank" rel="noopener noreferrer" style={{ fontSize: 14, color: 'rgba(255,255,255,0.6)' }}>{c.footer.companyLinks[2]}</a></li>
+                <li><Link to="/about"   style={{ fontSize: 14, color: 'rgba(255,255,255,0.6)' }}>{c.footer.companyLinks[0]}</Link></li>
+                <li><Link to="/story"   style={{ fontSize: 14, color: 'rgba(255,255,255,0.6)' }}>{c.footer.companyLinks[1]}</Link></li>
+                <li><Link to="/contact" style={{ fontSize: 14, color: 'rgba(255,255,255,0.6)' }}>{c.footer.companyLinks[2]}</Link></li>
               </ul>
             </div>
             <div>

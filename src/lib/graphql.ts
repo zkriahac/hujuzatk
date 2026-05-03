@@ -132,6 +132,9 @@ export const GET_BOOKINGS_QUERY = gql`
       remaining
       status
       notes
+      externalChannel
+      externalUrl
+      externalReservationId
       createdAt
       updatedAt
     }
@@ -159,6 +162,9 @@ export const GET_BOOKING_QUERY = gql`
       remaining
       status
       notes
+      externalChannel
+      externalUrl
+      externalReservationId
       createdAt
       updatedAt
     }
@@ -219,6 +225,9 @@ export const CREATE_BOOKING_MUTATION = gql`
       remaining
       status
       notes
+      externalChannel
+      externalUrl
+      externalReservationId
       createdAt
     }
   }
@@ -245,6 +254,9 @@ export const UPDATE_BOOKING_MUTATION = gql`
       remaining
       status
       notes
+      externalChannel
+      externalUrl
+      externalReservationId
       updatedAt
     }
   }
@@ -438,6 +450,7 @@ export const GET_CHANNEL_INTEGRATIONS_QUERY = gql`
       icalUrlMasked
       label
       isActive
+      syncBlocks
       lastSyncedAt
       lastSyncStatus
       lastSyncMessage
@@ -457,6 +470,7 @@ export const SAVE_CHANNEL_INTEGRATION_MUTATION = gql`
       icalUrlMasked
       label
       isActive
+      syncBlocks
       lastSyncedAt
       lastSyncStatus
       lastSyncMessage
@@ -471,8 +485,8 @@ export const DELETE_CHANNEL_INTEGRATION_MUTATION = gql`
 `;
 
 export const SYNC_CHANNEL_MUTATION = gql`
-  mutation SyncChannel($id: ID!) {
-    syncChannel(id: $id) {
+  mutation SyncChannel($id: ID!, $mode: String) {
+    syncChannel(id: $id, mode: $mode) {
       integrationId
       channelName
       roomId
@@ -480,6 +494,7 @@ export const SYNC_CHANNEL_MUTATION = gql`
       updated
       canceled
       skipped
+      blocksRemoved
       errors
       success
       message
@@ -488,14 +503,17 @@ export const SYNC_CHANNEL_MUTATION = gql`
 `;
 
 export const SYNC_ALL_CHANNELS_MUTATION = gql`
-  mutation SyncAllChannels {
-    syncAllChannels {
+  mutation SyncAllChannels($mode: String) {
+    syncAllChannels(mode: $mode) {
       integrationId
       channelName
       roomId
       imported
       updated
       canceled
+      skipped
+      blocksRemoved
+      errors
       success
       message
     }

@@ -3,6 +3,7 @@ import { format, addDays, parseISO } from 'date-fns';
 import {
   X, Sparkle, Users, Minus, Plus, CreditCard, FileText, Printer,
   PencilSimple, Prohibit, Trash, Check, WarningCircle, CaretDown, CaretUp, Upload, DownloadSimple,
+  ArrowSquareOut,
 } from 'phosphor-react';
 import { useBulkImportBookings } from '../hooks/useGraphQL';
 import { cn } from '../utils/cn';
@@ -296,27 +297,26 @@ export function AddBookingModal({ onClose, onAdd, initialDate, initialRoom, room
             </div>
           </div>
 
-          <div className="bg-slate-900 rounded-2xl p-4 text-white mt-2 relative overflow-hidden group">
-            <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:rotate-12 transition-all">
-              <CreditCard size={80} weight="duotone" />
-            </div>
-            <div className="grid grid-cols-2 gap-3 relative z-10">
+          {/* Compact amounts row — 3 columns side-by-side, light surface for a softer
+              look than the previous heavy black panel. */}
+          <div className="bg-slate-50 border border-slate-200 rounded-2xl p-3 mt-2">
+            <div className="grid grid-cols-3 gap-2">
               <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-0.5">{t(lang, 'booking.total')}</p>
-                <p className="text-xl font-black">{currency} {totalPrice}</p>
+                <p className="text-[9px] font-black uppercase tracking-[0.18em] text-slate-400 mb-1">{t(lang, 'booking.total')}</p>
+                <p className="text-base font-black text-slate-900 tabular-nums">{currency} {totalPrice}</p>
               </div>
               <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-0.5">{t(lang, 'booking.deposit')}</p>
+                <p className="text-[9px] font-black uppercase tracking-[0.18em] text-slate-400 mb-1">{t(lang, 'booking.deposit')}</p>
                 <input
                   type="number"
-                  className="w-full bg-slate-800/50 border-0 rounded-xl px-3 py-1 text-lg font-black focus:ring-1 focus:ring-emerald-500 transition-all"
+                  className="w-full bg-white border border-slate-200 rounded-xl px-2 py-1 text-base font-black tabular-nums focus:ring-2 focus:ring-emerald-500 transition-all"
                   value={f.deposit}
                   onChange={(e) => setF({ ...f, deposit: parseInt(e.target.value) || 0 })}
                 />
               </div>
-              <div className="col-span-2 pt-3 border-t border-slate-800 flex justify-between items-center">
-                <p className="text-xs font-black uppercase tracking-widest text-emerald-400">{t(lang, 'booking.remaining')}</p>
-                <p className="text-2xl font-black text-white">{currency} {remaining}</p>
+              <div>
+                <p className="text-[9px] font-black uppercase tracking-[0.18em] text-emerald-600 mb-1">{t(lang, 'booking.remaining')}</p>
+                <p className="text-base font-black text-emerald-700 tabular-nums">{currency} {remaining}</p>
               </div>
             </div>
           </div>
@@ -436,21 +436,34 @@ export function BookingDetailsModal({
               value={f.idNumber}
               onChange={(e) => setF({ ...f, idNumber: e.target.value })}
             />
-            <select
-              className="w-full bg-slate-50 border-slate-100 rounded-2xl px-4 py-2.5 text-sm font-bold focus:ring-2 focus:ring-emerald-500 transition-all"
-              value={f.source}
-              onChange={(e) => setF({ ...f, source: e.target.value })}
-            >
-              <option value="">{t(lang, 'booking.source')}</option>
-              <option value="Direct">Direct</option>
-              <option value="Airbnb">Airbnb</option>
-              <option value="Gathern">Gathern</option>
-              <option value="Booking.com">Booking.com</option>
-              <option value="WhatsApp">WhatsApp</option>
-              <option value="Phone">Phone</option>
-              <option value="Walk-in">Walk-in</option>
-              <option value="Other">Other</option>
-            </select>
+            {/* Source — locked when the booking came from a channel sync (externalChannel
+                set). Synced bookings get their source from the iCal feed, editing it would
+                drift from the channel state. Manual bookings stay editable. */}
+            {(() => {
+              const isSynced = !!(booking as any).externalChannel;
+              return (
+                <select
+                  className={cn(
+                    'w-full bg-slate-50 border-slate-100 rounded-2xl px-4 py-2.5 text-sm font-bold transition-all',
+                    isSynced ? 'cursor-not-allowed opacity-70' : 'focus:ring-2 focus:ring-emerald-500',
+                  )}
+                  value={f.source}
+                  onChange={(e) => setF({ ...f, source: e.target.value })}
+                  disabled={isSynced}
+                  title={isSynced ? t(lang, 'booking.sourceLocked') : undefined}
+                >
+                  <option value="">{t(lang, 'booking.source')}</option>
+                  <option value="Direct">Direct</option>
+                  <option value="Airbnb">Airbnb</option>
+                  <option value="Gathern">Gathern</option>
+                  <option value="Booking.com">Booking.com</option>
+                  <option value="WhatsApp">WhatsApp</option>
+                  <option value="Phone">Phone</option>
+                  <option value="Walk-in">Walk-in</option>
+                  <option value="Other">Other</option>
+                </select>
+              );
+            })()}
 
             {/* Collapsible extra details */}
             <button
@@ -546,24 +559,25 @@ export function BookingDetailsModal({
                 </div>
               </div>
             </div>
-            <div className="bg-slate-900 rounded-2xl p-4 text-white">
-              <div className="grid grid-cols-2 gap-3">
+            {/* Compact amounts row — 3 columns side-by-side, light surface. */}
+            <div className="bg-slate-50 border border-slate-200 rounded-2xl p-3">
+              <div className="grid grid-cols-3 gap-2">
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-0.5">{t(lang, 'booking.total')}</p>
-                  <p className="text-xl font-black">{currency} {totalPrice}</p>
+                  <p className="text-[9px] font-black uppercase tracking-[0.18em] text-slate-400 mb-1">{t(lang, 'booking.total')}</p>
+                  <p className="text-base font-black text-slate-900 tabular-nums">{currency} {totalPrice}</p>
                 </div>
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-0.5">{t(lang, 'booking.deposit')}</p>
+                  <p className="text-[9px] font-black uppercase tracking-[0.18em] text-slate-400 mb-1">{t(lang, 'booking.deposit')}</p>
                   <input
                     type="number"
-                    className="w-full bg-slate-800/50 border-0 rounded-xl px-3 py-1 text-lg font-black focus:ring-1 focus:ring-emerald-500 transition-all"
+                    className="w-full bg-white border border-slate-200 rounded-xl px-2 py-1 text-base font-black tabular-nums focus:ring-2 focus:ring-emerald-500 transition-all"
                     value={f.deposit}
                     onChange={(e) => setF({ ...f, deposit: parseInt(e.target.value) || 0 })}
                   />
                 </div>
-                <div className="col-span-2 pt-3 border-t border-slate-800 flex justify-between items-center">
-                  <p className="text-xs font-black uppercase tracking-widest text-emerald-400">{t(lang, 'booking.remaining')}</p>
-                  <p className="text-2xl font-black">{currency} {remaining}</p>
+                <div>
+                  <p className="text-[9px] font-black uppercase tracking-[0.18em] text-emerald-600 mb-1">{t(lang, 'booking.remaining')}</p>
+                  <p className="text-base font-black text-emerald-700 tabular-nums">{currency} {remaining}</p>
                 </div>
               </div>
             </div>
@@ -608,7 +622,7 @@ export function BookingDetailsModal({
             <h2 className="text-3xl font-black text-slate-900 tracking-tight leading-none mb-2">{booking.guestName}</h2>
             <div className="flex gap-2 items-center">
               <span className="text-[10px] font-black uppercase tracking-widest px-2 py-0.5 bg-slate-100 rounded text-slate-500">
-                {t(lang, 'list.room')} {booking.room}
+                {t(lang, 'list.room')} {(rooms.find((r: any) => r.id === booking.room)?.name) || booking.room}
               </span>
               <span className="text-[10px] font-black uppercase tracking-widest px-2 py-0.5 bg-blue-50 text-blue-600 rounded">
                 {booking.nights} {t(lang, 'list.nights')}
@@ -640,6 +654,59 @@ export function BookingDetailsModal({
               )}
             </div>
           )}
+          {(() => {
+            let url: string | null = (booking as any).externalUrl ?? null;
+            const channel: string | null = (booking as any).externalChannel ?? null;
+            const explicitCode: string | null = (booking as any).externalReservationId ?? null;
+
+            // Fallback: if the booking has a reservation code but no stored URL (e.g. it was
+            // synced before the externalUrl extractor was added), construct an Airbnb URL on
+            // the fly. Gathern doesn't expose a stable host-portal URL pattern so we leave
+            // its `url` null but still render a non-clickable pill below.
+            if (!url && channel === 'airbnb' && explicitCode) {
+              url = `https://www.airbnb.com/hosting/reservations/details/${explicitCode}`;
+            }
+
+            // Nothing to show — bail. (Pure manual bookings hit this path.)
+            if (!url && !explicitCode) return null;
+
+            const channelLabel =
+              channel === 'airbnb'      ? 'Airbnb'
+            : channel === 'gathern'     ? 'Gathern'
+            : channel === 'booking.com' ? 'Booking.com'
+            : 'Channel';
+            const tail = url ? (url.replace(/\/+$/, '').split('/').pop() || '') : '';
+            const code = explicitCode || (/^[A-Z0-9_-]{4,}$/i.test(tail) ? tail : '');
+            const tone =
+              channel === 'airbnb'      ? { bg: 'bg-rose-50',    fg: 'text-rose-600',    border: 'border-rose-100' }
+            : channel === 'gathern'     ? { bg: 'bg-emerald-50', fg: 'text-emerald-700', border: 'border-emerald-100' }
+            : channel === 'booking.com' ? { bg: 'bg-blue-50',    fg: 'text-blue-700',    border: 'border-blue-100' }
+            : { bg: 'bg-slate-50', fg: 'text-slate-700', border: 'border-slate-100' };
+            const pillClass = cn(
+              'inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-black',
+              tone.bg, tone.fg, tone.border,
+            );
+            const pillContent = (
+              <>
+                <span>{channelLabel}</span>
+                {code && <span className="font-mono tracking-tight opacity-80">· {code}</span>}
+                {url && <ArrowSquareOut size={13} weight="bold" />}
+              </>
+            );
+            return (
+              <div className="-mt-2">
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-300 mb-1.5">{t(lang, 'booking.reservation')}</p>
+                {url ? (
+                  <a href={url} target="_blank" rel="noopener noreferrer" className={cn(pillClass, 'transition-colors hover:opacity-90')}>
+                    {pillContent}
+                  </a>
+                ) : (
+                  // No public host-portal URL (e.g. Gathern) — show the code without ↗ icon.
+                  <span className={pillClass}>{pillContent}</span>
+                )}
+              </div>
+            );
+          })()}
           {(booking as any).notes && (
             <div className="-mt-2">
               <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-300 mb-1">{t(lang, 'booking.notes')}</p>
@@ -756,9 +823,11 @@ interface InvoiceModalProps {
   dir: 'ltr' | 'rtl';
   onClose: () => void;
   company?: CompanyProfile;
+  rooms?: any[];
 }
 
-export function InvoiceModal({ booking, tenantName, currency, lang, tz, dir, onClose, company }: InvoiceModalProps) {
+export function InvoiceModal({ booking, tenantName, currency, lang, tz, dir, onClose, company, rooms = [] }: InvoiceModalProps) {
+  const roomLabel = rooms.find((r: any) => r.id === booking.room)?.name || booking.room;
   return (
     <div
       className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-[200] p-4"
@@ -830,7 +899,7 @@ export function InvoiceModal({ booking, tenantName, currency, lang, tz, dir, onC
             </div>
             <div className="text-end">
               <div className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em] mb-3">{t(lang, 'invoice.roomDetails')}</div>
-              <div className="font-black text-2xl text-slate-900 leading-tight mb-1">{t(lang, 'list.room')} {booking.room}</div>
+              <div className="font-black text-2xl text-slate-900 leading-tight mb-1">{t(lang, 'list.room')} {roomLabel}</div>
               <div className="text-sm font-bold text-emerald-600 uppercase tracking-widest mb-1">{booking.nights} {t(lang, 'invoice.night')}</div>
               <div className="text-sm font-semibold text-slate-500">
                 {formatTz(booking.checkIn, 'dd MMM', tz, lang)} {' - '}

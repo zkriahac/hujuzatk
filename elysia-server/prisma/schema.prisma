@@ -50,6 +50,7 @@ model Tenant {
   settings             TenantSettings?
   channelIntegrations  ChannelIntegration[]
   expenses             Expense[]
+  deletedExternalBookings DeletedExternalBooking[]
 
   @@index([email])
   @@index([subscriptionStatus])
@@ -116,8 +117,10 @@ model Booking {
   notes             String?
 
   // Channel sync (iCal import)
-  externalId        String?   // iCal UID for deduplication
-  externalChannel   String?   // Channel at sync time: 'airbnb', 'gathern', 'booking.com'
+  externalId             String?   // iCal UID for deduplication
+  externalChannel        String?   // Channel at sync time: 'airbnb', 'gathern', 'booking.com'
+  externalUrl            String?   // Reservation URL extracted from iCal description (clickable in view)
+  externalReservationId  String?   // Human-readable code (HM8JQYPYEF / 11180423) — searchable
 
   // Human-friendly booking ID (sequential per tenant — assigned via the
   // Tenant.nextBookingNumber atomic counter)
@@ -136,7 +139,9 @@ model Booking {
   @@index([checkIn])
   @@index([checkOut])
   @@index([createdAt])
-  @@unique([tenantId, id])
+  @@index([tenantId, checkIn, checkOut]) // Calendar date-range query (hottest read)
+  @@index([tenantId, externalChannel])   // Synced vs manual filter, sync-upsert lookup
+  @@index([tenantId, externalReservationId]) // Reservation-code lookup
   @@unique([tenantId, externalId]) // NULL is distinct in Postgres — won't conflict with manual bookings
   @@unique([tenantId, bookingNumber]) // Sequential per tenant
 }
@@ -207,6 +212,7 @@ model ChannelIntegration {
   label           String?   // Optional user-facing name, e.g. "Airbnb Villa 1"
 
   isActive        Boolean   @default(true)
+  syncBlocks      Boolean   @default(false)  // Whether to import "[…block]" host-block events. OFF by default — most users only want real bookings.
 
   lastSyncedAt    DateTime?
   lastSyncStatus  String?   // 'success' | 'error' | 'partial'
@@ -256,6 +262,22 @@ model MonthlyOccupancyCache {
   updatedAt      DateTime @updatedAt
 
   @@unique([tenantId, roomId, year, month])
+  @@index([tenantId])
+}
+
+// ============= TOMBSTONES FOR USER-DELETED SYNCED BOOKINGS =============
+// When a user deletes a booking that came from a channel sync (has externalId),
+// we record a tombstone here. The next sync skips events whose UID is in this
+// table for the same tenant — prevents the "deleted, then resynced and came
+// back" surprise. Manual bookings (no externalId) skip this entirely.
+model DeletedExternalBooking {
+  id         String   @id @default(uuid())
+  tenantId   String
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  externalId String
+  deletedAt  DateTime @default(now())
+
+  @@unique([tenantId, externalId])
   @@index([tenantId])
 }
 

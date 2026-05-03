@@ -5,6 +5,8 @@ import { UserAuthShell, WorkspaceShell } from './pages/AuthShell';
 import { SuperAdminShell } from './pages/SuperAdminShell';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import { StoryPage } from './pages/StoryPage';
+import AboutPage from './pages/AboutPage';
+import ContactPage from './pages/ContactPage';
 import { NotFound } from './pages/NotFound';
 import { trackPageView } from './lib/analytics';
 import { authService, type SessionUser } from './lib/authService';
@@ -47,6 +49,8 @@ export function App() {
 
   if (path === '/') return <RootRedirect />;
   if (path === '/story') return <StoryPage />;
+  if (path === '/about') return <AboutPage />;
+  if (path === '/contact') return <ContactPage />;
   if (path === '/privacy') return <PrivacyPolicy />;
   if (path === '/terms') return <TermsOfService />;
   if (path === '/404') return <NotFound />;
