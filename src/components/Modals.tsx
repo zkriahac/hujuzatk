@@ -370,7 +370,19 @@ export function BookingDetailsModal({
     city: booking.city || '',
     phone: booking.guestPhone || '',
     idNumber: (booking as any).guestIdNumber || '',
-    source: (booking as any).source || '',
+    // Normalize the source value so the <option> with the same casing matches.
+    // Sync stores channel names lowercase ('airbnb' / 'gathern' / 'booking.com'),
+    // but our select options are capitalized. Without this, synced bookings would
+    // render the select stuck on the empty placeholder even though the booking
+    // does have a source.
+    source: ((s: string) => {
+      if (!s) return '';
+      const lower = s.toLowerCase();
+      if (lower === 'airbnb')      return 'Airbnb';
+      if (lower === 'gathern')     return 'Gathern';
+      if (lower === 'booking.com') return 'Booking.com';
+      return s; // already in correct casing (Direct, WhatsApp, Phone, etc.)
+    })((booking as any).source || ''),
     room: booking.room || '',
     checkIn: booking.checkIn ? booking.checkIn.split('T')[0] : '',
     nights: nightsFromBooking,
