@@ -370,9 +370,10 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
       // 1) Channel sync (best-effort)
       if (session.tenant.integrationsEnabled !== false) {
         try {
+          // No mode → each integration uses its own `syncLookbackDays` setting (Settings → Channel Integrations).
           const { data } = await apolloClient.mutate({
             mutation: SYNC_ALL_CHANNELS_MUTATION,
-            variables: { mode: 'future' },
+            variables: { mode: null },
           });
           const results = (data as any)?.syncAllChannels;
           if (results && results.length > 0) {
@@ -871,6 +872,7 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
           currency={currency}
           lang={lang}
           anchor={modalAnchor}
+          defaultNightPrice={(session.tenant as any).defaultNightPrice}
         />
       )}
 

@@ -1,17 +1,35 @@
 {
-  "short_name": "Hujuzatk PMS",
+  "short_name": "Hujuzatk",
   "name": "Hujuzatk - Property Management System",
   "icons": [
     {
+      "src": "icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512-maskable.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "maskable"
+    },
+    {
       "src": "favicon.svg",
       "type": "image/svg+xml",
-      "sizes": "any",
-      "purpose": "any maskable"
+      "sizes": "any"
     }
   ],
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
+  "orientation": "portrait-primary",
   "theme_color": "#0E9F6E",
   "background_color": "#ffffff",
   "description": "Professional SaaS Property Management System with 5-Year Calendar, Reports, and Invoices.",

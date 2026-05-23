@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Globe, Layout, X, CurrencyDollar, Buildings, Crown, Check, Calendar, Upload } from 'phosphor-react';
+import { Globe, Layout, X, CurrencyDollar, Buildings, Crown, Check, Calendar, Upload, DeviceMobile, ShareNetwork, Plus as PlusIcon, CheckCircle } from 'phosphor-react';
 import { authService } from '../lib/authService';
 import type { SessionUser } from '../lib/authService';
 import { t, type Language } from '../lib/i18n';
@@ -10,6 +10,8 @@ import { ImportBookingsModal } from './Modals';
 import { PLANS, type PlanKey, isUnlimited } from '../lib/planConfig';
 import { formatTz } from '../utils/formatTz';
 import { cn } from '../utils/cn';
+import { sanitizeNumeric } from '../utils/digits';
+import { usePwaInstall } from '../lib/pwaInstall';
 
 interface CompanyForm {
   companyName: string;
@@ -37,6 +39,8 @@ export default function SettingsView({ session, onSessionChange, lang }: Setting
   const [tenant, setTenant] = useState<Tenant>(session.tenant);
   const [saving, setSaving] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
+  const pwa = usePwaInstall();
+  const [iosExpanded, setIosExpanded] = useState(false);
   const [defaultNightPrice, setDefaultNightPrice] = useState<number>(session.tenant.defaultNightPrice ?? 50);
   const [defaultTax, setDefaultTax] = useState<number>(session.tenant.defaultTax ?? 0);
   const [company, setCompany] = useState<CompanyForm>({
@@ -268,11 +272,11 @@ export default function SettingsView({ session, onSessionChange, lang }: Setting
               {t(lang, 'settings.defaultNightPrice')}
             </label>
             <input
-              type="number"
-              min="0"
-              step="0.1"
-              value={defaultNightPrice}
-              onChange={(e) => setDefaultNightPrice(parseFloat(e.target.value) || 0)}
+              type="text"
+              inputMode="decimal"
+              pattern="[0-9]*\.?[0-9]*"
+              value={String(defaultNightPrice)}
+              onChange={(e) => setDefaultNightPrice(parseFloat(sanitizeNumeric(e.target.value)) || 0)}
               className="w-full bg-slate-50 border-slate-100 rounded-2xl px-4 py-3 font-black focus:ring-2 focus:ring-emerald-500 transition-all"
             />
           </div>
@@ -281,16 +285,88 @@ export default function SettingsView({ session, onSessionChange, lang }: Setting
               {t(lang, 'settings.defaultTax')}
             </label>
             <input
-              type="number"
-              min="0"
-              max="100"
-              step="0.1"
-              value={defaultTax}
-              onChange={(e) => setDefaultTax(parseFloat(e.target.value) || 0)}
+              type="text"
+              inputMode="decimal"
+              pattern="[0-9]*\.?[0-9]*"
+              value={String(defaultTax)}
+              onChange={(e) => setDefaultTax(parseFloat(sanitizeNumeric(e.target.value)) || 0)}
               className="w-full bg-slate-50 border-slate-100 rounded-2xl px-4 py-3 font-black focus:ring-2 focus:ring-emerald-500 transition-all"
             />
           </div>
         </div>
+      </div>
+
+      {/* Install App — PWA install entry point. Shows different content depending on
+          whether the browser surfaced a beforeinstallprompt (Chrome/Edge → one-click),
+          we detected iOS Safari (3-step Share menu instructions), or already running
+          standalone (just an installed badge). */}
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-xl p-5">
+        <h2 className="text-2xl font-black text-slate-900 mb-3 flex items-center gap-3">
+          <DeviceMobile size={28} className="text-emerald-500" />
+          {pwa.ios ? t(lang, 'settings.installAppIos') : t(lang, 'settings.installApp')}
+        </h2>
+
+        {pwa.standalone ? (
+          <div className="flex items-center gap-2 text-sm font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-2xl px-4 py-3">
+            <CheckCircle size={18} weight="fill" />
+            {t(lang, 'settings.installAppInstalled')}
+          </div>
+        ) : pwa.canPrompt ? (
+          <>
+            <p className="text-sm text-slate-500 leading-relaxed mb-4">
+              {t(lang, 'settings.installAppBody')}
+            </p>
+            <button
+              onClick={() => { void pwa.install(); }}
+              className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm px-5 py-3 rounded-2xl transition-colors"
+            >
+              <DeviceMobile size={18} weight="bold" />
+              {t(lang, 'settings.installAppButton')}
+            </button>
+          </>
+        ) : pwa.ios ? (
+          <>
+            <p className="text-sm text-slate-500 leading-relaxed mb-4">
+              {t(lang, 'settings.installAppIosBody')}
+            </p>
+            <button
+              onClick={() => setIosExpanded((v) => !v)}
+              className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm px-5 py-3 rounded-2xl transition-colors"
+            >
+              <ShareNetwork size={18} weight="bold" />
+              {iosExpanded ? t(lang, 'settings.installAppHideSteps') : t(lang, 'settings.installAppShowSteps')}
+            </button>
+            {iosExpanded && (
+              <ol className="mt-4 space-y-3 text-sm text-slate-600 leading-relaxed">
+                <li className="flex items-start gap-3">
+                  <span className="shrink-0 w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 text-xs font-black flex items-center justify-center">1</span>
+                  <span className="flex items-center gap-1.5 flex-wrap">
+                    {t(lang, 'pwa.iosStep1')}
+                    <ShareNetwork size={16} weight="bold" className="text-blue-500 inline" />
+                  </span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="shrink-0 w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 text-xs font-black flex items-center justify-center">2</span>
+                  <span className="flex items-center gap-1.5 flex-wrap">
+                    {t(lang, 'pwa.iosStep2')}
+                    <PlusIcon size={16} weight="bold" className="text-slate-500 inline" />
+                  </span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="shrink-0 w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 text-xs font-black flex items-center justify-center">3</span>
+                  <span>{t(lang, 'pwa.iosStep3')}</span>
+                </li>
+              </ol>
+            )}
+          </>
+        ) : (
+          // No beforeinstallprompt fired and not iOS Safari → in-app browser (Facebook /
+          // Instagram / WeChat WebView), Firefox desktop, or a not-yet-eligible Chrome.
+          // Show a hint rather than a dead button.
+          <p className="text-sm text-slate-500 leading-relaxed bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3">
+            {t(lang, 'settings.installAppUnsupported')}
+          </p>
+        )}
       </div>
 
       {/* Company profile — printed onto invoices */}

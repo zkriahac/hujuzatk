@@ -9,6 +9,16 @@ import { useBulkImportBookings } from '../hooks/useGraphQL';
 import { cn } from '../utils/cn';
 import { t, type Language } from '../lib/i18n';
 import { formatTz } from '../utils/formatTz';
+import { sanitizeNumeric } from '../utils/digits';
+
+// Parse a money input to a number rounded to 2 decimal places (cents).
+// Empty / NaN → 0. Accepts Arabic-Indic / Persian digits via sanitizeNumeric so an
+// Arabic keyboard on iOS doesn't strand the field at NaN.
+const to2dp = (v: string): number => {
+  const n = parseFloat(sanitizeNumeric(v));
+  return Number.isFinite(n) ? Math.round(n * 100) / 100 : 0;
+};
+
 
 // ---------- ANCHORED-POSITION HOOK ----------
 // Returns a ref to attach to the modal card and a {top, left} style to apply when an anchor
@@ -84,12 +94,17 @@ interface AddBookingModalProps {
   currency: string;
   lang: Language;
   anchor?: ModalAnchor;
+  /** Per-tenant default from Settings → falls through to 50 if unset. */
+  defaultNightPrice?: number;
 }
 
-export function AddBookingModal({ onClose, onAdd, initialDate, initialRoom, rooms, currency, lang, anchor }: AddBookingModalProps) {
+export function AddBookingModal({ onClose, onAdd, initialDate, initialRoom, rooms, currency, lang, anchor, defaultNightPrice }: AddBookingModalProps) {
   const guestNameInputRef = useRef<HTMLInputElement>(null);
   const [nameError, setNameError] = useState(false);
   const { ref: anchorRef, pos: anchorPos } = useAnchoredPosition(anchor);
+
+  // Pull from tenant settings (Settings → Default Night Price). Fallback 50 matches authService.
+  const initialNightPrice = typeof defaultNightPrice === 'number' && defaultNightPrice > 0 ? defaultNightPrice : 50;
 
   const [f, setF] = useState({
     guestName: '',
@@ -100,9 +115,14 @@ export function AddBookingModal({ onClose, onAdd, initialDate, initialRoom, room
     checkIn: initialDate,
     nights: 1,
     room: initialRoom,
-    nightPrice: 20,
-    deposit: 0,
   });
+  // Money inputs are stored as strings so mid-typed values like "12." aren't snapped
+  // back to "12" between keystrokes. Sanitized on every change (Arabic digits → ASCII)
+  // and converted to numbers via to2dp() for totals + submit.
+  const [nightPriceStr, setNightPriceStr] = useState<string>(String(initialNightPrice));
+  const [depositStr, setDepositStr] = useState<string>('');
+  const nightPriceNum = to2dp(nightPriceStr);
+  const depositNum = to2dp(depositStr);
   const [notes, setNotes] = useState('');
   const [showExtra, setShowExtra] = useState(false);
 
@@ -111,8 +131,8 @@ export function AddBookingModal({ onClose, onAdd, initialDate, initialRoom, room
   }, []);
 
   const checkOut = format(addDays(parseISO(f.checkIn), Math.max(1, f.nights)), 'yyyy-MM-dd');
-  const totalPrice = Math.max(1, f.nights) * f.nightPrice;
-  const remaining = totalPrice - f.deposit;
+  const totalPrice = Math.max(1, f.nights) * nightPriceNum;
+  const remaining = totalPrice - depositNum;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -121,7 +141,7 @@ export function AddBookingModal({ onClose, onAdd, initialDate, initialRoom, room
       guestNameInputRef.current?.focus();
       return;
     }
-    onAdd({ guestName: f.guestName, city: f.city, phone: f.phone, guestIdNumber: f.idNumber || null, source: f.source, room: f.room, checkIn: f.checkIn, checkOut, nightPrice: f.nightPrice, deposit: f.deposit, notes: notes || undefined });
+    onAdd({ guestName: f.guestName, city: f.city, phone: f.phone, guestIdNumber: f.idNumber || null, source: f.source, room: f.room, checkIn: f.checkIn, checkOut, nightPrice: nightPriceNum, deposit: depositNum, notes: notes || undefined });
   };
 
   return (
@@ -285,10 +305,12 @@ export function AddBookingModal({ onClose, onAdd, initialDate, initialRoom, room
               <div className="relative">
                 <div className={cn('absolute inset-y-0 flex items-center pointer-events-none text-slate-300 text-[10px] font-black uppercase', lang === 'ar' ? 'right-4' : 'left-4')}>{currency}</div>
                 <input
-                  type="number"
+                  type="text"
+                  inputMode="decimal"
+                  pattern="[0-9]*\.?[0-9]*"
                   className={cn('w-full bg-slate-50 border-slate-100 rounded-2xl py-2.5 text-sm font-black focus:ring-2 focus:ring-emerald-500 transition-all', lang === 'ar' ? 'pr-12 pl-4' : 'pl-12 pr-4')}
-                  value={f.nightPrice}
-                  onChange={(e) => setF({ ...f, nightPrice: parseInt(e.target.value) || 0 })}
+                  value={nightPriceStr}
+                  onChange={(e) => setNightPriceStr(sanitizeNumeric(e.target.value))}
                 />
               </div>
             </div>
@@ -305,10 +327,13 @@ export function AddBookingModal({ onClose, onAdd, initialDate, initialRoom, room
               <div>
                 <p className="text-[9px] font-black uppercase tracking-[0.18em] text-slate-400 mb-1">{t(lang, 'booking.deposit')}</p>
                 <input
-                  type="number"
+                  type="text"
+                  inputMode="decimal"
+                  pattern="[0-9]*\.?[0-9]*"
+                  placeholder="0"
                   className="w-full bg-white border border-slate-200 rounded-xl px-2 py-1 text-base font-black tabular-nums focus:ring-2 focus:ring-emerald-500 transition-all"
-                  value={f.deposit}
-                  onChange={(e) => setF({ ...f, deposit: parseInt(e.target.value) || 0 })}
+                  value={depositStr}
+                  onChange={(e) => setDepositStr(sanitizeNumeric(e.target.value))}
                 />
               </div>
               <div>
@@ -383,15 +408,19 @@ export function BookingDetailsModal({
     room: booking.room || '',
     checkIn: booking.checkIn ? booking.checkIn.split('T')[0] : '',
     nights: nightsFromBooking,
-    nightPrice: booking.nightPrice || 0,
-    deposit: booking.deposit || 0,
   });
+  // String mirrors so mid-typed "12." doesn't collapse to "12" between keystrokes,
+  // and so Arabic-Indic digits can be sanitized in place before parseFloat.
+  const [nightPriceStr, setNightPriceStr] = useState<string>(String(booking.nightPrice || 0));
+  const [depositStr, setDepositStr] = useState<string>(booking.deposit ? String(booking.deposit) : '');
+  const nightPriceNum = to2dp(nightPriceStr);
+  const depositNum = to2dp(depositStr);
   const [editNotes, setEditNotes] = useState((booking as any).notes || '');
   const [showExtra, setShowExtra] = useState(!!(booking.city || booking.guestPhone || (booking as any).notes));
 
   const checkOut = format(addDays(parseISO(f.checkIn), Math.max(1, f.nights)), 'yyyy-MM-dd');
-  const totalPrice = Math.max(1, f.nights) * f.nightPrice;
-  const remaining = totalPrice - f.deposit;
+  const totalPrice = Math.max(1, f.nights) * nightPriceNum;
+  const remaining = totalPrice - depositNum;
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
@@ -405,28 +434,25 @@ export function BookingDetailsModal({
       room: f.room,
       checkIn: f.checkIn,
       checkOut,
-      nightPrice: f.nightPrice,
-      deposit: f.deposit,
+      nightPrice: nightPriceNum,
+      deposit: depositNum,
       notes: editNotes.trim() !== '' ? editNotes : null,
     });
   };
 
   if (editMode) {
+    // Edit form is dense + tall; anchoring it to the originating calendar cell creates
+    // an awkward off-screen modal. Always center the edit modal regardless of anchor.
     return (
       <div
-        className={cn(
-          'fixed inset-0 z-[200]',
-          anchorPos ? 'bg-slate-900/10' : 'bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4',
-        )}
+        className="fixed inset-0 z-[200] bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4"
         onClick={() => setEditMode(false)}
       >
         <form
-          ref={anchorRef as any}
           onSubmit={handleSave}
           onClick={(e) => e.stopPropagation()}
           dir={lang === 'ar' ? 'rtl' : 'ltr'}
-          style={anchorPos ? { position: 'absolute', top: anchorPos.top, left: anchorPos.left } : undefined}
-          className={cn('relative bg-white rounded-2xl max-w-lg w-full p-6 sm:p-5 shadow-3xl max-h-[95vh] overflow-y-auto', anchorPos && 'max-w-[min(32rem,calc(100vw-2rem))]')}
+          className="relative bg-white rounded-2xl max-w-lg w-full p-6 sm:p-5 shadow-3xl max-h-[95vh] overflow-y-auto"
         >
           <button type="button" onClick={() => setEditMode(false)} className="absolute top-4 end-4 p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all">
             <X size={20} weight="bold" />
@@ -579,10 +605,12 @@ export function BookingDetailsModal({
                 <div className="relative">
                   <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-slate-300 text-[10px] font-black uppercase">{currency}</div>
                   <input
-                    type="number"
+                    type="text"
+                    inputMode="decimal"
+                    pattern="[0-9]*\.?[0-9]*"
                     className="w-full bg-slate-50 border-slate-100 rounded-2xl pl-12 pr-4 py-2.5 text-sm font-black focus:ring-2 focus:ring-emerald-500 transition-all"
-                    value={f.nightPrice}
-                    onChange={(e) => setF({ ...f, nightPrice: parseInt(e.target.value) || 0 })}
+                    value={nightPriceStr}
+                    onChange={(e) => setNightPriceStr(sanitizeNumeric(e.target.value))}
                   />
                 </div>
               </div>
@@ -597,10 +625,13 @@ export function BookingDetailsModal({
                 <div>
                   <p className="text-[9px] font-black uppercase tracking-[0.18em] text-slate-400 mb-1">{t(lang, 'booking.deposit')}</p>
                   <input
-                    type="number"
+                    type="text"
+                    inputMode="decimal"
+                    pattern="[0-9]*\.?[0-9]*"
+                    placeholder="0"
                     className="w-full bg-white border border-slate-200 rounded-xl px-2 py-1 text-base font-black tabular-nums focus:ring-2 focus:ring-emerald-500 transition-all"
-                    value={f.deposit}
-                    onChange={(e) => setF({ ...f, deposit: parseInt(e.target.value) || 0 })}
+                    value={depositStr}
+                    onChange={(e) => setDepositStr(sanitizeNumeric(e.target.value))}
                   />
                 </div>
                 <div>

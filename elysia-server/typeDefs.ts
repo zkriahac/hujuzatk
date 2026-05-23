@@ -186,6 +186,7 @@ export const typeDefs = `
     label: String
     isActive: Boolean!
     syncBlocks: Boolean!
+    syncLookbackDays: Int
     lastSyncedAt: DateTime
     lastSyncStatus: String
     lastSyncMessage: String
@@ -216,6 +217,7 @@ export const typeDefs = `
     label: String
     isActive: Boolean
     syncBlocks: Boolean
+    syncLookbackDays: Int
   }
 
   type Expense {

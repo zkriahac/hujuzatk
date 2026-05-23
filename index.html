@@ -216,7 +216,16 @@
     <meta name="theme-color" content="#0E9F6E">
     <link rel="icon" href="/favicon.svg?v=2" type="image/svg+xml">
     <link rel="manifest" href="/manifest.json" />
-    <link rel="apple-touch-icon" href="/favicon.svg?v=2" />
+
+    <!-- iOS PWA install support. iOS Safari ignores manifest icons for Add-to-Home-Screen
+         and requires a PNG apple-touch-icon. apple-mobile-web-app-capable hides the Safari
+         chrome once installed; status-bar-style + the theme-color above match the brand. -->
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Hujuzatk" />
     <link rel="sitemap" type="application/xml" href="/sitemap.xml" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />

@@ -1,6 +1,13 @@
-const CACHE_NAME = 'hujuzatk-v2';
+// Bump on every change that affects /manifest.json or the precached icons.
+// Returning users' SWs are cache-first for static assets, so without a bump iOS
+// keeps reading the previous manifest (which had no PNG apple-touch-icon).
+const CACHE_NAME = 'hujuzatk-v3';
 const STATIC_ASSETS = [
-  '/manifest.json'
+  '/manifest.json',
+  '/icon-192.png',
+  '/icon-512.png',
+  '/icon-512-maskable.png',
+  '/apple-touch-icon.png'
 ];
 
 // Install: cache only static non-HTML assets, skip waiting immediately
