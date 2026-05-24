@@ -556,10 +556,19 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
       return inRange && roomMatch;
     });
 
+    // remaining is stored on the booking but fall back to (totalPrice - deposit) for
+    // older rows where the server didn't compute it.
+    const remainingOf = (b: Booking): number =>
+      typeof (b as any).remaining === 'number'
+        ? (b as any).remaining
+        : Math.max(0, (b.totalPrice || 0) - (b.deposit || 0));
+
     const roomStats = rooms.map((room) => {
       const roomBookings = filtered.filter((b: Booking) => b.room === room.id);
       const totalNights = roomBookings.reduce((sum: number, b: Booking) => sum + b.nights, 0);
       const totalRevenue = roomBookings.reduce((sum: number, b: Booking) => sum + b.totalPrice, 0);
+      const totalDeposit = roomBookings.reduce((sum: number, b: Booking) => sum + (b.deposit || 0), 0);
+      const totalRemaining = roomBookings.reduce((sum: number, b: Booking) => sum + remainingOf(b), 0);
       const start = parseISO(reportStartDate);
       const end = parseISO(reportEndDate);
       const daysInReport = differenceInDays(end, start) + 1;
@@ -574,10 +583,12 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
         }
       }
       const occupancyRate = daysInReport > 0 ? (occupiedDays / daysInReport) * 100 : 0;
-      return { roomId: room.id, roomName: room.name, totalNights, totalRevenue, occupancyRate };
+      return { roomId: room.id, roomName: room.name, totalNights, totalRevenue, totalDeposit, totalRemaining, occupancyRate };
     });
 
     const totalRevenue = filtered.reduce((sum: number, b: Booking) => sum + b.totalPrice, 0);
+    const totalDeposit = filtered.reduce((sum: number, b: Booking) => sum + (b.deposit || 0), 0);
+    const totalRemaining = filtered.reduce((sum: number, b: Booking) => sum + remainingOf(b), 0);
     const totalNights = filtered.reduce((sum: number, b: Booking) => sum + b.nights, 0);
 
     const months = eachMonthOfInterval({ start: parseISO(reportStartDate), end: parseISO(reportEndDate) });
@@ -606,7 +617,7 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
       return { month: formatTz(month, 'MMM yyyy', tz, lang), revenue, fillRate };
     });
 
-    return { roomStats, totalRevenue, totalNights, bookingCount: filtered.length, monthlyStats };
+    return { roomStats, totalRevenue, totalDeposit, totalRemaining, totalNights, bookingCount: filtered.length, monthlyStats };
   }, [bookings, reportStartDate, reportEndDate, reportRoomFilter, reportType, rooms, tz, lang]);
 
   const handleLogout = async () => {
