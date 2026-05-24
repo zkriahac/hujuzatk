@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import {
-  ArrowsClockwise, Trash, WarningCircle, Link as LinkIcon,
+  CloudArrowDown, Trash, WarningCircle, Link as LinkIcon,
   GearSix, X, Plus,
 } from 'phosphor-react';
 import { apolloClient } from '../lib/apolloClient';
@@ -235,7 +235,7 @@ export default function IntegrationsView({ session, lang, onNavigateToSettings }
               title={t(lang, 'integrations.syncFutureTip')}
               className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-emerald-600 text-white text-sm font-black hover:bg-emerald-700 disabled:opacity-50 transition-all"
             >
-              <ArrowsClockwise size={16} className={syncingAll && syncingAllMode === 'future' ? 'animate-spin' : ''} />
+              <CloudArrowDown size={16} weight="bold" className={syncingAll && syncingAllMode === 'future' ? 'animate-spin' : ''} />
               {syncingAll && syncingAllMode === 'future' ? t(lang, 'integrations.syncing') : t(lang, 'integrations.syncFuture')}
             </button>
             {/* Full re-sync: includes past bookings. Heavier — used to back-fill or audit. */}
@@ -245,7 +245,7 @@ export default function IntegrationsView({ session, lang, onNavigateToSettings }
               title={t(lang, 'integrations.syncAllTip')}
               className="flex items-center gap-2 px-4 py-2 rounded-2xl border border-slate-200 bg-white text-slate-700 text-sm font-black hover:bg-slate-50 disabled:opacity-50 transition-all"
             >
-              <ArrowsClockwise size={16} className={syncingAll && syncingAllMode === 'all' ? 'animate-spin' : ''} />
+              <CloudArrowDown size={16} weight="bold" className={syncingAll && syncingAllMode === 'all' ? 'animate-spin' : ''} />
               {syncingAll && syncingAllMode === 'all' ? t(lang, 'integrations.syncing') : t(lang, 'integrations.syncAll')}
             </button>
           </div>
@@ -382,7 +382,7 @@ function ConnectedCell(props: {
           title={t(lang, 'integrations.syncNow')}
           className="p-1.5 rounded-lg hover:bg-emerald-100 text-emerald-700 disabled:opacity-40"
         >
-          <ArrowsClockwise size={14} weight="bold" className={isSyncing ? 'animate-spin' : ''} />
+          <CloudArrowDown size={14} weight="bold" className={isSyncing ? 'animate-spin' : ''} />
         </button>
         <button
           onClick={onEdit}

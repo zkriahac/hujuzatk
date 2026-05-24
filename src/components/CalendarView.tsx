@@ -73,6 +73,8 @@ interface CalendarViewProps {
   onSync?: () => Promise<void> | void;
   refreshing?: boolean;
   syncing?: boolean;
+  /** When false, hide the channel sync action — the user's plan can't talk to channels. */
+  integrationsEnabled?: boolean;
   onLoadMorePast: () => Promise<void>;
   onLoadMoreFuture: () => Promise<void>;
   lang: Language;
@@ -100,6 +102,7 @@ export default function CalendarView({
   onSync,
   refreshing,
   syncing,
+  integrationsEnabled = true,
   onLoadMorePast,
   onLoadMoreFuture,
   lang,
@@ -461,6 +464,10 @@ export default function CalendarView({
               disabled: syncing || refreshing,
               spin: syncing,
               tone: 'emerald',
+              // Hide on plans without channel integrations (trial / basic) — the action
+              // is a no-op there and surfacing it just confuses users into thinking
+              // it's broken.
+              hidden: !integrationsEnabled,
             },
             {
               icon: <ArrowsClockwise size={16} weight="bold" />,

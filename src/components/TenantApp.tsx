@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { format, addMonths, differenceInCalendarDays, differenceInDays, eachMonthOfInterval, endOfMonth, parseISO, startOfMonth } from 'date-fns';
-import { CaretDown, CalendarBlank, ListBullets, ChartPie, GearSix, ShieldCheck, ArrowsClockwise, CurrencyCircleDollar } from 'phosphor-react';
+import { CaretDown, CalendarBlank, ListBullets, ChartPie, GearSix, ShieldCheck, ArrowsClockwise, CloudArrowDown, CurrencyCircleDollar } from 'phosphor-react';
 import { authService, type SessionUser } from '../lib/authService';
 import { dataService } from '../lib/dataService';
 import { trackLogout, trackBookingCreated, trackBookingCanceled, trackViewChange } from '../lib/analytics';
@@ -639,7 +639,7 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
       })();
   const ICONS: Record<View, any> = {
     calendar: CalendarBlank, list: ListBullets, reports: ChartPie,
-    integrations: ArrowsClockwise, expenses: CurrencyCircleDollar,
+    integrations: CloudArrowDown, expenses: CurrencyCircleDollar,
     settings: GearSix, admin: ShieldCheck,
   };
 
@@ -715,7 +715,7 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
                 data-tour="view-switcher"
                 className="flex items-center gap-1.5 px-2.5 py-2.5 rounded-lg bg-emerald-50 text-emerald-700 text-[10px] sm:text-[11px] font-black uppercase tracking-widest hover:bg-emerald-100 transition-colors"
               >
-                {(() => { const I = { calendar: CalendarBlank, list: ListBullets, reports: ChartPie, integrations: ArrowsClockwise, expenses: CurrencyCircleDollar, settings: GearSix, admin: ShieldCheck }[currentView]; return <I size={14} weight="fill" />; })()}
+                {(() => { const I = { calendar: CalendarBlank, list: ListBullets, reports: ChartPie, integrations: CloudArrowDown, expenses: CurrencyCircleDollar, settings: GearSix, admin: ShieldCheck }[currentView]; return <I size={14} weight="fill" />; })()}
                 {t(lang, `nav.${currentView}`)}
                 <CaretDown size={11} weight="bold" className={cn('transition-transform', showViewMenu && 'rotate-180')} />
               </button>
@@ -727,7 +727,7 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
                       ? ['admin'] as View[]
                       : (['calendar', 'list', 'expenses', 'reports'] as View[])
                     ).map((v) => {
-                      const Icon = { calendar: CalendarBlank, list: ListBullets, reports: ChartPie, integrations: ArrowsClockwise, expenses: CurrencyCircleDollar, settings: GearSix, admin: ShieldCheck }[v];
+                      const Icon = { calendar: CalendarBlank, list: ListBullets, reports: ChartPie, integrations: CloudArrowDown, expenses: CurrencyCircleDollar, settings: GearSix, admin: ShieldCheck }[v];
                       return (
                         <button
                           key={v}
@@ -784,6 +784,7 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
             onSync={syncCalendar}
             refreshing={refreshingCalendar}
             syncing={syncingCalendar}
+            integrationsEnabled={session.tenant.integrationsEnabled !== false}
             onLoadMorePast={loadMorePast}
             onLoadMoreFuture={loadMoreFuture}
             lang={lang}
