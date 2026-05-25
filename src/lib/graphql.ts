@@ -184,6 +184,9 @@ export const GET_BOOKINGS_BY_DATE_RANGE_QUERY = gql`
       nightPrice
       totalPrice
       status
+      source
+      externalChannel
+      notes
     }
   }
 `;

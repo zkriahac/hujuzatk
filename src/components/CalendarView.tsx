@@ -6,7 +6,9 @@ import { t, type Language } from '../lib/i18n';
 import { formatTz } from '../utils/formatTz';
 import CornerActionMenu, { type ActionItem } from './CornerActionMenu';
 
-// Room group color palettes — header bg/text and booking cell bg/border/text
+// Room group color palettes — used ONLY for the room-name column headers so rooms
+// stay visually distinct. Booking cells use CHANNEL_BOOKING_PALETTE below (4 hues
+// keyed by source: manual / Airbnb / Gathern / Booking.com).
 export const ROOM_GROUP_PALETTES = [
   { header: 'bg-blue-100 text-blue-800',       booking: { bg: 'bg-blue-50',    border: 'border-blue-300',    text: 'text-blue-800'    } },
   { header: 'bg-emerald-100 text-emerald-800', booking: { bg: 'bg-emerald-50', border: 'border-emerald-300', text: 'text-emerald-800' } },
@@ -17,6 +19,31 @@ export const ROOM_GROUP_PALETTES = [
   { header: 'bg-fuchsia-100 text-fuchsia-800', booking: { bg: 'bg-fuchsia-50', border: 'border-fuchsia-300', text: 'text-fuchsia-800' } },
   { header: 'bg-lime-100 text-lime-800',       booking: { bg: 'bg-lime-50',    border: 'border-lime-300',    text: 'text-lime-800'    } },
 ];
+
+// Channel palette for booking cells. Hue picks roughly match each platform's brand:
+//   manual      → emerald (the app's own colour, "yours")
+//   airbnb      → rose   (#FF5A5F-adjacent)
+//   gathern     → teal   (#00C896-adjacent)
+//   booking.com → blue   (#003580-adjacent)
+type ChannelKey = 'manual' | 'airbnb' | 'gathern' | 'booking.com';
+export const CHANNEL_BOOKING_PALETTE: Record<ChannelKey, { bg: string; border: string; text: string }> = {
+  'manual':     { bg: 'bg-emerald-50', border: 'border-emerald-400', text: 'text-emerald-900' },
+  'airbnb':     { bg: 'bg-rose-50',    border: 'border-rose-400',    text: 'text-rose-900'    },
+  'gathern':    { bg: 'bg-teal-50',    border: 'border-teal-400',    text: 'text-teal-900'    },
+  'booking.com':{ bg: 'bg-blue-50',    border: 'border-blue-400',    text: 'text-blue-900'    },
+};
+
+// Resolve a booking to one of the four channels. externalChannel wins (set by
+// channelSync). Fallback: parse the free-text `source` field (case-insensitive)
+// because older manual entries pre-channelSync only had `source`. Anything that
+// doesn't match a known channel falls back to "manual".
+export function bookingChannel(b: { externalChannel?: string | null; source?: string | null }): ChannelKey {
+  const raw = (b.externalChannel || b.source || '').toLowerCase().trim();
+  if (raw === 'airbnb') return 'airbnb';
+  if (raw === 'gathern') return 'gathern';
+  if (raw === 'booking.com' || raw === 'booking') return 'booking.com';
+  return 'manual';
+}
 
 // Visual overlay applied on top of the room-palette per booking status. Room hue still wins
 // for normal upcoming/active bookings (empty overlay); other statuses get a distinguishing
@@ -34,7 +61,11 @@ export const STATUS_OVERLAY: Record<string, string> = {
   UPCOMING: '',
   ACTIVE: '',
   COMPLETED: '',
-  CANCELED: 'line-through bg-red-50! border-red-300! text-red-700!',
+  // Cancelled bookings stay visible on the calendar so the user can see the
+  // history. We override colour + bg only (no width override) so the merge
+  // classes on multi-day slices still correctly strip joining borders. The
+  // strikethrough + saturated red signals "cancelled" without hiding the row.
+  CANCELED: 'line-through bg-red-100! border-red-500! text-red-800!',
   'NO-SHOW': 'bg-amber-100! border-amber-400! text-amber-800!',
 };
 
@@ -298,13 +329,15 @@ export default function CalendarView({
                             const checkOutStr = b.checkOut.split('T')[0];
                             return inRoom && dStr >= checkInStr && dStr < checkOutStr;
                           })
-                          // Canceled/completed render first (lower z-index) so active bookings sit on top
+                          // Render active first, then completed/no-show, then CANCELED last so a
+                          // cancelled booking that overlaps a replacement is still visible (DOM
+                          // order = stacking order for siblings without explicit z-index).
                           .sort((a: any, b: any) => {
                             const zScore = (s: string) => {
                               const u = (s || '').toUpperCase();
-                              if (u === 'CANCELED') return 0;
+                              if (u === 'CANCELED') return 2;
                               if (u === 'COMPLETED' || u === 'NO-SHOW' || u === 'NO_SHOW') return 1;
-                              return 2;
+                              return 0;
                             };
                             return zScore(a.status) - zScore(b.status);
                           });
@@ -336,7 +369,8 @@ export default function CalendarView({
                               </div>
                             )}
                             {cellBookings.map((b: any) => {
-                              const palette = ROOM_GROUP_PALETTES[roomPaletteMap[b.room] ?? 0].booking;
+                              // Colour by channel, not by room — Airbnb / Gathern / Booking.com / manual each get their own hue.
+                              const palette = CHANNEL_BOOKING_PALETTE[bookingChannel(b)];
                               const statusOverlay = STATUS_OVERLAY[(b.status || '').toUpperCase()] || '';
                               const checkInStr = b.checkIn.split('T')[0];
                               const checkOutStr = b.checkOut.split('T')[0];
@@ -391,7 +425,13 @@ export default function CalendarView({
                                     statusOverlay,
                                     // Unified emphasis across every slice of the same booking (state-driven, not per-slice :hover)
                                     (isHovered || isSelected) && 'shadow-lg z-10',
-                                    isSelected && 'ring-2 ring-emerald-500 ring-inset',
+                                    // Selection outline. Plain `border-2 border-emerald-500` — NOT a ring.
+                                    // Tailwind's `ring` is a box-shadow that always paints on all 4 sides of the
+                                    // slice, so a multi-day booking would render interior borders at every cell
+                                    // join. A border can be stripped per-side, and the existing merge classes
+                                    // above (border-b-0 / border-t-0 / border-y-0) already do exactly that —
+                                    // so promoting the existing border from 1px → 2px wraps the whole shape.
+                                    isSelected && 'border-2 border-emerald-500',
                                   )}
                                   title={`${b.bookingNumber ? '#' + String(b.bookingNumber).padStart(4, '0') + ' • ' : ''}${b.guestName}${b.notes ? ' 📝' : ''}`}
                                 >
