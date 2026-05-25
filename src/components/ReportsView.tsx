@@ -255,11 +255,11 @@ export default function ReportsView({
       {/* Cash row — what's been collected vs what's still owed across the date range.
           Pastel surface so it reads as supporting context for the bold P&L row above. */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-        <StatCard variant="pastel" tone="emerald"
+        <StatCard variant="bold" tone="emerald"
                   label={t(lang, 'reports.totalDeposit')}
                   value={`${currency} ${(reportData.totalDeposit ?? 0).toLocaleString()}`}
                   Icon={Wallet} />
-        <StatCard variant="pastel" tone="amber"
+        <StatCard variant="bold" tone="amber"
                   label={t(lang, 'reports.totalRemaining')}
                   value={`${currency} ${(reportData.totalRemaining ?? 0).toLocaleString()}`}
                   Icon={Hourglass} />
