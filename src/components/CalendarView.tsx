@@ -274,7 +274,9 @@ export default function CalendarView({
                     style={{ width: colW, minWidth: colW }}
                     className={cn(
                       'p-1 sm:p-3 border-b border-r border-slate-200 text-[10px] sm:text-xs font-black uppercase tracking-widest text-center whitespace-nowrap',
-                      ROOM_GROUP_PALETTES[roomPaletteMap[r.id] ?? 0].header,
+                      // Uniform slate header across all rooms — colour is reserved for the booking
+                      // cells (per-channel hex), not the room columns.
+                      'bg-slate-50 text-slate-700',
                     )}
                   >
                     {r.name}
