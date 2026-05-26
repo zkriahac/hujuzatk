@@ -7,7 +7,7 @@ import { formatTz } from '../utils/formatTz';
 import CornerActionMenu, { type ActionItem } from './CornerActionMenu';
 
 // Room group color palettes — used ONLY for the room-name column headers so rooms
-// stay visually distinct. Booking cells use CHANNEL_BOOKING_PALETTE below (4 hues
+// stay visually distinct. Booking cells use the channel hex map below (4 colours
 // keyed by source: manual / Airbnb / Gathern / Booking.com).
 export const ROOM_GROUP_PALETTES = [
   { header: 'bg-blue-100 text-blue-800',       booking: { bg: 'bg-blue-50',    border: 'border-blue-300',    text: 'text-blue-800'    } },
@@ -20,17 +20,46 @@ export const ROOM_GROUP_PALETTES = [
   { header: 'bg-lime-100 text-lime-800',       booking: { bg: 'bg-lime-50',    border: 'border-lime-300',    text: 'text-lime-800'    } },
 ];
 
-// Channel palette for booking cells. Hue picks roughly match each platform's brand:
-//   manual      → emerald (the app's own colour, "yours")
-//   airbnb      → rose   (#FF5A5F-adjacent)
-//   gathern     → teal   (#00C896-adjacent)
-//   booking.com → blue   (#003580-adjacent)
+// Channel brand hex (exact values per channel guidelines):
+//   Airbnb       → #FF5A5F  (red)
+//   Booking.com  → #003B95  (navy)
+//   Gathern      → #7C3AED  (violet)
+//   Direct/manual→ #10B981  (emerald)
 type ChannelKey = 'manual' | 'airbnb' | 'gathern' | 'booking.com';
-export const CHANNEL_BOOKING_PALETTE: Record<ChannelKey, { bg: string; border: string; text: string }> = {
-  'manual':     { bg: 'bg-emerald-50', border: 'border-emerald-400', text: 'text-emerald-900' },
-  'airbnb':     { bg: 'bg-rose-50',    border: 'border-rose-400',    text: 'text-rose-900'    },
-  'gathern':    { bg: 'bg-teal-50',    border: 'border-teal-400',    text: 'text-teal-900'    },
-  'booking.com':{ bg: 'bg-blue-50',    border: 'border-blue-400',    text: 'text-blue-900'    },
+export const CHANNEL_HEX: Record<ChannelKey, string> = {
+  'manual':     '#10B981',
+  'airbnb':     '#FF5A5F',
+  'gathern':    '#7C3AED',
+  'booking.com':'#003B95',
+};
+
+// Inline style for a booking cell. Background = the channel hex at ~12% alpha so
+// text stays readable; border + text use the full hex so the brand colour is
+// visible. We pass these as `style` (not Tailwind classes) so we can apply the
+// exact spec'd hex and so cancellation override (also inline) wins predictably.
+export function channelStyle(channel: ChannelKey): React.CSSProperties {
+  const hex = CHANNEL_HEX[channel];
+  return {
+    backgroundColor: `${hex}1F`, // ~12% alpha (1F = 31/255)
+    borderColor: hex,
+    color: hex,
+  };
+}
+
+// Cancelled bookings override the channel colour with a saturated red so they
+// stand out unambiguously on the calendar. Inline style → wins over any class.
+export const CANCELED_STYLE: React.CSSProperties = {
+  backgroundColor: '#FEE2E2', // red-100
+  borderColor: '#DC2626',     // red-600
+  color: '#7F1D1D',           // red-900
+  textDecoration: 'line-through',
+};
+
+// No-show override — amber, matches the legacy STATUS_OVERLAY hue.
+export const NO_SHOW_STYLE: React.CSSProperties = {
+  backgroundColor: '#FEF3C7', // amber-100
+  borderColor: '#F59E0B',     // amber-500
+  color: '#92400E',           // amber-900
 };
 
 // Resolve a booking to one of the four channels. externalChannel wins (set by
@@ -57,15 +86,14 @@ export function bookingChannel(b: { externalChannel?: string | null; source?: st
 // COMPLETED has no override on purpose — past bookings render in their normal room
 // palette, same as upcoming. The visual cue for "what's happening now" is a thicker
 // border applied per-render to active + imminent (checkIn within 1 day) bookings.
+// Status-driven class overlay — used to be applied to booking cells, but bg /
+// border / text are now driven by inline style (channelStyle + CANCELED_STYLE).
+// Kept exported in case other surfaces want to mirror the visual language.
 export const STATUS_OVERLAY: Record<string, string> = {
   UPCOMING: '',
   ACTIVE: '',
   COMPLETED: '',
-  // Cancelled bookings stay visible on the calendar so the user can see the
-  // history. We override colour + bg only (no width override) so the merge
-  // classes on multi-day slices still correctly strip joining borders. The
-  // strikethrough + saturated red signals "cancelled" without hiding the row.
-  CANCELED: 'line-through bg-red-100! border-red-500! text-red-800!',
+  CANCELED: 'line-through',
   'NO-SHOW': 'bg-amber-100! border-amber-400! text-amber-800!',
 };
 
@@ -369,16 +397,25 @@ export default function CalendarView({
                               </div>
                             )}
                             {cellBookings.map((b: any) => {
-                              // Colour by channel, not by room — Airbnb / Gathern / Booking.com / manual each get their own hue.
-                              const palette = CHANNEL_BOOKING_PALETTE[bookingChannel(b)];
-                              const statusOverlay = STATUS_OVERLAY[(b.status || '').toUpperCase()] || '';
+                              // Colour by channel — Airbnb / Booking.com / Gathern / Direct each get
+                              // their brand hex (inline style, exact values). Cancelled bookings get
+                              // a saturated red override that wins because it's also inline.
+                              const channel = bookingChannel(b);
+                              const statusU = (b.status || '').toUpperCase();
+                              const isCanceled = statusU === 'CANCELED';
+                              const isNoShow = statusU === 'NO_SHOW' || statusU === 'NO-SHOW';
+                              const cellStyle: React.CSSProperties = isCanceled
+                                ? CANCELED_STYLE
+                                : isNoShow
+                                  ? NO_SHOW_STYLE
+                                  : channelStyle(channel);
                               const checkInStr = b.checkIn.split('T')[0];
                               const checkOutStr = b.checkOut.split('T')[0];
                               // Imminent = currently active OR checkIn is tomorrow.
                               // We compare strings so timezone shifts don't sneak in.
                               const isActiveNow = todayStr >= checkInStr && todayStr < checkOutStr;
                               const startsTomorrow = checkInStr === tomorrowStr;
-                              const isImminent = (isActiveNow || startsTomorrow) && b.status?.toUpperCase() !== 'CANCELED';
+                              const isImminent = (isActiveNow || startsTomorrow) && !isCanceled;
                               const isFirst = dStr === checkInStr;
                               // Last night = day right before checkout
                               const prevDay = new Date(dStr + 'T12:00:00');
@@ -403,16 +440,22 @@ export default function CalendarView({
                                   }}
                                   onMouseEnter={() => setHoveredBookingId(b.id)}
                                   onMouseLeave={() => setHoveredBookingId((cur) => (cur === b.id ? null : cur))}
+                                  // Inline style for bg/border/text — exact brand hex per channel,
+                                  // or saturated red when cancelled. Inline wins over any class so
+                                  // cancelled rows are unmistakable even on a brand-colored channel.
+                                  style={{
+                                    ...cellStyle,
+                                    // Selected: override border color to emerald 500 so the outline
+                                    // wraps the whole shape (existing merge classes strip joining sides).
+                                    ...(isSelected ? { borderColor: '#10B981', borderWidth: 2 } : {}),
+                                    // Imminent: thicker border, keeps channel color
+                                    ...(isImminent && !isSelected ? { borderWidth: 2 } : {}),
+                                    // Cancelled dashed border + slight transparency on text
+                                    ...(isCanceled ? { borderStyle: 'dashed', borderWidth: 2 } : {}),
+                                  }}
                                   className={cn(
                                     'absolute left-0.5 right-0.5 font-black text-center leading-tight flex items-center justify-center shadow-sm cursor-pointer transition-all px-0.5 border truncate',
                                     bookingText,
-                                    palette.bg,
-                                    palette.border,
-                                    palette.text,
-                                    // Bold edge for "happening right now / starts tomorrow".
-                                    // Goes through the same merge logic, so multi-day imminent
-                                    // bookings get a thick continuous bar — not per-cell rings.
-                                    isImminent && 'border-2',
                                     // Merge visual: round only outer edges, strip interior borders so slices look continuous
                                     isSingle
                                       ? 'inset-y-0.5 rounded-md'
@@ -421,19 +464,12 @@ export default function CalendarView({
                                       : isLast
                                       ? '-top-px bottom-0.5 rounded-b-md rounded-t-none border-t-0'
                                       : '-top-px -bottom-px rounded-none border-y-0',
-                                    // Status-aware overlay (canceled, completed, no-show)
-                                    statusOverlay,
-                                    // Unified emphasis across every slice of the same booking (state-driven, not per-slice :hover)
+                                    // Unified emphasis across every slice of the same booking
                                     (isHovered || isSelected) && 'shadow-lg z-10',
-                                    // Selection outline. Plain `border-2 border-emerald-500` — NOT a ring.
-                                    // Tailwind's `ring` is a box-shadow that always paints on all 4 sides of the
-                                    // slice, so a multi-day booking would render interior borders at every cell
-                                    // join. A border can be stripped per-side, and the existing merge classes
-                                    // above (border-b-0 / border-t-0 / border-y-0) already do exactly that —
-                                    // so promoting the existing border from 1px → 2px wraps the whole shape.
-                                    isSelected && 'border-2 border-emerald-500',
+                                    // Cancelled bookings always render above replacements so they stay visible
+                                    isCanceled && 'z-20',
                                   )}
-                                  title={`${b.bookingNumber ? '#' + String(b.bookingNumber).padStart(4, '0') + ' • ' : ''}${b.guestName}${b.notes ? ' 📝' : ''}`}
+                                  title={`${b.bookingNumber ? '#' + String(b.bookingNumber).padStart(4, '0') + ' • ' : ''}${b.guestName}${isCanceled ? ' • CANCELED' : ''}${b.notes ? ' 📝' : ''}`}
                                 >
                                   {/* Note corner fold — amber dog-ear in the top-right, visible on first/single slice */}
                                   {b.notes && (isFirst || isSingle) && (
@@ -441,6 +477,16 @@ export default function CalendarView({
                                       className="absolute top-0 right-0 pointer-events-none z-10"
                                       style={{ width: 9, height: 9, background: '#f59e0b', clipPath: 'polygon(100% 0, 0 0, 100% 100%)' }}
                                     />
+                                  )}
+                                  {/* CANCELED pill on the first / single slice so cancellations
+                                      are obvious even when no guest name is shown on this slice */}
+                                  {isCanceled && (isFirst || isSingle) && (
+                                    <span
+                                      className="absolute top-0.5 left-1 px-1 py-0.5 rounded text-[8px] font-black uppercase tracking-wider bg-red-600 text-white shadow-sm"
+                                      style={{ textDecoration: 'none' }}
+                                    >
+                                      ✕
+                                    </span>
                                   )}
                                   {/* Guest name on the middle slice; booking # appended on first slice when zoom permits */}
                                   <span className="truncate">
