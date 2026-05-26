@@ -33,16 +33,22 @@ export const CHANNEL_HEX: Record<ChannelKey, string> = {
   'booking.com':'#003B95',
 };
 
-// Inline style for a booking cell. Background = the channel hex at ~12% alpha so
-// text stays readable; border + text use the full hex so the brand colour is
-// visible. We pass these as `style` (not Tailwind classes) so we can apply the
-// exact spec'd hex and so cancellation override (also inline) wins predictably.
+// Solid pale background per channel. We use opaque pastels (not alpha blends
+// of the brand hex) so the underlying day-row borders don't bleed through and
+// give the booking that "ribbed" look across cells. Border + text still use
+// the full saturated brand hex so the channel is unmistakable at a glance.
+const CHANNEL_BG: Record<ChannelKey, string> = {
+  'manual':     '#D1FAE5', // emerald-100
+  'airbnb':     '#FFE4E5', // pale rose tuned to #FF5A5F
+  'gathern':    '#EDE6FB', // pale violet tuned to #7C3AED
+  'booking.com':'#DBE6F4', // pale navy tuned to #003B95
+};
+
 export function channelStyle(channel: ChannelKey): React.CSSProperties {
-  const hex = CHANNEL_HEX[channel];
   return {
-    backgroundColor: `${hex}1F`, // ~12% alpha (1F = 31/255)
-    borderColor: hex,
-    color: hex,
+    backgroundColor: CHANNEL_BG[channel],
+    borderColor: CHANNEL_HEX[channel],
+    color: CHANNEL_HEX[channel],
   };
 }
 
@@ -451,17 +457,26 @@ export default function CalendarView({
                                   // cancelled rows are unmistakable even on a brand-colored channel.
                                   style={{
                                     ...cellStyle,
-                                    // Selected: override border color to emerald 500 so the outline
-                                    // wraps the whole shape (existing merge classes strip joining sides).
-                                    ...(isSelected ? { borderColor: '#10B981', borderWidth: 2 } : {}),
-                                    // Imminent: thicker border, keeps channel color
-                                    ...(isImminent && !isSelected ? { borderWidth: 2 } : {}),
-                                    // Cancelled dashed border + slight transparency on text
+                                    // Hover or selected → thick outer border so the booking pops without
+                                    // relying on shadow ridges. Selected wins with emerald accent color.
+                                    ...(isSelected
+                                      ? { borderColor: '#10B981', borderWidth: 3 }
+                                      : isHovered
+                                        ? { borderWidth: 3 }
+                                        : isImminent
+                                          ? { borderWidth: 2 }
+                                          : {}),
+                                    // Cancelled dashed border (now unused since cancellations are filtered
+                                    // out of cellBookings, but kept for one-line revert).
                                     ...(isCanceled ? { borderStyle: 'dashed', borderWidth: 2 } : {}),
                                   }}
                                   className={cn(
-                                    'absolute left-0.5 right-0.5 font-black text-center leading-tight flex items-center justify-center shadow-sm cursor-pointer transition-all px-0.5 border truncate',
+                                    'absolute left-0.5 right-0.5 font-black text-center leading-tight flex items-center justify-center cursor-pointer transition-all px-0.5 border truncate',
                                     bookingText,
+                                    // Drop shadow on middle slices — slice-by-slice shadow-sm creates ridges
+                                    // at every cell boundary. Keep shadow on the outermost slices only so the
+                                    // whole booking still has a soft outer drop shadow.
+                                    (isFirst || isLast || isSingle) && 'shadow-sm',
                                     // Merge visual: round only outer edges, strip interior borders so slices look continuous
                                     isSingle
                                       ? 'inset-y-0.5 rounded-md'
@@ -470,8 +485,9 @@ export default function CalendarView({
                                       : isLast
                                       ? '-top-px bottom-0.5 rounded-b-md rounded-t-none border-t-0'
                                       : '-top-px -bottom-px rounded-none border-y-0',
-                                    // Unified emphasis across every slice of the same booking
-                                    (isHovered || isSelected) && 'shadow-lg z-10',
+                                    // Unified emphasis across every slice (z-lift only — drop the shadow-lg
+                                    // since the thicker border already signals selection / hover).
+                                    (isHovered || isSelected) && 'z-10',
                                     // Cancelled bookings always render above replacements so they stay visible
                                     isCanceled && 'z-20',
                                   )}
