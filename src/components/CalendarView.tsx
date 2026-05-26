@@ -353,7 +353,11 @@ export default function CalendarView({
                       {rooms.map((r: any) => {
                         const cellBookings = bookings
                           .filter((b: any) => {
-                            // Show canceled too — just visually faded
+                            // Hide cancelled — user can still see them via the booking-table
+                            // filter (List view → Canceled tab). Keeps the calendar focused on
+                            // active occupancy. Status is normalized for both 'canceled' and
+                            // 'CANCELED' (server stores lowercase, resolver uppercases on read).
+                            if ((b.status || '').toUpperCase() === 'CANCELED') return false;
                             const inRoom = b.room === r.id;
                             const checkInStr = b.checkIn.split('T')[0];
                             const checkOutStr = b.checkOut.split('T')[0];
