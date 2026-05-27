@@ -1122,6 +1122,39 @@ export function LandingPage() {
 
   useEffect(() => { applySEO(lang); }, [lang]);
 
+  // Inject FAQPage JSON-LD on the landing route only. Previously it lived in
+  // index.html and was therefore present on every SPA route — Google flagged
+  // "Duplicate field 'FAQPage'" because /terms, /privacy, /workspace, etc. all
+  // carried it. Mount-scoped script tag → only the home page emits it.
+  useEffect(() => {
+    const faq = {
+      '@context': 'https://schema.org',
+      '@type': 'FAQPage',
+      mainEntity: [
+        { '@type': 'Question', name: 'What is Hujuzatk PMS?',
+          acceptedAnswer: { '@type': 'Answer', text: 'Hujuzatk is a cloud-based Hotel and Property Management System (PMS) designed for hotels, apartments, and vacation rentals. It features a 5-year booking calendar, automated invoicing, financial analytics, and full Arabic and English support.' } },
+        { '@type': 'Question', name: 'Does Hujuzatk support Arabic language?',
+          acceptedAnswer: { '@type': 'Answer', text: 'Yes. Hujuzatk has native Arabic RTL support including Arabic date formats, OMR currency, and complete right-to-left layout throughout the entire application.' } },
+        { '@type': 'Question', name: 'How much does Hujuzatk cost?',
+          acceptedAnswer: { '@type': 'Answer', text: 'Two plans: Basic at $35/year (year-end 2026 promo, normally $40) and Pro at $58/year with automatic Airbnb, Gathern, and Booking.com channel sync (year-end 2026 promo, normally $65). Both include unlimited bookings, up to 50 rooms, full reporting, multi-language support, and a 5-year calendar. A 14-day free trial is included — no credit card required.' } },
+        { '@type': 'Question', name: 'Is Hujuzatk available as a mobile app?',
+          acceptedAnswer: { '@type': 'Answer', text: "Yes. Hujuzatk installs to your phone's home screen from the browser in one tap — works offline, sends push notifications, no App Store or Play Store download needed." } },
+        { '@type': 'Question', name: 'كم تكلفة حجوزاتك؟',
+          acceptedAnswer: { '@type': 'Answer', text: 'نقدم خطتين: الأساسية 35$/سنة (عرض نهاية 2026، بدلاً من 40$)، والمحترفة 58$/سنة مع مزامنة تلقائية لـ Airbnb وجاذبين وBooking.com (عرض نهاية 2026، بدلاً من 65$). الخطتان تشملان حجوزات غير محدودة وحتى 50 غرفة وتقارير كاملة ودعم متعدد اللغات وتقويم 5 سنوات. تتوفر تجربة مجانية لمدة 14 يوماً بدون بطاقة ائتمان.' } },
+        { '@type': 'Question', name: 'ما هو نظام حجوزاتك PMS؟',
+          acceptedAnswer: { '@type': 'Answer', text: 'حجوزاتك هو نظام إدارة الحجوزات والفنادق المبني على السحابة، مصمم للفنادق والشقق والإيجارات السياحية. يتميز بتقويم حجوزات لـ5 سنوات، وفوترة تلقائية، وتحليلات مالية، ودعم كامل للغة العربية والإنجليزية.' } },
+        { '@type': 'Question', name: 'هل حجوزاتك يدعم اللغة العربية؟',
+          acceptedAnswer: { '@type': 'Answer', text: 'نعم، يدعم حجوزاتك اللغة العربية بشكل كامل مع تخطيط RTL أصيل، وتنسيقات التواريخ العربية، وعملة OMR، وواجهة كاملة من اليمين إلى اليسار.' } },
+      ],
+    };
+    const script = document.createElement('script');
+    script.type = 'application/ld+json';
+    script.dataset.faq = 'hujuzatk-landing';
+    script.textContent = JSON.stringify(faq);
+    document.head.appendChild(script);
+    return () => { script.remove(); };
+  }, []);
+
   // Detect logged-in session
   useEffect(() => {
     let mounted = true;
