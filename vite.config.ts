@@ -16,26 +16,25 @@ export default defineConfig({
     },
   },
   build: {
-    // Split big vendors into stable cacheable chunks. The landing page only pulls
-    // `vendor-react`; everything else is fetched on-demand when the user navigates
-    // to a route that needs it (workspace → apollo, expenses/reports → date-fns,
-    // export → xlsx). Means a returning visitor doesn't redownload react every
-    // time the app code changes.
+    // Conservative manualChunks — only split what's a clean leaf in the dep
+    // graph. Aggressive splitting (separating Apollo / framer / dexie from
+    // their tslib + @wry helpers) broke runtime with
+    //   "Class extends value undefined is not a constructor"
+    // because the base class lived in one chunk and the subclass tried to
+    // extend it before the base loaded. React itself + phosphor icons + xlsx
+    // are safe — no class extension chains across packages.
     rollupOptions: {
       output: {
         manualChunks(id) {
           if (!id.includes('node_modules')) return;
-          if (id.includes('react-router'))                return 'vendor-react';
-          if (id.match(/[/\\]react[/\\]|[/\\]react-dom[/\\]|[/\\]scheduler[/\\]/)) return 'vendor-react';
-          if (id.includes('@apollo') || id.includes('graphql')) return 'vendor-apollo';
-          if (id.includes('phosphor-react'))              return 'vendor-icons';
-          if (id.includes('date-fns'))                    return 'vendor-datefns';
-          if (id.includes('framer-motion'))               return 'vendor-motion';
-          if (id.includes('dexie'))                       return 'vendor-dexie';
-          if (id.includes('xlsx'))                        return 'vendor-xlsx';
+          if (id.match(/[/\\]react[/\\]|[/\\]react-dom[/\\]|[/\\]scheduler[/\\]|[/\\]react-router[/\\]|[/\\]react-router-dom[/\\]/)) {
+            return 'vendor-react';
+          }
+          if (id.includes('phosphor-react')) return 'vendor-icons';
+          if (id.includes('/xlsx/'))         return 'vendor-xlsx';
         },
       },
     },
-    chunkSizeWarningLimit: 600,
+    chunkSizeWarningLimit: 800,
   },
 });
