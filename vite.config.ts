@@ -7,44 +7,40 @@ import { defineConfig, type Plugin } from "vite";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Inline the entire built CSS into <head>. Tailwind output is ~80 KB raw
-// (~14 KB gzip) — small enough to embed rather than ship as a separate
-// render-blocking <link rel="stylesheet">. Saves ~1.3 s on slow-4G LCP
-// per Lighthouse's "Render-blocking requests" diagnostic. Still leaves
-// the CSS file in dist for any external referrer; we just remove its
-// <link> tag from index.html.
+// Inline the built CSS into <head>. Tailwind output is ~80 KB raw / ~14 KB
+// gzip — small enough to embed rather than ship as a separate render-blocking
+// <link rel="stylesheet">. Saves ~1.3 s on slow-4G LCP per Lighthouse.
+//
+// Uses Vite's `transformIndexHtml` hook (not the lower-level Rollup
+// `generateBundle`) so it runs at the right point in Vite's HTML pipeline
+// regardless of plugin ordering or Vite version. The earlier `generateBundle`
+// implementation worked locally but silently no-op'd on Vercel's build,
+// shipping a non-inlined HTML to production.
 function inlineCss(): Plugin {
   return {
     name: 'inline-css',
     apply: 'build',
     enforce: 'post',
-    generateBundle(_options, bundle) {
-      const indexAsset = Object.values(bundle).find(
-        (a) => a.type === 'asset' && a.fileName === 'index.html',
-      ) as { type: 'asset'; fileName: string; source: string | Uint8Array } | undefined;
-      if (!indexAsset) return;
-      let html =
-        typeof indexAsset.source === 'string'
-          ? indexAsset.source
-          : new TextDecoder().decode(indexAsset.source);
-
-      // Find each `<link rel="stylesheet" ... href="/assets/index-XXXX.css">`
-      // and replace it with an inline <style>...</style> block.
-      html = html.replace(
-        /<link[^>]+rel=["']stylesheet["'][^>]+href=["']([^"']+\.css)["'][^>]*>/g,
-        (_match, hrefAttr: string) => {
-          const fileName = hrefAttr.replace(/^\//, '');
-          const cssAsset = bundle[fileName];
-          if (!cssAsset || cssAsset.type !== 'asset') return _match;
-          const css =
-            typeof cssAsset.source === 'string'
-              ? cssAsset.source
-              : new TextDecoder().decode(cssAsset.source);
-          return `<style>${css}</style>`;
-        },
-      );
-
-      indexAsset.source = html;
+    transformIndexHtml: {
+      order: 'post',
+      handler(html, ctx) {
+        if (!ctx.bundle) return html;
+        return html.replace(
+          /<link[^>]+rel=["']stylesheet["'][^>]+href=["']([^"']+\.css)["'][^>]*>/g,
+          (match, hrefAttr: string) => {
+            // ctx.bundle keys are bundle-relative; the href has a leading slash
+            // and may include the assets dir. Try both forms to match.
+            const stripped = hrefAttr.replace(/^\//, '');
+            const cssAsset = ctx.bundle![stripped] || ctx.bundle![hrefAttr];
+            if (!cssAsset || cssAsset.type !== 'asset') return match;
+            const css =
+              typeof cssAsset.source === 'string'
+                ? cssAsset.source
+                : new TextDecoder().decode(cssAsset.source);
+            return `<style>${css}</style>`;
+          },
+        );
+      },
     },
   };
 }
