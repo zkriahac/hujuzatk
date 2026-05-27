@@ -1,5 +1,5 @@
 {
-  "installCommand": "bun install --frozen-lockfile",
+  "installCommand": "bun install --no-save",
   "buildCommand": "bun run build",
   "outputDirectory": "dist",
   "redirects": [
