@@ -1,7 +1,8 @@
 // Bump on every change that affects /manifest.json or the precached icons.
-// Returning users' SWs are cache-first for static assets, so without a bump iOS
-// keeps reading the previous manifest (which had no PNG apple-touch-icon).
-const CACHE_NAME = 'hujuzatk-v3';
+// Also bump after a deploy that changes the JS bundle structure so cache-first
+// fetches don't keep serving a broken hash (e.g., the recent vendor-chunk split
+// that triggered a class-extends runtime error for returning visitors).
+const CACHE_NAME = 'hujuzatk-v4';
 const STATIC_ASSETS = [
   '/manifest.json',
   '/icon-192.png',
