@@ -60,7 +60,11 @@
    `var(--brand-green)` references inside design files still work.
    ============================================================ */
 :root {
-  --brand-green:      #0E9F6E;
+  /* Bumped from #0E9F6E (~3.4:1 with white text — failed WCAG AA on every
+     CTA button on the landing) to #047857 (~4.79:1, passes AA). Same value as
+     --brand-green-deep, which is kept as a separate token for places that
+     intentionally want the darker shade. */
+  --brand-green:      #047857;
   --brand-green-soft: #D1FAE5;
   --brand-green-tint: #ECFDF5;
   --brand-green-deep: #047857;

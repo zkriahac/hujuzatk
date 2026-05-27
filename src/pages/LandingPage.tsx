@@ -389,9 +389,13 @@ function CalendarScreenMock() {
     { name: 'R 4', tone: 'blue' }, { name: 'B 1', tone: 'neutral' },
     { name: 'B 2', tone: 'neutral' }, { name: 'B 3', tone: 'green' },
   ];
+  // Booking-cell tones. Text colors picked to pass WCAG AA 4.5:1 on their pastel
+  // backgrounds — the natural blue-500 / emerald-700 combo failed contrast.
+  //   blue:  #1E40AF (blue-800) on #DBEAFE  → ~7.1:1
+  //   green: #065F46 (emerald-800) on #D1FAE5 → ~6.7:1
   const colorMap: Record<string, { bg: string; text: string; border: string }> = {
-    blue:    { bg: 'var(--accent-blue-soft)',  text: 'var(--accent-blue)',  border: 'rgba(59,130,246,.45)' },
-    green:   { bg: 'var(--brand-green-soft)',  text: 'var(--brand-green-deep)', border: 'rgba(14,159,110,.45)' },
+    blue:    { bg: 'var(--accent-blue-soft)',  text: '#1E40AF',             border: 'rgba(59,130,246,.45)' },
+    green:   { bg: 'var(--brand-green-soft)',  text: '#065F46',             border: 'rgba(14,159,110,.45)' },
     neutral: { bg: 'transparent',              text: 'var(--ink-700)',      border: 'var(--border)' },
   };
 
@@ -456,7 +460,9 @@ function CalendarScreenMock() {
           {dates.map((d, di) => (
             <div key={di} className="contents">
               <div className="flex flex-col items-center justify-center font-bold" style={{
-                fontSize: 11, color: 'var(--accent-coral)', lineHeight: 1.1,
+                // Was var(--accent-coral) #F87171 on white — ~2.8:1, failed AA.
+                // ink-700 matches the rest of the mock and is high-contrast.
+                fontSize: 11, color: 'var(--ink-700)', lineHeight: 1.1,
                 borderTop: '1px solid var(--border-soft)', borderInlineStart: '1px solid var(--border)',
               }}>
                 <span style={{ fontSize: 11 }}>{d.d}</span>
