@@ -1386,6 +1386,12 @@ export function LandingPage() {
         )}
       </nav>
 
+      {/* <main> landmark wraps the page's primary content. Lighthouse a11y
+          flagged "Document does not have a main landmark" — every page needs
+          exactly one <main> for screen-reader users to jump straight to the
+          content (skipping nav). The footer below stays outside. */}
+      <main>
+
       {/* ───────── Hero ─────────
           Decorative shapes use raw `left`/`right` (not insetInline*) so they stay in
           the same physical positions regardless of text direction — purely aesthetic
@@ -1812,6 +1818,8 @@ export function LandingPage() {
         </div>
       </section>
 
+      </main>
+
       {/* ───────── Footer ───────── */}
       <footer style={{ background: 'var(--ink-900)', color: '#fff', padding: '60px 24px 32px' }}>
         <div className="max-w-[1280px] mx-auto">
@@ -1834,7 +1842,7 @@ export function LandingPage() {
               </a>
             </div>
             <div>
-              <h4 className="font-bold" style={{ fontSize: 14, marginBottom: 16 }}>{c.footer.product}</h4>
+              <h3 className="font-bold" style={{ fontSize: 14, marginBottom: 16 }}>{c.footer.product}</h3>
               <ul className="flex flex-col" style={{ gap: 10, listStyle: 'none', padding: 0, margin: 0 }}>
                 {c.footer.productLinks.map((it: string, j: number) => (
                   <li key={j}>
@@ -1844,7 +1852,7 @@ export function LandingPage() {
               </ul>
             </div>
             <div>
-              <h4 className="font-bold" style={{ fontSize: 14, marginBottom: 16 }}>{c.footer.company}</h4>
+              <h3 className="font-bold" style={{ fontSize: 14, marginBottom: 16 }}>{c.footer.company}</h3>
               <ul className="flex flex-col" style={{ gap: 10, listStyle: 'none', padding: 0, margin: 0 }}>
                 <li><Link to="/about"   style={{ fontSize: 14, color: 'rgba(255,255,255,0.6)' }}>{c.footer.companyLinks[0]}</Link></li>
                 <li><Link to="/story"   style={{ fontSize: 14, color: 'rgba(255,255,255,0.6)' }}>{c.footer.companyLinks[1]}</Link></li>
@@ -1852,7 +1860,7 @@ export function LandingPage() {
               </ul>
             </div>
             <div>
-              <h4 className="font-bold" style={{ fontSize: 14, marginBottom: 16 }}>{c.footer.legal}</h4>
+              <h3 className="font-bold" style={{ fontSize: 14, marginBottom: 16 }}>{c.footer.legal}</h3>
               <ul className="flex flex-col" style={{ gap: 10, listStyle: 'none', padding: 0, margin: 0 }}>
                 <li><Link to="/privacy" style={{ fontSize: 14, color: 'rgba(255,255,255,0.6)' }}>{c.footer.legalLinks[0]}</Link></li>
                 <li><Link to="/terms" style={{ fontSize: 14, color: 'rgba(255,255,255,0.6)' }}>{c.footer.legalLinks[1]}</Link></li>
@@ -1958,7 +1966,7 @@ export function PrivacyPolicy() {
     <h2 style={{ fontSize: 18, fontWeight: 800, color: 'var(--ink-900)', marginBottom: 6 }}>{props.children}</h2>
   );
   return (
-    <div className="min-h-screen" dir={isAr ? 'rtl' : 'ltr'} style={{ background: 'var(--bg)', padding: '60px 24px', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-en)' }}>
+    <main className="min-h-screen" dir={isAr ? 'rtl' : 'ltr'} style={{ background: 'var(--bg)', padding: '60px 24px', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-en)' }}>
       <div className="max-w-[760px] mx-auto" style={{
         background: '#fff', border: '1px solid var(--border)', borderRadius: 24, padding: 36, color: 'var(--ink-900)',
       }}>
@@ -2019,7 +2027,7 @@ export function PrivacyPolicy() {
           </Link>
         </div>
       </div>
-    </div>
+    </main>
   );
 }
 
@@ -2041,7 +2049,7 @@ export function TermsOfService() {
     <h2 style={{ fontSize: 18, fontWeight: 800, color: 'var(--ink-900)', marginBottom: 6 }}>{props.children}</h2>
   );
   return (
-    <div className="min-h-screen" dir={isAr ? 'rtl' : 'ltr'} style={{ background: 'var(--bg)', padding: '60px 24px', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-en)' }}>
+    <main className="min-h-screen" dir={isAr ? 'rtl' : 'ltr'} style={{ background: 'var(--bg)', padding: '60px 24px', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-en)' }}>
       <div className="max-w-[760px] mx-auto" style={{
         background: '#fff', border: '1px solid var(--border)', borderRadius: 24, padding: 36, color: 'var(--ink-900)',
       }}>
@@ -2110,6 +2118,6 @@ export function TermsOfService() {
           </Link>
         </div>
       </div>
-    </div>
+    </main>
   );
 }
