@@ -1197,8 +1197,12 @@ export function LandingPage() {
       background: 'var(--bg)', minHeight: '100vh',
       fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-en)',
     }}>
-      {/* ───────── Nav ───────── */}
-      <nav className="relative z-10" style={{ background: 'var(--surface)', borderBottom: '1px solid var(--border)' }}>
+      {/* ───────── Nav ─────────
+          z-50 (not z-10) — the hero section below also has a z-10 inner wrapper
+          for its parallax content, so a same-z later-in-DOM sibling was painting
+          over the language dropdown panel. The dropdown's own z-[120] is capped
+          by the nav's stacking context, so the fix is at the nav level. */}
+      <nav className="relative z-50" style={{ background: 'var(--surface)', borderBottom: '1px solid var(--border)' }}>
         <div className="max-w-[1280px] mx-auto flex items-center justify-between" style={{ padding: '20px 24px' }}>
           <Link to="/" className="shrink-0"><HZLogo size={36} /></Link>
           <div className="hidden md:flex items-center gap-1">
