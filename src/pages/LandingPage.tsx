@@ -1831,6 +1831,33 @@ export function LandingPage() {
           </div>
           <div className="flex flex-col" style={{ gap: 12 }}>
             {([
+              // ── Original Q/A set ──
+              {
+                q: { en: 'What is Hujuzatk PMS?',
+                     ar: 'ما هو نظام حجوزاتك PMS؟',
+                     tr: 'Hujuzatk PMS nedir?' },
+                a: { en: 'Hujuzatk is a cloud-based Hotel and Property Management System (PMS) designed for hotels, apartments, and vacation rentals. It features a 5-year booking calendar, automated invoicing, financial analytics, and full Arabic and English support.',
+                     ar: 'حجوزاتك هو نظام إدارة الحجوزات والفنادق المبني على السحابة، مصمم للفنادق والشقق والإيجارات السياحية. يتميز بتقويم حجوزات لـ5 سنوات، وفوترة تلقائية، وتحليلات مالية، ودعم كامل للغة العربية والإنجليزية.',
+                     tr: 'Hujuzatk; oteller, daireler ve kısa süreli kiralamalar için tasarlanmış, bulut tabanlı bir Otel ve Mülk Yönetim Sistemidir (PMS). 5 yıllık rezervasyon takvimi, otomatik faturalama, finansal analitik ve tam Arapça / İngilizce desteği sunar.' },
+              },
+              {
+                q: { en: 'Does Hujuzatk support Arabic language?',
+                     ar: 'هل حجوزاتك يدعم اللغة العربية؟',
+                     tr: 'Hujuzatk Arapça dilini destekler mi?' },
+                a: { en: 'Yes. Hujuzatk has native Arabic RTL support including Arabic date formats, OMR currency, and a complete right-to-left layout throughout the entire application.',
+                     ar: 'نعم، يدعم حجوزاتك اللغة العربية بشكل كامل مع تخطيط RTL أصيل، وتنسيقات التواريخ العربية، وعملة OMR، وواجهة كاملة من اليمين إلى اليسار.',
+                     tr: 'Evet. Hujuzatk; Arapça tarih formatları, OMR para birimi ve uygulama genelinde tam sağdan-sola düzen dahil olmak üzere yerel Arapça RTL desteğine sahiptir.' },
+              },
+              {
+                q: { en: 'How much does Hujuzatk cost?',
+                     ar: 'كم تكلفة حجوزاتك؟',
+                     tr: 'Hujuzatk ne kadar?' },
+                a: { en: 'Two plans: Basic at $35/year (year-end 2026 promo, normally $40) and Pro at $58/year with automatic Airbnb, Gathern, and Booking.com channel sync (year-end 2026 promo, normally $65). Both include unlimited bookings, up to 50 rooms, full reporting, multi-language support, and a 5-year calendar. A 14-day free trial is included — no credit card required.',
+                     ar: 'نقدم خطتين: الأساسية 35$/سنة (عرض نهاية 2026، بدلاً من 40$)، والمحترفة 58$/سنة مع مزامنة تلقائية لـ Airbnb وجاذبين وBooking.com (عرض نهاية 2026، بدلاً من 65$). الخطتان تشملان حجوزات غير محدودة وحتى 50 غرفة وتقارير كاملة ودعم متعدد اللغات وتقويم 5 سنوات. تتوفر تجربة مجانية لمدة 14 يوماً بدون بطاقة ائتمان.',
+                     tr: 'İki plan: Basic 35 $/yıl (2026 yıl sonu kampanyası, normalde 40 $) ve Pro 58 $/yıl, otomatik Airbnb / Gathern / Booking.com kanal senkronizasyonu ile (2026 yıl sonu kampanyası, normalde 65 $). Her ikisi de sınırsız rezervasyon, 50 odaya kadar, tam raporlama, çoklu dil desteği ve 5 yıllık takvim içerir. 14 gün ücretsiz deneme dahildir — kredi kartı gerekmez.' },
+              },
+
+              // ── From customer questions ──
               {
                 q: { en: 'Is there a mobile app, or only a website?',
                      ar: 'هل يوجد تطبيق للموبايل أم فقط موقع؟',
