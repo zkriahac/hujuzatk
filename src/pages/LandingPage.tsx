@@ -1462,6 +1462,9 @@ export function LandingPage() {
                 {c.hero.cta}
                 <ArrowRight size={18} weight="bold" style={{ transform: isRtl ? 'scaleX(-1)' : undefined }} />
               </button>
+              {/* Watch-video CTA hidden until we have a video to ship.
+                  Kept in the tree (commented) so re-enabling is a one-line
+                  uncomment + restoring c.hero.cta2 copy.
               <button
                 onClick={() => { trackCTA('hero_video', 'hero'); setVideoOpen(true); }}
                 className="inline-flex items-center transition-all hover:-translate-y-0.5"
@@ -1478,6 +1481,7 @@ export function LandingPage() {
                 </span>
                 {c.hero.cta2}
               </button>
+              */}
             </div>
             <p style={{ fontSize: 13, color: 'var(--ink-300)' }}>{c.hero.trust}</p>
           </div>
