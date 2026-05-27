@@ -187,7 +187,33 @@
     <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-MZF9WH37"
     height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <!-- End Google Tag Manager (noscript) -->
-    <div id="root"></div>
+    <!-- Static hero shell — paints from the HTML stream, no JS needed. Captures
+         the LCP timing the moment HTML+inline-CSS parses (~FCP), instead of
+         waiting for the full React bundle to download + parse + render the
+         landing component (~3s+ on slow-4G). React's createRoot replaces the
+         children of #root when it mounts; LCP locks the EARLIER paint time as
+         long as the React-rendered hero is the same size or smaller.
+
+         Defaults to English copy. Returning AR/TR users see a brief flash of
+         English before React rehydrates the right language — acceptable trade
+         for the LCP win. -->
+    <div id="root">
+      <div id="hero-shell" style="min-height:100vh;background:#fafaf9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;display:flex;align-items:flex-start;justify-content:center;padding:96px 24px 32px;box-sizing:border-box;">
+        <div style="max-width:880px;width:100%;text-align:center;">
+          <span style="display:inline-block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.16em;color:#059669;background:#ecfdf5;padding:6px 14px;border-radius:999px;margin-bottom:16px;">The smartest booking OS for the Arab world</span>
+          <h1 style="font-size:clamp(2.75rem,6.5vw,5rem);margin:0 0 18px;color:#0f172a;line-height:1.05;font-weight:900;letter-spacing:-.02em;">
+            Booking management, <span style="color:#0f172a;">made simpler</span>
+          </h1>
+          <p style="font-size:18px;line-height:1.6;color:#64748b;max-width:680px;margin:0 auto 28px;">
+            Scale your hotel, apartments, or short-term rentals with our blazing-fast calendar, automatic invoicing, financial analytics, and channel sync.
+          </p>
+          <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-bottom:14px;">
+            <a href="/user?tab=register" style="background:#0E9F6E;color:#fff;padding:16px 30px;font-size:16px;font-weight:700;border-radius:999px;text-decoration:none;box-shadow:0 8px 20px -8px rgba(14,159,110,.6);">Start 14-day free trial</a>
+          </div>
+          <p style="font-size:13px;color:#94a3b8;">Trusted by chalet owners, guesthouses, and serviced-apartment operators</p>
+        </div>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

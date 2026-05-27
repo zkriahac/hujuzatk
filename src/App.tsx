@@ -2,7 +2,6 @@ import { lazy, Suspense, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { LandingPage, PrivacyPolicy, TermsOfService } from './pages/LandingPage';
 import { trackPageView } from './lib/analytics';
-import { authService } from './lib/authService';
 
 // Every non-landing route is lazy-loaded so a `/` visitor downloads only the
 // landing chunk + React/Router vendor — not the workspace app, super-admin,
@@ -30,9 +29,15 @@ function RootRoute() {
   // if a session exists, redirect after the in-flight check resolves. Worst case is
   // a brief flash of the landing for already-logged-in users — much better than the
   // previous 1-2s spinner that gated everything.
+  //
+  // authService is dynamic-imported so Apollo + Dexie don't ship in the landing
+  // critical bundle — they only load if the user actually has a token to validate.
   useEffect(() => {
     let cancelled = false;
-    authService.getCurrentUser().then((s) => {
+    import('./lib/authService').then(({ authService }) => {
+      if (cancelled) return;
+      return authService.getCurrentUser();
+    }).then((s) => {
       if (cancelled || !s) return;
       const slug = encodeURIComponent((s.tenant.name || 'workspace').replace(/\s+/g, '-'));
       navigate(`/${slug}`, { replace: true });
