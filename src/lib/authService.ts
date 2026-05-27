@@ -11,6 +11,24 @@ export interface SessionUser {
 const TRIAL_DAYS = 14;
 const GRAPHQL_URL = import.meta.env.VITE_GRAPHQL_URL || 'http://localhost:4000/graphql';
 
+// Decode the `exp` claim from a JWT without verifying the signature. Used only
+// for early-exit ("token already expired, don't bother sending it") on the
+// client. The backend still verifies signatures on every request. Returns null
+// when the token isn't a parseable JWT or has no `exp` claim.
+function decodeJwtExp(token: string): number | null {
+  try {
+    const parts = token.split('.');
+    if (parts.length < 2) return null;
+    // base64url → base64
+    const b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    const padded = b64 + '==='.slice((b64.length + 3) % 4);
+    const payload = JSON.parse(atob(padded));
+    return typeof payload.exp === 'number' ? payload.exp : null;
+  } catch {
+    return null;
+  }
+}
+
 function addDaysString(dateStr: string, days: number): string {
   const d = new Date(dateStr + 'T00:00:00');
   d.setDate(d.getDate() + days);
@@ -57,15 +75,25 @@ export const authService = {
   isCloud,
 
   async getCurrentUser(): Promise<SessionUser | null> {
-    // First check for GraphQL token
-    const token = localStorage.getItem('authToken');
-    if (token) {
+    // First check for GraphQL token. Client-side JWT expiry check skips the
+    // network call entirely when the token is already dead — otherwise every
+    // home-page mount with a stale token logged a noisy `POST /graphql 401`
+    // in the browser console (the browser auto-logs non-2xx responses; we
+    // can't silence that from JS).
+    const rawToken = localStorage.getItem('authToken');
+    const tokenExp = rawToken ? decodeJwtExp(rawToken) : null;
+    const tokenIsLive = !!rawToken && (tokenExp === null || tokenExp * 1000 > Date.now());
+    if (rawToken && !tokenIsLive) {
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('refreshToken');
+    }
+    if (rawToken && tokenIsLive) {
       try {
         const response = await fetch(GRAPHQL_URL, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
+            'Authorization': `Bearer ${rawToken}`,
           },
           body: JSON.stringify({
             query: `query Me {
@@ -100,15 +128,23 @@ export const authService = {
             }`,
           }),
         });
-        
-        const result = await response.json();
-        if (result.data?.me) {
-          const tenant = convertGraphQLTenantToLocal(result.data.me);
-          return {
-            tenantId: tenant.uuid,
-            tenant,
-            isAdmin: !!tenant.isAdmin,
-          };
+
+        // 401 / 403 → token rejected by backend. Drop it so future mounts
+        // don't repeat the call. Fall through silently to the supabase /
+        // Dexie fallback chain.
+        if (response.status === 401 || response.status === 403) {
+          localStorage.removeItem('authToken');
+          localStorage.removeItem('refreshToken');
+        } else {
+          const result = await response.json();
+          if (result.data?.me) {
+            const tenant = convertGraphQLTenantToLocal(result.data.me);
+            return {
+              tenantId: tenant.uuid,
+              tenant,
+              isAdmin: !!tenant.isAdmin,
+            };
+          }
         }
       } catch (err) {
         console.error('Failed to fetch current user from GraphQL:', err);
