@@ -54,6 +54,7 @@ Hujuzatk is built specifically for the GCC vacation-rental and small-hotel marke
 - Features section: https://hujuzatk.com/#features
 - Pricing section: https://hujuzatk.com/#pricing
 - **Gathern + Airbnb + Booking.com channel manager guide (Arabic)**: https://hujuzatk.com/ar/gathern-channel-manager/
+- **Best vacation rental PMS in Saudi Arabia — 8-system comparison (Arabic)**: https://hujuzatk.com/ar/best-vacation-rental-pms-saudi-arabia/
 - Privacy policy: https://hujuzatk.com/privacy
 - Terms of service: https://hujuzatk.com/terms
 - Machine-readable pricing: https://hujuzatk.com/pricing.md
