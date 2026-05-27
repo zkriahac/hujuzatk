@@ -1151,6 +1151,27 @@ export function LandingPage() {
           acceptedAnswer: { '@type': 'Answer', text: 'حجوزاتك هو نظام إدارة الحجوزات والفنادق المبني على السحابة، مصمم للفنادق والشقق والإيجارات السياحية. يتميز بتقويم حجوزات لـ5 سنوات، وفوترة تلقائية، وتحليلات مالية، ودعم كامل للغة العربية والإنجليزية.' } },
         { '@type': 'Question', name: 'هل حجوزاتك يدعم اللغة العربية؟',
           acceptedAnswer: { '@type': 'Answer', text: 'نعم، يدعم حجوزاتك اللغة العربية بشكل كامل مع تخطيط RTL أصيل، وتنسيقات التواريخ العربية، وعملة OMR، وواجهة كاملة من اليمين إلى اليسار.' } },
+
+        // ── From customer questions ──
+        { '@type': 'Question', name: 'Is there a mobile app or only the website?',
+          acceptedAnswer: { '@type': 'Answer', text: 'Both. Hujuzatk is a Progressive Web App — install it to your home screen from any modern browser in one tap. It runs full-screen like a native app, works offline, and sends push notifications. No App Store or Play Store download required. On iPhone: open in Safari → Share → Add to Home Screen. On Android: Chrome shows an "Install app" prompt automatically.' } },
+        { '@type': 'Question', name: 'هل يوجد تطبيق للموبايل أم فقط موقع؟',
+          acceptedAnswer: { '@type': 'Answer', text: 'الاثنان معاً. حجوزاتك تطبيق ويب تقدمي (PWA) — ثبّته على الشاشة الرئيسية لجهازك من أي متصفح حديث بنقرة واحدة. يعمل بملء الشاشة كتطبيق أصلي، يدعم العمل دون اتصال، ويرسل إشعارات. لا تحتاج تنزيله من App Store أو Play Store. على iPhone: افتح في Safari → مشاركة → إضافة إلى الشاشة الرئيسية. على Android: Chrome يعرض زر "تثبيت التطبيق" تلقائياً.' } },
+
+        { '@type': 'Question', name: 'Does Hujuzatk work for a 60-room hotel?',
+          acceptedAnswer: { '@type': 'Answer', text: 'Yes. The Pro plan covers up to 30 rooms; for 60+ rooms we offer the Enterprise plan with unlimited rooms. The calendar grid is optimised for hundreds of rooms across a 5-year horizon with zero scroll lag — we routinely test with much larger properties. Contact us for Enterprise pricing.' } },
+        { '@type': 'Question', name: 'هل حجوزاتك يناسب فندقاً بـ 60 غرفة؟',
+          acceptedAnswer: { '@type': 'Answer', text: 'نعم. خطة Pro تدعم حتى 30 غرفة، وخطة Enterprise تدعم عدداً غير محدود من الغرف وهي المناسبة للفنادق الأكبر. تقويم الحجوزات محسّن للعمل مع مئات الغرف على مدى 5 سنوات بدون أي تأخير. تواصل معنا للحصول على سعر Enterprise.' } },
+
+        { '@type': 'Question', name: 'Can I customize the invoice design and add my logo?',
+          acceptedAnswer: { '@type': 'Answer', text: 'Yes. From Settings → Company Profile you can upload your logo, set your company name, address, phone, email, tax ID, and a custom invoice footer. All these appear automatically on every printed and PDF invoice. Invoices are bilingual (Arabic / English / Turkish) and adapt to the language of the guest entry.' } },
+        { '@type': 'Question', name: 'هل يمكنني تخصيص تصميم الفاتورة وإضافة لوجو؟',
+          acceptedAnswer: { '@type': 'Answer', text: 'نعم. من الإعدادات → بيانات الشركة يمكنك رفع شعارك، وتحديد اسم الشركة والعنوان والهاتف والبريد والرقم الضريبي ونص في تذييل الفاتورة. تظهر هذه البيانات تلقائياً على كل فاتورة مطبوعة أو PDF. الفواتير ثنائية اللغة (عربي / إنجليزي / تركي) وتتكيف مع لغة بيانات الضيف.' } },
+
+        { '@type': 'Question', name: 'How many users can use Hujuzatk at the same time? Is it cloud-based or does it work offline?',
+          acceptedAnswer: { '@type': 'Answer', text: 'Unlimited concurrent users on the same account — share the login with your entire front desk and they all get the same full-access view in real time. Hujuzatk is cloud-based (changes sync across devices instantly via our managed Postgres database) AND works offline (PWA caches data locally; the calendar, booking list, and invoice screens stay usable without internet, and pending changes sync as soon as you reconnect).' } },
+        { '@type': 'Question', name: 'كم شخص يستطيع استخدام البرنامج في نفس الوقت؟ هل هو سحابي أم يعمل بدون إنترنت؟',
+          acceptedAnswer: { '@type': 'Answer', text: 'عدد المستخدمين غير محدود على نفس الحساب — يمكنك مشاركة بيانات الدخول مع كل موظفي الاستقبال (front desk) ويحصل الجميع على صلاحيات كاملة في الوقت الفعلي. حجوزاتك سحابي (التغييرات تتزامن فوراً بين جميع الأجهزة عبر قاعدة بيانات Postgres مُدارة) ويعمل أيضاً بدون إنترنت (تطبيق الويب التقدمي يحفظ البيانات محلياً، فيبقى التقويم وقائمة الحجوزات والفواتير قابلة للاستخدام، وتتم المزامنة تلقائياً عند عودة الاتصال).' } },
       ],
     };
     const script = document.createElement('script');
@@ -1790,6 +1811,89 @@ export function LandingPage() {
           <p className="text-center" style={{ marginTop: 32, fontSize: 14, color: 'var(--ink-300)', fontWeight: 500 }}>
             {c.pricing.note}
           </p>
+        </div>
+      </section>
+
+      {/* ───────── FAQ ─────────
+          Same Q/A set that's emitted as FAQPage JSON-LD higher up — duplicating
+          here makes them visible to users (and Google rewards in-page text that
+          matches the structured data). <details>/<summary> gives free
+          accessibility: keyboard toggle, screen-reader semantics, no JS. */}
+      <section id="faq" style={{ padding: '80px 24px', background: 'var(--surface)', borderTop: '1px solid var(--border)' }}>
+        <div className="max-w-[860px] mx-auto">
+          <div className="text-center" style={{ marginBottom: 32 }}>
+            <span className="eyebrow inline-block" style={{ marginBottom: 12 }}>
+              {isAr ? 'الأسئلة الشائعة' : lang === 'tr' ? 'Sıkça Sorulan Sorular' : 'Frequently Asked Questions'}
+            </span>
+            <h2 className="h-display" style={{ fontSize: 40, margin: '8px 0 0', color: 'var(--ink-900)' }}>
+              {isAr ? 'الأسئلة الأكثر شيوعاً' : lang === 'tr' ? 'En çok sorulanlar' : 'Common questions'}
+            </h2>
+          </div>
+          <div className="flex flex-col" style={{ gap: 12 }}>
+            {([
+              {
+                q: { en: 'Is there a mobile app, or only a website?',
+                     ar: 'هل يوجد تطبيق للموبايل أم فقط موقع؟',
+                     tr: 'Mobil uygulama var mı, yoksa sadece web sitesi mi?' },
+                a: { en: 'Both. Hujuzatk is a Progressive Web App — install it to your home screen from any modern browser in one tap. It runs full-screen like a native app, works offline, and sends push notifications. No App Store or Play Store download required. On iPhone: open in Safari → Share → Add to Home Screen. On Android: Chrome shows an "Install app" prompt automatically.',
+                     ar: 'الاثنان معاً. حجوزاتك تطبيق ويب تقدمي (PWA) — ثبّته على الشاشة الرئيسية لجهازك من أي متصفح حديث بنقرة واحدة. يعمل بملء الشاشة كتطبيق أصلي، يدعم العمل دون اتصال، ويرسل إشعارات. لا تحتاج تنزيله من App Store أو Play Store. على iPhone: افتح في Safari → مشاركة → إضافة إلى الشاشة الرئيسية. على Android: Chrome يعرض زر "تثبيت التطبيق" تلقائياً.',
+                     tr: 'İkisi de. Hujuzatk bir Progressive Web App — herhangi bir modern tarayıcıdan tek dokunuşla ana ekrana yükleyin. Yerel uygulama gibi tam ekran çalışır, çevrimdışı çalışır ve push bildirimleri gönderir. App Store veya Play Store indirme gerekmez.' },
+              },
+              {
+                q: { en: 'Does Hujuzatk work for a 60-room hotel?',
+                     ar: 'هل حجوزاتك يناسب فندقاً بـ 60 غرفة؟',
+                     tr: '60 odalı bir otel için uygun mu?' },
+                a: { en: 'Yes. The Pro plan covers up to 30 rooms; for 60+ rooms we offer the Enterprise plan with unlimited rooms. The calendar grid is optimised for hundreds of rooms across a 5-year horizon with zero scroll lag — we routinely test with much larger properties. Contact us for Enterprise pricing.',
+                     ar: 'نعم. خطة Pro تدعم حتى 30 غرفة، وخطة Enterprise تدعم عدداً غير محدود من الغرف وهي المناسبة للفنادق الأكبر. تقويم الحجوزات محسّن للعمل مع مئات الغرف على مدى 5 سنوات بدون أي تأخير. تواصل معنا للحصول على سعر Enterprise.',
+                     tr: 'Evet. Pro planı 30 odaya kadar destekler; 60+ oda için Enterprise plan sınırsız oda destekler. Takvim, 5 yıllık ufkun üzerinde yüzlerce oda için sıfır gecikme ile optimize edilmiştir.' },
+              },
+              {
+                q: { en: 'Can I customize the invoice design and add my logo?',
+                     ar: 'هل يمكنني تخصيص تصميم الفاتورة وإضافة لوجو؟',
+                     tr: 'Fatura tasarımını özelleştirebilir ve logomu ekleyebilir miyim?' },
+                a: { en: 'Yes. From Settings → Company Profile you can upload your logo, set your company name, address, phone, email, tax ID, and a custom invoice footer. All these appear automatically on every printed and PDF invoice. Invoices are bilingual (Arabic / English / Turkish) and adapt to the language of the guest entry.',
+                     ar: 'نعم. من الإعدادات ← بيانات الشركة يمكنك رفع شعارك، وتحديد اسم الشركة والعنوان والهاتف والبريد والرقم الضريبي ونص في تذييل الفاتورة. تظهر هذه البيانات تلقائياً على كل فاتورة مطبوعة أو PDF. الفواتير ثنائية اللغة (عربي / إنجليزي / تركي).',
+                     tr: 'Evet. Ayarlar → Şirket Profili\'nden logonuzu yükleyebilir, şirket adınızı, adresinizi, telefonunuzu, e-postanızı, vergi numaranızı ve özel bir fatura alt bilgisi ayarlayabilirsiniz.' },
+              },
+              {
+                q: { en: 'How many users can use Hujuzatk at the same time? Is it cloud-based or does it work offline?',
+                     ar: 'كم شخص يستطيع استخدام البرنامج في نفس الوقت؟ هل هو سحابي أم يعمل بدون إنترنت؟',
+                     tr: 'Aynı anda kaç kullanıcı kullanabilir? Bulut tabanlı mı yoksa çevrimdışı çalışır mı?' },
+                a: { en: 'Unlimited concurrent users on the same account — share the login with your entire front desk and they all get the same full-access view in real time. Hujuzatk is cloud-based (changes sync across devices instantly via our managed Postgres database) AND works offline (PWA caches data locally; the calendar, booking list, and invoice screens stay usable without internet, and pending changes sync as soon as you reconnect).',
+                     ar: 'عدد المستخدمين غير محدود على نفس الحساب — يمكنك مشاركة بيانات الدخول مع كل موظفي الاستقبال ويحصل الجميع على صلاحيات كاملة في الوقت الفعلي. حجوزاتك سحابي (التغييرات تتزامن فوراً بين جميع الأجهزة عبر قاعدة بيانات Postgres مُدارة) ويعمل أيضاً بدون إنترنت (تطبيق الويب التقدمي يحفظ البيانات محلياً، فيبقى التقويم وقائمة الحجوزات والفواتير قابلة للاستخدام، وتتم المزامنة تلقائياً عند عودة الاتصال).',
+                     tr: 'Aynı hesapta sınırsız eşzamanlı kullanıcı — giriş bilgilerini tüm resepsiyon ekibinizle paylaşın, hepsi gerçek zamanlı tam erişim alır. Hujuzatk bulut tabanlı (değişiklikler yönetilen Postgres veritabanı üzerinden cihazlar arası anında senkronize) VE çevrimdışı çalışır (PWA verileri yerel olarak önbelleğe alır).' },
+              },
+            ] as const).map((item, i) => (
+              <details
+                key={i}
+                className="group"
+                style={{
+                  background: '#fff', border: '1px solid var(--border)', borderRadius: 16,
+                  padding: '18px 22px',
+                }}
+              >
+                <summary
+                  className="cursor-pointer flex items-center justify-between gap-4 list-none"
+                  style={{ fontSize: 16, fontWeight: 700, color: 'var(--ink-900)' }}
+                >
+                  <span>{item.q[lang]}</span>
+                  <span
+                    aria-hidden
+                    className="transition-transform group-open:rotate-45 shrink-0"
+                    style={{ fontSize: 22, lineHeight: 1, color: 'var(--brand-green)' }}
+                  >
+                    +
+                  </span>
+                </summary>
+                <p
+                  className="mt-3"
+                  style={{ fontSize: 15, lineHeight: 1.65, color: 'var(--ink-500)', margin: '12px 0 0' }}
+                >
+                  {item.a[lang]}
+                </p>
+              </details>
+            ))}
+          </div>
         </div>
       </section>
 
