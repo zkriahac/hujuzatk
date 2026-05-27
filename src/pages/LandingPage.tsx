@@ -1115,6 +1115,29 @@ export function LandingPage() {
   const [videoOpen, setVideoOpen] = useState(false);
   const [loggedInUser, setLoggedInUser] = useState<{ name: string; email: string; slug: string } | null>(null);
   const [sessionResolved, setSessionResolved] = useState(false);
+  // Gate below-the-fold sections behind a flag that flips after the first frame
+  // commits. Initial React render only includes nav + hero (what's visible on
+  // a phone above the fold). The rest mounts one frame later, so the long task
+  // is split across two paints instead of one — measured TBT drops because
+  // Lighthouse's long-task threshold is hit on a smaller render.
+  const [belowReady, setBelowReady] = useState(false);
+  useEffect(() => {
+    // Two rAFs: first commits the hero, second schedules the below-fold mount.
+    // Falls back to setTimeout for environments without rAF.
+    let raf1 = 0, raf2 = 0, fallback: number | undefined;
+    const flip = () => setBelowReady(true);
+    if (typeof requestAnimationFrame === 'function') {
+      raf1 = requestAnimationFrame(() => { raf2 = requestAnimationFrame(flip); });
+      fallback = window.setTimeout(flip, 1500); // safety net if rAF stalls (bg tab)
+    } else {
+      fallback = window.setTimeout(flip, 0);
+    }
+    return () => {
+      cancelAnimationFrame(raf1);
+      cancelAnimationFrame(raf2);
+      if (fallback !== undefined) clearTimeout(fallback);
+    };
+  }, []);
 
   const c = content[lang];
   const isRtl = lang === 'ar';
@@ -1596,6 +1619,14 @@ export function LandingPage() {
         </div>
       </section>
 
+      {/* Everything below the hero is gated behind belowReady so React's initial
+          render only commits the nav + hero. Cuts the longest task at first paint
+          (Lighthouse TBT measure). The flag flips after rAF + rAF (~2 frames),
+          so the user sees below-fold content within ~32ms of paint — no visible
+          delay on real devices, but enough to split the long task in the Slow-4G
+          simulation Lighthouse runs. */}
+      {belowReady && (<>
+
       {/* ───────── Logos strip — static row, fade-in stagger on viewport entry.
           Only 3 supported channels (Airbnb / Gathern / Booking.com) so no scroll
           needed — they fit on one line on every viewport. Each name pulses subtly
@@ -1906,6 +1937,8 @@ export function LandingPage() {
           <path d="M19.11 17.205c-.372 0-1.088 1.39-1.518 1.39a.63.63 0 0 1-.315-.1c-.802-.402-1.504-.817-2.163-1.447-.545-.516-1.146-1.29-1.46-1.963a.426.426 0 0 1-.073-.215c0-.33.99-.945.99-1.49 0-.143-.73-2.09-.832-2.335-.143-.372-.214-.487-.6-.487-.187 0-.36-.043-.53-.043-.302 0-.53.115-.746.315-.688.645-1.032 1.318-1.06 2.264v.114c-.015.99.472 1.977 1.017 2.78 1.23 1.82 2.506 3.41 4.554 4.34.616.287 2.035.872 2.722.872.4 0 1.117-.058 1.43-.301.388-.302.673-.953.673-1.444 0-.156-.043-.301-.072-.444-.115-.422-1.917-1.234-2.018-1.205zM16.117 27.71c-2.063 0-4.083-.587-5.832-1.66l-.418-.25-4.318 1.131 1.158-4.21-.272-.434C5.234 20.4 4.578 18.214 4.578 16c0-6.357 5.182-11.54 11.54-11.54 6.36 0 11.54 5.183 11.54 11.54-.013 6.357-5.197 11.71-11.54 11.71zm0-25.117c-7.4 0-13.41 6.014-13.41 13.41 0 2.379.625 4.683 1.81 6.736l-1.93 7.057 7.213-1.886a13.39 13.39 0 0 0 6.347 1.622h.012c7.4 0 13.426-6.013 13.426-13.41 0-3.59-1.396-6.957-3.94-9.495a13.45 13.45 0 0 0-9.527-3.943z" />
         </svg>
       </a>
+
+      </>)}{/* /belowReady — close the gate that wraps everything past the hero */}
     </div>
   );
 }
