@@ -1,19 +1,49 @@
-import { lazy, Suspense, useEffect } from 'react';
+import { lazy, Suspense, useEffect, type ComponentType } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { LandingPage, PrivacyPolicy, TermsOfService } from './pages/LandingPage';
 import { trackPageView } from './lib/analytics';
 
+// When a deploy ships, returning visitors still have the old index.html in
+// memory referencing old hashed chunk filenames. Clicking a route that triggers
+// React.lazy() requests e.g. /assets/AuthShell-OLDHASH.js which no longer
+// exists on the server — the browser receives index.html (HTML), tries to
+// parse as a JS module, throws a MIME error and the screen goes blank.
+//
+// `lazyWithRetry` catches the dynamic-import failure and force-reloads the page
+// once. The reload fetches fresh index.html with the current chunk hashes, and
+// the user's click works. A sessionStorage flag prevents an infinite loop if
+// the reload itself doesn't fix the issue (e.g. genuinely broken deploy).
+function lazyWithRetry<T extends ComponentType<any>>(loader: () => Promise<{ default: T }>) {
+  return lazy(async () => {
+    try {
+      return await loader();
+    } catch (err) {
+      const KEY = 'hujuzatk_chunk_reload_at';
+      const last = Number(sessionStorage.getItem(KEY) || '0');
+      // Reload at most once every 60 seconds — beyond that we surface the
+      // error to the ErrorBoundary / Suspense so it's debuggable.
+      if (Date.now() - last > 60_000) {
+        sessionStorage.setItem(KEY, String(Date.now()));
+        window.location.reload();
+        // Return a promise that never resolves; the reload tears down the page first.
+        return new Promise<{ default: T }>(() => {});
+      }
+      throw err;
+    }
+  });
+}
+
 // Every non-landing route is lazy-loaded so a `/` visitor downloads only the
 // landing chunk + React/Router vendor — not the workspace app, super-admin,
 // xlsx export, etc. Cut roughly two-thirds off the bundle gzip on initial paint.
-const UserAuthShell    = lazy(() => import('./pages/AuthShell').then(m => ({ default: m.UserAuthShell })));
-const WorkspaceShell   = lazy(() => import('./pages/AuthShell').then(m => ({ default: m.WorkspaceShell })));
-const SuperAdminShell  = lazy(() => import('./pages/SuperAdminShell').then(m => ({ default: m.SuperAdminShell })));
-const ResetPasswordPage= lazy(() => import('./pages/ResetPasswordPage'));
-const StoryPage        = lazy(() => import('./pages/StoryPage').then(m => ({ default: m.StoryPage })));
-const AboutPage        = lazy(() => import('./pages/AboutPage'));
-const ContactPage      = lazy(() => import('./pages/ContactPage'));
-const NotFound         = lazy(() => import('./pages/NotFound').then(m => ({ default: m.NotFound })));
+const UserAuthShell    = lazyWithRetry(() => import('./pages/AuthShell').then(m => ({ default: m.UserAuthShell })));
+const WorkspaceShell   = lazyWithRetry(() => import('./pages/AuthShell').then(m => ({ default: m.WorkspaceShell })));
+const SuperAdminShell  = lazyWithRetry(() => import('./pages/SuperAdminShell').then(m => ({ default: m.SuperAdminShell })));
+const ResetPasswordPage= lazyWithRetry(() => import('./pages/ResetPasswordPage'));
+const StoryPage        = lazyWithRetry(() => import('./pages/StoryPage').then(m => ({ default: m.StoryPage })));
+const AboutPage        = lazyWithRetry(() => import('./pages/AboutPage'));
+const ContactPage      = lazyWithRetry(() => import('./pages/ContactPage'));
+const NotFound         = lazyWithRetry(() => import('./pages/NotFound').then(m => ({ default: m.NotFound })));
 
 function Spinner() {
   return (
@@ -41,7 +71,7 @@ function RootRoute() {
       if (cancelled || !s) return;
       const slug = encodeURIComponent((s.tenant.name || 'workspace').replace(/\s+/g, '-'));
       navigate(`/${slug}`, { replace: true });
-    }).catch(() => { /* unauth → stay on landing */ });
+    }).catch(() => { /* unauth → stay on landing, or stale-chunk reload kicked in */ });
     return () => { cancelled = true; };
   }, [navigate]);
   return <LandingPage />;

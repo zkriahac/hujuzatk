@@ -9,5 +9,7 @@
       "statusCode": 301
     }
   ],
-  "rewrites": [{ "source": "/((?!index.html).*)", "destination": "/index.html" }]
+  "rewrites": [
+    { "source": "/((?!.*\\.[a-zA-Z0-9]+$|index.html).*)", "destination": "/index.html" }
+  ]
 }
