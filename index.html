@@ -205,6 +205,21 @@
     <noscript>
       <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" />
     </noscript>
+
+    <!-- www → apex redirect (defensive).
+         The Vercel-level 301 redirect in vercel.json works for non-cached paths,
+         but Cloudflare (which fronts the domain) had cached an old 200 response
+         for `/` on www. This inline script catches the case before React mounts:
+         if the hostname is www.hujuzatk.com, immediately replace the location
+         with the apex equivalent. location.replace() avoids polluting back
+         history. No <noscript> meta-refresh fallback because conditional
+         redirects can't be expressed in HTML without JS — and emitting a
+         meta-refresh to apex unconditionally would loop on apex itself. -->
+    <script>
+      if (typeof window !== 'undefined' && window.location.hostname === 'www.hujuzatk.com') {
+        window.location.replace('https://hujuzatk.com' + window.location.pathname + window.location.search + window.location.hash);
+      }
+    </script>
   </head>
   <body>
     <!-- Google Tag Manager (noscript) -->

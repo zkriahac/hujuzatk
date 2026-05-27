@@ -2,7 +2,7 @@
 // Also bump after a deploy that changes the JS bundle structure so cache-first
 // fetches don't keep serving a broken hash (e.g., the recent vendor-chunk split
 // that triggered a class-extends runtime error for returning visitors).
-const CACHE_NAME = 'hujuzatk-v4';
+const CACHE_NAME = 'hujuzatk-v5';
 const STATIC_ASSETS = [
   '/manifest.json',
   '/icon-192.png',
