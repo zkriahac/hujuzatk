@@ -24,13 +24,13 @@ const content = {
     dir: 'ltr' as const,
     nav: { features: 'Features', pricing: 'Pricing', login: 'Sign in', signup: 'Start free' },
     hero: {
-      eyebrow: 'The smartest booking OS for the Arab world',
-      title1: 'Booking management,',
-      mark: 'made simpler',
-      subtitle: 'Scale your hotel, apartments, or short-term rentals with our blazing-fast calendar, automatic invoicing, financial analytics, and channel sync.',
-      cta: 'Start 14-day free trial',
-      cta2: 'Watch video',
-      trust: 'Trusted by chalet owners, guesthouses, and serviced-apartment operators',
+      eyebrow: 'Built for chalet, apartment and guesthouse owners in Saudi Arabia and the Gulf',
+      title1: 'Run your properties',
+      mark: 'from one calendar',
+      subtitle: 'Track bookings, send Arabic invoices, log expenses, and see real revenue per room — on any phone. Sync Airbnb, Booking.com and Gathern when you\'re ready.',
+      cta: 'Start free — no card needed',
+      cta2: 'Watch 60-second tour',
+      trust: 'For chalets, apartments, guesthouses and serviced rentals across Saudi Arabia and the Gulf',
     },
     logos: { intro: 'Integrates with major platforms', items: ['Airbnb', 'Booking.com', 'Gathern'] },
     features: {
@@ -43,15 +43,15 @@ const content = {
       { tag: '02', title: 'Smart invoicing', desc: 'Automatic calculation of nights, discounts, and deposits. Generate clean printable invoices in Arabic or English instantly.', color: 'amber' },
       { tag: '03', title: 'Full Arabic & RTL support', desc: 'Not just a translation — a fully localized experience. Pixel-perfect RTL layouts with regional date formats and currencies built in.', color: 'blue' },
       { tag: '04', title: 'Financial intelligence', desc: 'Advanced reports by stay date or booking date. Visualize occupancy rates and revenue per room at a glance.', color: 'green' },
-      { tag: '05', title: 'Installable mobile app', desc: 'Pin Hujuzatk to your home screen with one tap — works offline, sends push notifications, no App Store or Play Store needed.', color: 'purple' },
-      { tag: '06', title: 'Automatic channel sync', desc: 'Nightly and on-demand sync for Airbnb, Gathern, and Booking.com calendars. New bookings appear automatically — no copy-paste.', color: 'coral' },
-      { tag: '07', title: 'Expense tracking', desc: 'Log property expenses by room or category — maintenance, cleaning, utilities. Monthly and yearly reports reveal your true margin.', color: 'amber' },
+      { tag: '06', title: 'Installable mobile app', desc: 'Pin Hujuzatk to your home screen with one tap — works offline, sends push notifications, no App Store or Play Store needed.', color: 'purple' },
+      { tag: '07', title: 'Automatic channel sync', desc: 'Nightly and on-demand sync for Airbnb, Gathern, and Booking.com calendars. New bookings appear automatically — no copy-paste.', color: 'coral' },
+      { tag: '05', title: 'Expense tracking', desc: 'Log property expenses by room or category — maintenance, cleaning, utilities. Monthly and yearly reports reveal your true margin.', color: 'amber' },
     ],
     badges: {
       cal:    { title: '3-year calendar', sub: 'Scroll instantly, no lag' },
-      inv:    { title: 'Smart invoicing', sub: '5 nights × OMR 250 = OMR 1,250' },
+      inv:    { title: 'Smart invoicing', sub: '5 nights × SAR 250 = SAR 1,250' },
       sync:   { title: 'Airbnb sync', sub: 'Synced 12s ago' },
-      rev:    { title: 'Monthly revenue', big: 'OMR 28,450', delta: '↑ 18% vs last month' },
+      rev:    { title: 'Monthly revenue', big: 'SAR 28,450', delta: '↑ 18% vs last month' },
       rtl:    { title: 'Arabic & RTL', sub: 'Truly localized' },
       install:{ title: 'Add to home screen', sub: 'No app store needed' },
     },
@@ -63,23 +63,17 @@ const content = {
     pricing: {
       eyebrow: 'Simple pricing',
       title: 'A plan for every size of business',
-      subtitle: 'Start free. Scale as you grow. No hidden fees.',
+      subtitle: 'Every plan starts with 14 days free. No credit card needed.',
       perYear: '/yr',
       was: 'was',
       save: '15% OFF',
       recommended: 'MOST POPULAR',
       note: 'Cancel anytime. No long-term contracts.',
       promo: {
-        title: 'Year-End Promo',
-        subtitle: 'All plans discounted until end of 2026 — start now and lock in your rate.',
+        title: 'Launch pricing',
+        subtitle: 'Early-customer rates. Start your trial today and secure this price.',
       },
       plans: [
-        {
-          id: 'trial', name: 'Trial', price: 0, priceLabel: 'Free for 14 days',
-          tagline: 'Try every core feature',
-          features: ['3 Rooms', 'Unlimited Bookings', 'Reports', 'Expense Tracking', 'Multi-Language (AR/EN/TR)', 'Installable App', '3-Year Calendar'],
-          cta: 'Start Free Trial', recommended: false,
-        },
         {
           id: 'basic', name: 'Basic', price: 40, oldPrice: 50,
           tagline: 'Perfect for small properties — no channel sync',
@@ -98,6 +92,18 @@ const content = {
           features: ['Unlimited Rooms', 'All Pro features', 'Dedicated WhatsApp support', 'Custom onboarding', 'SLA-backed uptime'],
           cta: 'Contact Sales', recommended: false,
         },
+      ],
+    },
+    faq: {
+      eyebrow: 'FAQ',
+      title: 'Questions, answered',
+      items: [
+        { q: 'What happens when my 14-day trial ends?', a: 'We email you 2 days before. If you don\'t pick a plan, your account pauses — your data stays safe and you can resume anytime.' },
+        { q: 'Do I need a credit card to start?', a: 'No. Start your trial with just your email. Add billing only when you decide to continue.' },
+        { q: 'Can I import my existing bookings?', a: 'Yes. Upload a CSV or paste your current bookings — we\'ll match rooms automatically. Pro users can also sync Airbnb, Booking.com and Gathern in one click.' },
+        { q: 'What if I don\'t use Airbnb or Booking.com?', a: 'That\'s most of our customers. Use Hujuzatk for direct bookings, WhatsApp leads and walk-ins — channel sync is there when you want it, on the Pro plan.' },
+        { q: 'Where is my data stored — is it safe?', a: 'Your data lives on secure servers with encryption at rest and in transit. We never sell or share it. You can export everything anytime.' },
+        { q: 'Can I cancel anytime?', a: 'Yes. One click in your account settings — no calls, no questions. We don\'t do long-term contracts.' },
       ],
     },
     cta: {
@@ -126,13 +132,13 @@ const content = {
     dir: 'rtl' as const,
     nav: { features: 'المميزات', pricing: 'الأسعار', login: 'تسجيل الدخول', signup: 'ابدأ مجاناً' },
     hero: {
-      eyebrow: 'نظام إدارة الحجوزات الأذكى للعالم العربي',
-      title1: 'إدارة الحجوزات',
-      mark: 'أصبحت أبسط',
-      subtitle: 'وسّع نطاق فندقك أو شققك أو إيجاراتك السياحية مع تقويمنا الفائق السرعة، والفوترة التلقائية، والتحليلات المالية، والربط مع مواقع الحجوزات.',
-      cta: 'تجربة 14 يوم مجاناً',
-      cta2: 'شاهد الفيديو',
-      trust: 'موثوق من ملاك الشاليهات والاستراحات والشقق المخدومة',
+      eyebrow: 'مصمَّم لملّاك الشاليهات والشقق والاستراحات في السعودية والخليج',
+      title1: 'أدر عقاراتك',
+      mark: 'من تقويم واحد',
+      subtitle: 'تابع الحجوزات، أصدر فواتير عربية، سجّل المصروفات، واطّلع على إيرادات كل غرفة — من أي هاتف. اربط Airbnb وBooking.com وجاذبين عند الحاجة.',
+      cta: 'ابدأ مجاناً — بدون بطاقة',
+      cta2: 'شاهد جولة 60 ثانية',
+      trust: 'لإدارة الشاليهات والشقق والاستراحات والوحدات المخدومة في السعودية والخليج',
     },
     logos: { intro: 'نتكامل مع المنصات الكبرى', items: ['Airbnb', 'Booking.com', 'جاذبين'] },
     features: {
@@ -145,9 +151,9 @@ const content = {
       { tag: '٠٢', title: 'فوترة ذكية', desc: 'حساب تلقائي للليالي والخصومات والعربون. أنشئ فواتير نظيفة وقابلة للطباعة باللغة العربية أو الإنجليزية فوراً.', color: 'amber' },
       { tag: '٠٣', title: 'دعم كامل للعربية وRTL', desc: 'ليس مجرد ترجمة، بل تجربة محلية كاملة. تخطيطات RTL مثالية مع تنسيقات تواريخ إقليمية وعملات مدمجة.', color: 'blue' },
       { tag: '٠٤', title: 'ذكاء مالي', desc: 'تقارير متقدمة حسب تاريخ الإقامة أو تاريخ الإنشاء. تصور معدلات الإشغال والإيرادات لكل غرفة.', color: 'green' },
-      { tag: '٠٥', title: 'تطبيق جوال قابل للتثبيت', desc: 'ثبّت حجوزاتك على شاشتك الرئيسية بنقرة واحدة — يعمل بدون إنترنت، ويرسل إشعارات، بدون الحاجة لتحميل من المتاجر.', color: 'purple' },
-      { tag: '٠٦', title: 'مزامنة تلقائية للقنوات', desc: 'مزامنة ليلية وعند الطلب لتقويم Airbnb وجاذبين وBooking.com. الحجوزات الجديدة تظهر تلقائياً — دون أي نسخ ولصق.', color: 'coral' },
-      { tag: '٠٧', title: 'تتبع المصروفات', desc: 'سجّل نفقات العقار حسب الغرفة أو الفئة — صيانة، تنظيف، مرافق. تقارير شهرية وسنوية تكشف هامش الربح الحقيقي.', color: 'amber' },
+      { tag: '٠٦', title: 'تطبيق جوال قابل للتثبيت', desc: 'ثبّت حجوزاتك على شاشتك الرئيسية بنقرة واحدة — يعمل بدون إنترنت، ويرسل إشعارات، بدون الحاجة لتحميل من المتاجر.', color: 'purple' },
+      { tag: '٠٧', title: 'مزامنة تلقائية للقنوات', desc: 'مزامنة ليلية وعند الطلب لتقويم Airbnb وجاذبين وBooking.com. الحجوزات الجديدة تظهر تلقائياً — دون أي نسخ ولصق.', color: 'coral' },
+      { tag: '٠٥', title: 'تتبع المصروفات', desc: 'سجّل نفقات العقار حسب الغرفة أو الفئة — صيانة، تنظيف، مرافق. تقارير شهرية وسنوية تكشف هامش الربح الحقيقي.', color: 'amber' },
     ],
     badges: {
       cal:    { title: 'تقويم 3 سنوات', sub: 'تمرير فوري بدون تأخير' },
@@ -165,23 +171,17 @@ const content = {
     pricing: {
       eyebrow: 'أسعار بسيطة',
       title: 'خطة لكل حجم نشاط',
-      subtitle: 'ابدأ مجاناً. ارتقِ كلما نمت. لا توجد رسوم خفية.',
+      subtitle: 'كل خطة تبدأ بـ 14 يوماً مجاناً. بدون بطاقة ائتمان.',
       perYear: '/سنة',
       was: 'كان',
       save: 'خصم 15%',
       recommended: 'الأكثر شعبية',
       note: 'إلغاء في أي وقت. لا عقود ملزمة.',
       promo: {
-        title: 'عرض نهاية العام',
-        subtitle: 'جميع الخطط مخفضة حتى نهاية 2026 — اشترك الآن واحجز سعرك.',
+        title: 'أسعار الإطلاق',
+        subtitle: 'سعر العملاء الأوائل. ابدأ تجربتك اليوم واحجز هذا السعر.',
       },
       plans: [
-        {
-          id: 'trial', name: 'تجريبي', price: 0, priceLabel: 'مجاناً 14 يوماً',
-          tagline: 'جرب كل الميزات الأساسية',
-          features: ['3 غرف', 'حجوزات غير محدودة', 'تقارير', 'تتبع المصروفات', 'متعدد اللغات (AR/EN/TR)', 'تطبيق قابل للتثبيت', 'تقويم 3 سنوات'],
-          cta: 'ابدأ التجربة المجانية', recommended: false,
-        },
         {
           id: 'basic', name: 'أساسي', price: 40, oldPrice: 50,
           tagline: 'مثالي للعقارات الصغيرة — بدون مزامنة القنوات',
@@ -200,6 +200,18 @@ const content = {
           features: ['غرف غير محدودة', 'كل ميزات المحترف', 'دعم واتساب مخصص', 'إعداد مخصص', 'ضمان الأداء'],
           cta: 'تواصل مع المبيعات', recommended: false,
         },
+      ],
+    },
+    faq: {
+      eyebrow: 'الأسئلة الشائعة',
+      title: 'إجابات على أكثر الأسئلة',
+      items: [
+        { q: 'ماذا يحدث بعد انتهاء فترة التجربة 14 يوماً؟', a: 'نرسل لك بريداً قبل يومين. إذا لم تختر خطة، يتوقف حسابك مؤقتاً — بياناتك تبقى آمنة ويمكنك الاستئناف في أي وقت.' },
+        { q: 'هل أحتاج بطاقة ائتمان للبدء؟', a: 'لا. ابدأ تجربتك بإيميلك فقط. أضف بيانات الدفع عندما تقرر الاستمرار.' },
+        { q: 'هل يمكنني استيراد حجوزاتي الحالية؟', a: 'نعم. ارفع ملف CSV أو ألصق حجوزاتك الحالية — نطابق الغرف تلقائياً. مستخدمو خطة المحترف يربطون Airbnb و Booking.com وجاذبين بنقرة واحدة.' },
+        { q: 'ماذا لو كنت لا أستخدم Airbnb أو Booking.com؟', a: 'هذا حال معظم عملائنا. استخدم حجوزاتك للحجوزات المباشرة وواتساب والزبائن الحضوريين — مزامنة القنوات متاحة عند الحاجة في خطة المحترف.' },
+        { q: 'أين تُحفظ بياناتي — هل هي آمنة؟', a: 'بياناتك على خوادم آمنة بتشفير كامل أثناء النقل والتخزين. لا نبيعها أو نشاركها أبداً. يمكنك تصدير كل شيء في أي وقت.' },
+        { q: 'هل يمكنني الإلغاء في أي وقت؟', a: 'نعم. نقرة واحدة من إعدادات حسابك — بدون مكالمات أو أسئلة. لا توجد عقود ملزمة.' },
       ],
     },
     cta: {
@@ -228,13 +240,13 @@ const content = {
     dir: 'ltr' as const,
     nav: { features: 'Özellikler', pricing: 'Fiyatlar', login: 'Giriş Yap', signup: 'Ücretsiz Başla' },
     hero: {
-      eyebrow: 'Arap dünyası için en akıllı rezervasyon sistemi',
-      title1: 'Rezervasyon yönetimi,',
-      mark: 'çok daha basit',
-      subtitle: 'Otelinizi, dairelerinizi veya kısa süreli kiralamalarınızı hızlı takvimimiz, otomatik faturalandırma, finansal analitik ve kanal senkronizasyonu ile büyütün.',
-      cta: '14 günlük ücretsiz deneme',
-      cta2: 'Videoyu izle',
-      trust: 'Şale sahipleri, pansiyon işletmecileri ve hizmet daireleri tarafından tercih edildi',
+      eyebrow: 'Körfez bölgesindeki şale, daire ve pansiyon sahipleri için tasarlandı',
+      title1: 'Mülklerinizi',
+      mark: 'tek takvimden yönetin',
+      subtitle: 'Rezervasyonları takip edin, Arapça faturalar gönderin, giderleri kaydedin ve oda başına gerçek geliri görün — her telefonda. Hazır olduğunuzda Airbnb, Booking.com ve Gathern\'i senkronize edin.',
+      cta: 'Ücretsiz başla — kart gerekmez',
+      cta2: '60 saniyelik turu izle',
+      trust: 'Suudi Arabistan ve Körfez bölgesindeki şale, daire, pansiyon ve hizmet kiraları için',
     },
     logos: { intro: 'Büyük platformlarla entegre çalışır', items: ['Airbnb', 'Booking.com', 'Gathern'] },
     features: {
@@ -247,9 +259,9 @@ const content = {
       { tag: '02', title: 'Akıllı faturalandırma', desc: 'Geceler, indirimler ve depozitolar otomatik hesaplanır. Arapça veya İngilizce temiz yazdırılabilir faturalar anında oluşturun.', color: 'amber' },
       { tag: '03', title: 'Tam Arapça ve RTL desteği', desc: 'Sadece çeviri değil — tamamen yerelleştirilmiş bir deneyim. Bölgesel tarih biçimleri ve para birimleriyle piksel mükemmel RTL düzenleri.', color: 'blue' },
       { tag: '04', title: 'Finansal zeka', desc: 'Konaklama tarihine veya rezervasyon tarihine göre gelişmiş raporlar. Doluluk oranlarını ve oda başına geliri bir bakışta görselleştirin.', color: 'green' },
-      { tag: '05', title: 'Kurulabilir mobil uygulama', desc: 'Hujuzatk\'ı tek dokunuşla ana ekrana sabitleyin — çevrimdışı çalışır, bildirim gönderir, App Store veya Play Store gerekmez.', color: 'purple' },
-      { tag: '06', title: 'Otomatik kanal senkronizasyonu', desc: 'Airbnb, Gathern ve Booking.com takvimleri için gecelik ve isteğe bağlı senkronizasyon. Yeni rezervasyonlar otomatik olarak görünür.', color: 'coral' },
-      { tag: '07', title: 'Gider takibi', desc: 'Mülk giderlerini odaya veya kategoriye göre kaydedin — bakım, temizlik, faturalar. Aylık ve yıllık raporlar gerçek marjınızı ortaya çıkarır.', color: 'amber' },
+      { tag: '06', title: 'Kurulabilir mobil uygulama', desc: 'Hujuzatk\'ı tek dokunuşla ana ekrana sabitleyin — çevrimdışı çalışır, bildirim gönderir, App Store veya Play Store gerekmez.', color: 'purple' },
+      { tag: '07', title: 'Otomatik kanal senkronizasyonu', desc: 'Airbnb, Gathern ve Booking.com takvimleri için gecelik ve isteğe bağlı senkronizasyon. Yeni rezervasyonlar otomatik olarak görünür.', color: 'coral' },
+      { tag: '05', title: 'Gider takibi', desc: 'Mülk giderlerini odaya veya kategoriye göre kaydedin — bakım, temizlik, faturalar. Aylık ve yıllık raporlar gerçek marjınızı ortaya çıkarır.', color: 'amber' },
     ],
     badges: {
       cal:    { title: '3 yıllık takvim', sub: 'Anında kaydırma' },
@@ -267,23 +279,17 @@ const content = {
     pricing: {
       eyebrow: 'Basit fiyatlandırma',
       title: 'Her işletme boyutuna uygun bir plan',
-      subtitle: 'Ücretsiz başlayın. Büyüdükçe ölçeklendirin. Gizli ücretler yok.',
+      subtitle: 'Her plan 14 gün ücretsiz başlar. Kart gerekmez.',
       perYear: '/yıl',
       was: 'Eski',
       save: '%15 İNDİRİM',
       recommended: 'EN POPÜLER',
       note: 'İstediğiniz zaman iptal edin. Uzun vadeli sözleşmeler yok.',
       promo: {
-        title: 'Yıl Sonu Kampanyası',
-        subtitle: '2026 yılı sonuna kadar tüm planlar indirimli — hemen başlayın, fiyatınızı kilitleyin.',
+        title: 'Lansman fiyatları',
+        subtitle: 'İlk müşteri fiyatlandırması. Denemenize bugün başlayın ve bu fiyatı sabitleyin.',
       },
       plans: [
-        {
-          id: 'trial', name: 'Deneme', price: 0, priceLabel: '14 gün ücretsiz',
-          tagline: 'Tüm temel özellikleri deneyin',
-          features: ['3 Oda', 'Sınırsız Rezervasyon', 'Raporlar', 'Gider Takibi', 'Çoklu Dil (AR/EN/TR)', 'Kurulabilir Uygulama', '3 Yıllık Takvim'],
-          cta: 'Ücretsiz Denemeye Başla', recommended: false,
-        },
         {
           id: 'basic', name: 'Temel', price: 40, oldPrice: 50,
           tagline: 'Küçük mülkler için ideal — kanal senkronu yok',
@@ -302,6 +308,18 @@ const content = {
           features: ['Sınırsız Oda', 'Tüm Pro özellikleri', 'Özel WhatsApp desteği', 'Özel kurulum', 'SLA destekli çalışma süresi'],
           cta: 'Satışla İletişime Geç', recommended: false,
         },
+      ],
+    },
+    faq: {
+      eyebrow: 'SSS',
+      title: 'Sıkça sorulan sorular',
+      items: [
+        { q: '14 günlük denemem bittiğinde ne olur?', a: 'Bitmesinden 2 gün önce e-posta gönderiyoruz. Plan seçmezseniz hesabınız duraklatılır — verileriniz güvende kalır ve istediğiniz zaman devam edebilirsiniz.' },
+        { q: 'Başlamak için kredi kartı gerekli mi?', a: 'Hayır. Sadece e-postanızla denemenize başlayın. Ödeme bilgilerini devam etmeye karar verdiğinizde eklersiniz.' },
+        { q: 'Mevcut rezervasyonlarımı içe aktarabilir miyim?', a: 'Evet. CSV yükleyin veya mevcut rezervasyonlarınızı yapıştırın — odaları otomatik eşleştiririz. Pro kullanıcılar Airbnb, Booking.com ve Gathern\'i tek tıkla senkronize edebilir.' },
+        { q: 'Airbnb veya Booking.com kullanmıyorsam?', a: 'Müşterilerimizin çoğu kullanmıyor. Doğrudan rezervasyonlar, WhatsApp ve gelen müşteriler için Hujuzatk\'ı kullanın — kanal senkronu Pro planda hazır.' },
+        { q: 'Verilerim nerede saklanıyor — güvenli mi?', a: 'Verileriniz güvenli sunucularda, aktarımda ve depolamada şifrelenir. Asla satmaz veya paylaşmayız. İstediğiniz zaman her şeyi dışa aktarabilirsiniz.' },
+        { q: 'İstediğim zaman iptal edebilir miyim?', a: 'Evet. Hesap ayarlarınızdan tek tıkla — telefon yok, soru yok. Uzun vadeli sözleşmemiz yok.' },
       ],
     },
     cta: {
@@ -591,9 +609,9 @@ function InvoiceHolo({ lang }: { lang: Lang }) {
         </div>
       </div>
       {[
-        { l: isAr ? '5 ليالٍ × ﷼ 250' : lang === 'tr' ? '5 gece × ₺ 250' : '5 nights × OMR 250', v: isAr ? '﷼ 1,250' : lang === 'tr' ? '₺ 1,250' : 'OMR 1,250' },
-        { l: isAr ? 'خصم 10%' : lang === 'tr' ? 'İndirim %10' : 'Discount 10%', v: isAr ? '−﷼ 125' : lang === 'tr' ? '−₺ 125' : '−OMR 125', muted: true },
-        { l: isAr ? 'ضريبة 5%' : lang === 'tr' ? 'Vergi %5' : 'Tax 5%', v: isAr ? '﷼ 56' : lang === 'tr' ? '₺ 56' : 'OMR 56', muted: true },
+        { l: isAr ? '5 ليالٍ × ﷼ 250' : lang === 'tr' ? '5 gece × ₺ 250' : '5 nights × SAR 250', v: isAr ? '﷼ 1,250' : lang === 'tr' ? '₺ 1,250' : 'SAR 1,250' },
+        { l: isAr ? 'خصم 10%' : lang === 'tr' ? 'İndirim %10' : 'Discount 10%', v: isAr ? '−﷼ 125' : lang === 'tr' ? '−₺ 125' : '−SAR 125', muted: true },
+        { l: isAr ? 'ضريبة 5%' : lang === 'tr' ? 'Vergi %5' : 'Tax 5%', v: isAr ? '﷼ 56' : lang === 'tr' ? '₺ 56' : 'SAR 56', muted: true },
       ].map((r, i) => (
         <div key={i} className="flex justify-between" style={{ fontSize: 10, color: r.muted ? 'var(--ink-300)' : 'var(--ink-900)', padding: '3px 0' }}>
           <span>{r.l}</span><span>{r.v}</span>
@@ -602,7 +620,7 @@ function InvoiceHolo({ lang }: { lang: Lang }) {
       <div style={{ height: 1, background: 'var(--border)', margin: '6px 0' }} />
       <div className="flex justify-between" style={{ fontSize: 12, fontWeight: 800, color: 'var(--ink-900)' }}>
         <span>{isAr ? 'الإجمالي' : lang === 'tr' ? 'Toplam' : 'Total'}</span>
-        <span>{isAr ? '﷼ 1,181' : lang === 'tr' ? '₺ 1,181' : 'OMR 1,181'}</span>
+        <span>{isAr ? '﷼ 1,181' : lang === 'tr' ? '₺ 1,181' : 'SAR 1,181'}</span>
       </div>
     </div>
   );
@@ -665,7 +683,7 @@ function ReportsHolo({ lang }: { lang: Lang }) {
           <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--brand-green-deep)', background: 'var(--brand-green-tint)', padding: '2px 6px', borderRadius: 4 }}>↑ 18%</span>
         </div>
         <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--ink-900)', letterSpacing: '-0.02em', marginBottom: 12 }}>
-          {isAr ? '﷼ 28,450' : lang === 'tr' ? '₺ 28,450' : 'OMR 28,450'}
+          {isAr ? '﷼ 28,450' : lang === 'tr' ? '₺ 28,450' : 'SAR 28,450'}
         </div>
         <div className="flex items-end" style={{ gap: 5, height: 60 }}>
           {bars.map((h, i) => (
@@ -777,9 +795,9 @@ function ChannelsHolo({ lang }: { lang: Lang }) {
 
 function ExpensesHolo({ lang }: { lang: Lang }) {
   const items = [
-    { l: lang === 'ar' ? 'صيانة'  : lang === 'tr' ? 'Bakım'   : 'Maintenance', v: lang === 'ar' ? '﷼ 420' : lang === 'tr' ? '₺ 420' : 'OMR 420', c: 'var(--accent-amber)' },
-    { l: lang === 'ar' ? 'تنظيف'  : lang === 'tr' ? 'Temizlik': 'Cleaning',    v: lang === 'ar' ? '﷼ 180' : lang === 'tr' ? '₺ 180' : 'OMR 180', c: 'var(--accent-blue)'  },
-    { l: lang === 'ar' ? 'كهرباء' : lang === 'tr' ? 'Faturalar': 'Utilities',  v: lang === 'ar' ? '﷼ 95'  : lang === 'tr' ? '₺ 95'  : 'OMR 95',  c: 'var(--accent-purple)' },
+    { l: lang === 'ar' ? 'صيانة'  : lang === 'tr' ? 'Bakım'   : 'Maintenance', v: lang === 'ar' ? '﷼ 420' : lang === 'tr' ? '₺ 420' : 'SAR 420', c: 'var(--accent-amber)' },
+    { l: lang === 'ar' ? 'تنظيف'  : lang === 'tr' ? 'Temizlik': 'Cleaning',    v: lang === 'ar' ? '﷼ 180' : lang === 'tr' ? '₺ 180' : 'SAR 180', c: 'var(--accent-blue)'  },
+    { l: lang === 'ar' ? 'كهرباء' : lang === 'tr' ? 'Faturalar': 'Utilities',  v: lang === 'ar' ? '﷼ 95'  : lang === 'tr' ? '₺ 95'  : 'SAR 95',  c: 'var(--accent-purple)' },
   ];
   return (
     <div style={{ position: 'relative', width: 240, height: 170 }}>
@@ -1198,7 +1216,7 @@ export function LandingPage() {
       fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-en)',
     }}>
       {/* ───────── Nav ───────── */}
-      <nav className="relative z-10" style={{ background: 'var(--surface)', borderBottom: '1px solid var(--border)' }}>
+      <nav className="relative z-11" style={{ background: 'var(--surface)', borderBottom: '1px solid var(--border)' }}>
         <div className="max-w-[1280px] mx-auto flex items-center justify-between" style={{ padding: '20px 24px' }}>
           <Link to="/" className="shrink-0"><HZLogo size={36} /></Link>
           <div className="hidden md:flex items-center gap-1">
@@ -1608,10 +1626,10 @@ export function LandingPage() {
             <FeatureCard idx={2} span={2} item={c.f[2]} lang={lang}><RtlHolo lang={lang} /></FeatureCard>
 
             <FeatureCard idx={0} span={3} item={c.f[3]} lang={lang} wide><ReportsHolo lang={lang} /></FeatureCard>
-            <FeatureCard idx={1} span={3} item={c.f[5]} lang={lang} wide><ChannelsHolo lang={lang} /></FeatureCard>
+            <FeatureCard idx={1} span={3} item={c.f[6]} lang={lang} wide><ExpensesHolo lang={lang} /></FeatureCard>
 
             <FeatureCard idx={0} span={3} item={c.f[4]} lang={lang} wide><InstallHolo lang={lang} /></FeatureCard>
-            <FeatureCard idx={1} span={3} item={c.f[6]} lang={lang} wide><ExpensesHolo lang={lang} /></FeatureCard>
+            <FeatureCard idx={1} span={3} item={c.f[5]} lang={lang} wide><ChannelsHolo lang={lang} /></FeatureCard>
           </div>
         </div>
       </section>
@@ -1649,7 +1667,7 @@ export function LandingPage() {
             <p style={{ fontSize: 18, color: 'var(--ink-500)' }}>{c.pricing.subtitle}</p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4" style={{ gap: 20 }}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 max-w-[1100px] mx-auto" style={{ gap: 20 }}>
             {c.pricing.plans.map((p) => {
               const showCrossout = promoOn && 'oldPrice' in p && p.oldPrice && p.price !== p.oldPrice;
               const isPopular = p.recommended;
@@ -1694,20 +1712,21 @@ export function LandingPage() {
                   }}>{p.tagline}</p>
 
                   <div className="mb-5" dir="ltr">
-                    {p.price === 0 ? (
-                      <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--brand-green)' }}>{p.priceLabel}</div>
-                    ) : (
-                      <div className="flex items-baseline gap-1.5 flex-wrap">
-                        {showCrossout && (
-                          <span className="line-through font-bold" style={{
-                            fontSize: 14,
-                            color: isPopular ? 'rgba(255,255,255,0.4)' : 'var(--ink-300)',
-                          }}>
-                            {CURRENCY_SYMBOL}{(p as any).oldPrice}
-                          </span>
-                        )}
-                        <span style={{ fontSize: 38, fontWeight: 800, letterSpacing: '-0.03em' }}>{CURRENCY_SYMBOL}{p.price}</span>
-                        <span style={{ fontSize: 13, fontWeight: 600, color: isPopular ? 'rgba(255,255,255,0.6)' : 'var(--ink-500)' }}>{c.pricing.perYear}</span>
+                    <div className="flex items-baseline gap-1.5 flex-wrap">
+                      {showCrossout && (
+                        <span className="line-through font-bold" style={{
+                          fontSize: 14,
+                          color: isPopular ? 'rgba(255,255,255,0.4)' : 'var(--ink-300)',
+                        }}>
+                          {CURRENCY_SYMBOL}{(p as any).oldPrice}
+                        </span>
+                      )}
+                      <span style={{ fontSize: 38, fontWeight: 800, letterSpacing: '-0.03em' }}>{CURRENCY_SYMBOL}{p.price}</span>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: isPopular ? 'rgba(255,255,255,0.6)' : 'var(--ink-500)' }}>{c.pricing.perYear}</span>
+                    </div>
+                    {(lang === 'ar' || lang === 'en') && (
+                      <div style={{ fontSize: 12, fontWeight: 600, marginTop: 6, color: isPopular ? 'rgba(255,255,255,0.55)' : 'var(--ink-300)' }}>
+                        ≈ {lang === 'ar' ? '﷼' : 'SAR'} {Math.round(p.price * 3.75)} {c.pricing.perYear}
                       </div>
                     )}
                   </div>
@@ -1741,6 +1760,45 @@ export function LandingPage() {
           <p className="text-center" style={{ marginTop: 32, fontSize: 14, color: 'var(--ink-300)', fontWeight: 500 }}>
             {c.pricing.note}
           </p>
+        </div>
+      </section>
+
+      {/* ───────── FAQ ───────── */}
+      <section style={{ padding: '120px 24px', background: 'var(--bg)' }}>
+        <div className="max-w-[860px] mx-auto">
+          <div className="text-center mx-auto" style={{ maxWidth: 720, marginBottom: 48 }}>
+            <span className="eyebrow">{c.faq.eyebrow}</span>
+            <h2 className="h-display" style={{ fontSize: 48, margin: '16px 0 16px', color: 'var(--ink-900)' }}>{c.faq.title}</h2>
+          </div>
+          <div className="flex flex-col" style={{ gap: 12 }}>
+            {c.faq.items.map((it, i) => (
+              <details key={i} className="hz-faq" style={{
+                background: '#fff',
+                border: '1px solid var(--border)',
+                borderRadius: 16,
+                padding: '20px 24px',
+                direction: isAr ? 'rtl' : 'ltr',
+              }}>
+                <summary className="hz-faq__summary" style={{
+                  cursor: 'pointer',
+                  fontSize: 17,
+                  fontWeight: 700,
+                  color: 'var(--ink-900)',
+                  listStyle: 'none',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  gap: 16,
+                }}>
+                  <span>{it.q}</span>
+                  <CaretDown size={18} weight="bold" className="hz-faq__caret" style={{ color: 'var(--ink-500)', flexShrink: 0 }} />
+                </summary>
+                <p style={{ fontSize: 15, color: 'var(--ink-500)', lineHeight: 1.6, marginTop: 12, marginBottom: 0 }}>
+                  {it.a}
+                </p>
+              </details>
+            ))}
+          </div>
         </div>
       </section>
 

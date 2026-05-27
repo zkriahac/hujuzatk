@@ -289,3 +289,15 @@ select::-ms-expand { display: none; }
   }
   .hide-on-print { display: none !important; }
 }
+
+/* ============================================================
+   Landing FAQ accordion
+   ============================================================ */
+.hz-faq {
+  transition: box-shadow .25s cubic-bezier(.2,.7,.2,1), border-color .25s;
+}
+.hz-faq:hover { box-shadow: 0 6px 16px -8px rgba(11,27,58,0.10); }
+.hz-faq[open] { border-color: rgba(14,159,110,.35); }
+.hz-faq__summary::-webkit-details-marker { display: none; }
+.hz-faq__caret { transition: transform .22s cubic-bezier(.2,.7,.2,1); }
+.hz-faq[open] .hz-faq__caret { transform: rotate(180deg); }
