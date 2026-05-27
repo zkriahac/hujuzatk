@@ -15,11 +15,11 @@
     <meta name="rating" content="general" />
     <meta name="revisit-after" content="7 days" />
 
-    <!-- Canonical & hreflang -->
-    <link rel="canonical" href="https://hujuzatk.com" />
-    <link rel="alternate" hreflang="en" href="https://hujuzatk.com" />
-    <link rel="alternate" hreflang="ar" href="https://hujuzatk.com" />
-    <link rel="alternate" hreflang="x-default" href="https://hujuzatk.com" />
+    <!-- Canonical. We don't emit hreflang en/ar because the same URL serves all
+         languages (client-side toggle) — pointing en and ar at the same href is
+         an invalid signal in Google's eyes and gets dropped. x-default is enough. -->
+    <link rel="canonical" href="https://hujuzatk.com/" />
+    <link rel="alternate" hreflang="x-default" href="https://hujuzatk.com/" />
 
     <!-- Open Graph -->
     <meta property="og:site_name" content="Hujuzatk PMS" />

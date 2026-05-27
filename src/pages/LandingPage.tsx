@@ -1881,14 +1881,49 @@ export function LandingPage() {
 // PrivacyPolicy + TermsOfService (kept simple, in new design language)
 // =====================================================================
 
+// Per-route SEO. SPA shares <head> with index.html, so we patch document.title +
+// meta[name=description] on mount for Legal pages. Without this, Google sees the
+// landing-page title on /terms and /privacy and may classify them as duplicates
+// or thin content.
+function useRouteHead(title: string, description: string) {
+  useEffect(() => {
+    const prevTitle = document.title;
+    document.title = title;
+    let meta = document.querySelector<HTMLMetaElement>('meta[name="description"]');
+    let created = false;
+    if (!meta) {
+      meta = document.createElement('meta');
+      meta.name = 'description';
+      document.head.appendChild(meta);
+      created = true;
+    }
+    const prevDesc = meta.content;
+    meta.content = description;
+    return () => {
+      document.title = prevTitle;
+      if (created && meta) meta.remove();
+      else if (meta) meta.content = prevDesc;
+    };
+  }, [title, description]);
+}
+
 export function PrivacyPolicy() {
   const [lang, setLang] = useState<Lang>(detectLang);
   const isAr = lang === 'ar';
+  useRouteHead(
+    isAr ? 'سياسة الخصوصية | حجوزاتك' : 'Privacy Policy | Hujuzatk PMS',
+    isAr
+      ? 'سياسة خصوصية حجوزاتك: ما البيانات التي نجمعها، كيف نستخدمها، حقوقك، وكيفية حذف حسابك أو طلب بياناتك.'
+      : 'Hujuzatk Privacy Policy — what data we collect, how we use it, your rights under GDPR, data retention, security practices, and how to delete your account or export data.'
+  );
   const cycleLang = () => {
     const order: Lang[] = ['en', 'ar', 'tr'];
     const next = order[(order.indexOf(lang) + 1) % order.length];
     setLang(next); localStorage.setItem('landing-lang', next);
   };
+  const H2 = (props: { children: React.ReactNode }) => (
+    <h2 style={{ fontSize: 18, fontWeight: 800, color: 'var(--ink-900)', marginBottom: 6 }}>{props.children}</h2>
+  );
   return (
     <div className="min-h-screen" dir={isAr ? 'rtl' : 'ltr'} style={{ background: 'var(--bg)', padding: '60px 24px', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-en)' }}>
       <div className="max-w-[760px] mx-auto" style={{
@@ -1909,17 +1944,39 @@ export function PrivacyPolicy() {
         <div className="flex flex-col" style={{ gap: 18, color: 'var(--ink-700)', lineHeight: 1.6 }}>
           {isAr ? (
             <>
-              <p>في حجوزاتك، نأخذ خصوصيتك بجدية. تصف هذه السياسة كيفية جمع بياناتك واستخدامها وحمايتها.</p>
-              <div><h2 style={{ fontSize: 18, fontWeight: 800, color: 'var(--ink-900)', marginBottom: 6 }}>١. جمع البيانات</h2><p>نجمع المعلومات التي تقدمها مباشرة عند إنشاء حساب، مثل اسمك وبريدك الإلكتروني وتفاصيل العقار.</p></div>
-              <div><h2 style={{ fontSize: 18, fontWeight: 800, color: 'var(--ink-900)', marginBottom: 6 }}>٢. استخدام البيانات</h2><p>تُستخدم بياناتك فقط لتقديم خدمة حجوزاتك وتحسينها. لا نبيع معلوماتك الشخصية.</p></div>
-              <div><h2 style={{ fontSize: 18, fontWeight: 800, color: 'var(--ink-900)', marginBottom: 6 }}>٣. الأمان</h2><p>نطبق معايير أمان عالية المستوى لحماية بياناتك. للمستخدمين السحابيين، البيانات مشفرة في السكون وأثناء النقل.</p></div>
+              <p>تشرح هذه السياسة كيف يتعامل حجوزاتك مع المعلومات الشخصية لمالكي العقارات ومديري الفنادق والشقق الذين يستخدمون منصتنا لإدارة الحجوزات. باستخدامك للخدمة، فإنك توافق على ممارسات جمع البيانات الموضحة هنا.</p>
+
+              <div><H2>١. ما البيانات التي نجمعها</H2><p>نجمع المعلومات التي تقدمها مباشرة عند إنشاء حساب: الاسم، البريد الإلكتروني، رقم الهاتف، اسم الشركة، والعملة المفضلة. عند إضافة حجوزات، نخزن أسماء الضيوف، أرقام الهواتف، أرقام الهوية، تواريخ الإقامة، أسعار الليلة، والملاحظات. إذا فعّلت تكامل القنوات (Airbnb, Booking.com, Gathren) فإننا نستورد بيانات الحجوزات عبر روابط iCal التي تزودنا بها.</p></div>
+
+              <div><H2>٢. كيف نستخدم بياناتك</H2><p>تُستخدم بياناتك فقط لتقديم الخدمة لك: عرض تقويم الحجوزات، توليد الفواتير، إنتاج التقارير المالية، والمزامنة مع قنوات الحجز الخارجية. لا نبيع بياناتك ولا نشاركها مع جهات إعلانية. قد نستخدم البريد الإلكتروني المرتبط بحسابك لإرسال إشعارات تشغيلية (تأكيد التسجيل، إعادة تعيين كلمة المرور، تغييرات الاشتراك).</p></div>
+
+              <div><H2>٣. مكان تخزين البيانات</H2><p>تُخزن بياناتك على بنية تحتية سحابية (Supabase) في مراكز بيانات آمنة. جميع الاتصالات بين متصفحك وخوادمنا مشفرة عبر TLS. كلمات المرور مُشفرة باستخدام bcrypt ولا تُخزن بصيغة نصية أبداً.</p></div>
+
+              <div><H2>٤. حقوقك</H2><p>يحق لك في أي وقت: (١) الوصول إلى بياناتك وتنزيلها بصيغة CSV من شاشة الإعدادات، (٢) تعديل أي معلومة على حسابك، (٣) طلب حذف حسابك وجميع بياناتك المرتبطة به نهائياً عبر مراسلة الدعم. عند حذف الحساب، تُحذف البيانات خلال 30 يوماً ما عدا السجلات المطلوبة قانونياً (الفواتير الضريبية).</p></div>
+
+              <div><H2>٥. ملفات تعريف الارتباط (Cookies)</H2><p>نستخدم ملفات تعريف ارتباط أساسية للحفاظ على جلسة الدخول، تذكر تفضيلات اللغة، والقياس التحليلي المُجمَّع. لا نستخدم ملفات تعريف ارتباط إعلانية ولا نتتبعك عبر مواقع أخرى.</p></div>
+
+              <div><H2>٦. الاحتفاظ بالبيانات</H2><p>نحتفظ بحجوزاتك ومعلومات الضيوف طوال فترة نشاط حسابك. عند الإلغاء، يُعطى مهلة 90 يوماً لاستعادة البيانات، ثم تُحذف نهائياً ما عدا السجلات المالية المطلوبة بموجب القانون المحلي.</p></div>
+
+              <div><H2>٧. التواصل</H2><p>لأي سؤال أو طلب يخص الخصوصية، راسلنا عبر <a href="https://wa.me/905523205496" style={{ color: 'var(--brand-green-deep)', fontWeight: 700 }}>WhatsApp</a> أو البريد المرفق في موقعنا.</p></div>
             </>
           ) : (
             <>
-              <p>At Hujuzatk, we take your privacy seriously. This policy describes how we collect, use, and protect your data.</p>
-              <div><h2 style={{ fontSize: 18, fontWeight: 800, color: 'var(--ink-900)', marginBottom: 6 }}>1. Data Collection</h2><p>We collect information you provide directly to us when you create an account.</p></div>
-              <div><h2 style={{ fontSize: 18, fontWeight: 800, color: 'var(--ink-900)', marginBottom: 6 }}>2. Data Usage</h2><p>Your data is used solely to provide and improve the Hujuzatk service. We do not sell your personal information.</p></div>
-              <div><h2 style={{ fontSize: 18, fontWeight: 800, color: 'var(--ink-900)', marginBottom: 6 }}>3. Security</h2><p>We implement industry-standard security measures. Cloud data is encrypted at rest and in transit.</p></div>
+              <p>This policy explains how Hujuzatk handles personal information for property owners and hotel/apartment managers using our platform to manage bookings. By using the service you consent to the data practices described here.</p>
+
+              <div><H2>1. What we collect</H2><p>We collect information you provide directly when you create an account: name, email, phone, company name, and preferred currency. When you add bookings, we store guest names, phone numbers, ID numbers, stay dates, nightly rates, deposits, and notes. If you enable channel integrations (Airbnb, Booking.com, Gathren), we import booking data via the iCal URLs you provide us.</p></div>
+
+              <div><H2>2. How we use your data</H2><p>Your data is used only to deliver the service to you: rendering the booking calendar, generating invoices, producing financial reports, and syncing with external booking channels. We do not sell your data and do not share it with advertisers. We may use the email on your account to send operational notifications (signup confirmation, password reset, subscription changes).</p></div>
+
+              <div><H2>3. Where your data lives</H2><p>Your data is stored on managed cloud infrastructure (Supabase) in secure data centers. All traffic between your browser and our servers is encrypted with TLS. Passwords are hashed with bcrypt and never stored in plain text.</p></div>
+
+              <div><H2>4. Your rights</H2><p>At any time you can: (1) access and export your data as CSV from the Settings screen, (2) edit any information on your account, (3) request permanent deletion of your account and all associated data by contacting support. After deletion, data is removed within 30 days except for legally required records (tax invoices).</p></div>
+
+              <div><H2>5. Cookies</H2><p>We use essential cookies to maintain your login session, remember your language preference, and aggregate analytics. We do not use advertising cookies and do not track you across other websites.</p></div>
+
+              <div><H2>6. Data retention</H2><p>We keep your bookings and guest information for as long as your account is active. On cancellation, we give a 90-day grace period for data export, after which the data is permanently deleted except for financial records required by local law.</p></div>
+
+              <div><H2>7. Contact</H2><p>For any privacy question or request, reach us via <a href="https://wa.me/905523205496" style={{ color: 'var(--brand-green-deep)', fontWeight: 700 }}>WhatsApp</a> or the email shown on our contact page.</p></div>
             </>
           )}
         </div>
@@ -1936,11 +1993,20 @@ export function PrivacyPolicy() {
 export function TermsOfService() {
   const [lang, setLang] = useState<Lang>(detectLang);
   const isAr = lang === 'ar';
+  useRouteHead(
+    isAr ? 'شروط الخدمة | حجوزاتك' : 'Terms of Service | Hujuzatk PMS',
+    isAr
+      ? 'شروط استخدام منصة حجوزاتك لإدارة الحجوزات الفندقية: الاشتراك، التجربة المجانية، حدود المسؤولية، إنهاء الحساب، والقانون المعمول به.'
+      : 'Hujuzatk Terms of Service — subscription terms, free trial conditions, acceptable use, account termination, liability limits, and the governing law for our property management platform.'
+  );
   const cycleLang = () => {
     const order: Lang[] = ['en', 'ar', 'tr'];
     const next = order[(order.indexOf(lang) + 1) % order.length];
     setLang(next); localStorage.setItem('landing-lang', next);
   };
+  const H2 = (props: { children: React.ReactNode }) => (
+    <h2 style={{ fontSize: 18, fontWeight: 800, color: 'var(--ink-900)', marginBottom: 6 }}>{props.children}</h2>
+  );
   return (
     <div className="min-h-screen" dir={isAr ? 'rtl' : 'ltr'} style={{ background: 'var(--bg)', padding: '60px 24px', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-en)' }}>
       <div className="max-w-[760px] mx-auto" style={{
@@ -1961,15 +2027,47 @@ export function TermsOfService() {
         <div className="flex flex-col" style={{ gap: 18, color: 'var(--ink-700)', lineHeight: 1.6 }}>
           {isAr ? (
             <>
-              <div><h2 style={{ fontSize: 18, fontWeight: 800, color: 'var(--ink-900)', marginBottom: 6 }}>١. قبول الشروط</h2><p>بالوصول إلى حجوزاتك، توافق على الالتزام بهذه الشروط. خدمتنا مقدمة "كما هي" و"كما هو متاح".</p></div>
-              <div><h2 style={{ fontSize: 18, fontWeight: 800, color: 'var(--ink-900)', marginBottom: 6 }}>٢. الاشتراك والتجارب</h2><p>تحصل الحسابات الجديدة على فترة تجريبية مجانية لمدة 14 يومًا.</p></div>
-              <div><h2 style={{ fontSize: 18, fontWeight: 800, color: 'var(--ink-900)', marginBottom: 6 }}>٣. مسؤولية المستخدم</h2><p>المستخدمون مسؤولون عن الحفاظ على سرية بيانات تسجيل الدخول.</p></div>
+              <p>تحكم هذه الشروط استخدامك لمنصة حجوزاتك لإدارة العقارات. باستخدامك للخدمة فإنك تقر بقراءتها والموافقة عليها.</p>
+
+              <div><H2>١. قبول الشروط</H2><p>بإنشائك حساباً على حجوزاتك أو باستخدامك للخدمة، توافق على الالتزام بهذه الشروط. إذا كنت تستخدم الخدمة بالنيابة عن شركة، فأنت تؤكد أن لديك الصلاحية لإلزام تلك الشركة بهذه الشروط.</p></div>
+
+              <div><H2>٢. الاشتراك والتجربة المجانية</H2><p>تحصل الحسابات الجديدة على فترة تجريبية مجانية لمدة 14 يوماً مع وصول كامل لميزات الخطة التجريبية. بعد انتهاء التجربة، يتطلب استمرار الوصول اشتراكاً نشطاً. يتم تجديد الاشتراك تلقائياً ما لم يتم إلغاؤه قبل تاريخ التجديد. الرسوم غير قابلة للاسترداد عن الفترات الجزئية.</p></div>
+
+              <div><H2>٣. مسؤوليات المستخدم</H2><p>أنت مسؤول عن: (١) الحفاظ على سرية كلمة المرور وبيانات تسجيل الدخول، (٢) دقة المعلومات التي تدخلها (أسماء الضيوف، التواريخ، الأسعار)، (٣) التأكد من امتثال استخدامك للخدمة لجميع القوانين المعمول بها في بلد عملك، بما في ذلك قوانين حماية البيانات والضرائب.</p></div>
+
+              <div><H2>٤. الاستخدام المسموح</H2><p>يُمنع منعاً باتاً: استخدام الخدمة لأي غرض غير مشروع، محاولة الوصول غير المصرح به إلى أنظمتنا، استخدام الخدمة لإرسال رسائل مزعجة، أو إعادة بيع الخدمة دون إذن خطي مسبق.</p></div>
+
+              <div><H2>٥. تكامل القنوات الخارجية</H2><p>عند ربط حساب Airbnb أو Booking.com أو Gathren عبر روابط iCal، فإنك تقر بأن البيانات المستوردة تخضع لشروط الخدمة الخاصة بتلك القنوات. حجوزاتك تستورد البيانات فقط ولا تتحكم في محتواها. اختلافات المزامنة بين القنوات (الحجز المزدوج، التأخير في التحديث) ليست من مسؤوليتنا.</p></div>
+
+              <div><H2>٦. حدود المسؤولية</H2><p>تُقدم الخدمة "كما هي" دون ضمانات صريحة أو ضمنية. لن نكون مسؤولين عن أي خسارة مالية، فقدان بيانات، أو ضرر تبعي ناتج عن استخدام الخدمة. مسؤوليتنا القصوى في أي حال محدودة بالمبلغ الذي دفعته خلال 12 شهراً السابقة.</p></div>
+
+              <div><H2>٧. إنهاء الحساب</H2><p>يمكنك إلغاء حسابك في أي وقت من شاشة الإعدادات. نحتفظ بحقنا في تعليق أو إنهاء حسابك إذا انتهكت هذه الشروط. عند الإلغاء، يمكنك تصدير بياناتك خلال 90 يوماً قبل الحذف النهائي.</p></div>
+
+              <div><H2>٨. التعديلات</H2><p>قد نُحدّث هذه الشروط من وقت لآخر. التعديلات الجوهرية ستُعلَن عبر البريد الإلكتروني قبل 30 يوماً من سريانها. استمرار استخدامك للخدمة بعد التعديل يُعتبر موافقة.</p></div>
+
+              <div><H2>٩. القانون المعمول به</H2><p>تخضع هذه الشروط لقوانين سلطنة عُمان. أي نزاع ينشأ عن الخدمة يُحل عبر التحكيم في مسقط ما لم يتفق الطرفان كتابياً على غير ذلك.</p></div>
             </>
           ) : (
             <>
-              <div><h2 style={{ fontSize: 18, fontWeight: 800, color: 'var(--ink-900)', marginBottom: 6 }}>1. Acceptance of Terms</h2><p>By accessing Hujuzatk, you agree to be bound by these terms. Our service is provided "as is" and "as available".</p></div>
-              <div><h2 style={{ fontSize: 18, fontWeight: 800, color: 'var(--ink-900)', marginBottom: 6 }}>2. Subscription & Trials</h2><p>New accounts receive a 14-day free trial. After the trial, continued access requires an active subscription.</p></div>
-              <div><h2 style={{ fontSize: 18, fontWeight: 800, color: 'var(--ink-900)', marginBottom: 6 }}>3. User Responsibility</h2><p>Users are responsible for maintaining the confidentiality of their login credentials.</p></div>
+              <p>These terms govern your use of the Hujuzatk property management platform. By using the service, you acknowledge that you have read and agree to them.</p>
+
+              <div><H2>1. Acceptance of Terms</H2><p>By creating a Hujuzatk account or using the service, you agree to be bound by these terms. If you are using the service on behalf of a company, you represent that you have authority to bind that company to these terms.</p></div>
+
+              <div><H2>2. Subscription &amp; Free Trial</H2><p>New accounts receive a 14-day free trial with full access to trial-plan features. After the trial, continued access requires an active paid subscription. Subscriptions renew automatically unless cancelled before the renewal date. Fees are non-refundable for partial periods.</p></div>
+
+              <div><H2>3. Your Responsibilities</H2><p>You are responsible for: (1) keeping your password and login credentials confidential, (2) the accuracy of information you enter (guest names, dates, prices), (3) ensuring your use of the service complies with all applicable laws in your country of operation, including data protection and tax law.</p></div>
+
+              <div><H2>4. Acceptable Use</H2><p>You may not: use the service for any unlawful purpose, attempt unauthorized access to our systems, use the service to send spam, or resell the service without prior written permission.</p></div>
+
+              <div><H2>5. External Channel Integrations</H2><p>When you connect Airbnb, Booking.com, or Gathren via iCal URLs, you acknowledge that the imported data is subject to those channels' own terms. Hujuzatk only imports the data and does not control its content. Sync discrepancies between channels (double-bookings, update delays) are not our liability.</p></div>
+
+              <div><H2>6. Limitation of Liability</H2><p>The service is provided "as is" without express or implied warranties. We are not liable for any financial loss, data loss, or consequential damages arising from your use of the service. Our maximum liability in any case is limited to the amount you paid us during the prior 12 months.</p></div>
+
+              <div><H2>7. Termination</H2><p>You may cancel your account at any time from the Settings screen. We reserve the right to suspend or terminate your account if you violate these terms. After cancellation, you have 90 days to export your data before permanent deletion.</p></div>
+
+              <div><H2>8. Changes</H2><p>We may update these terms from time to time. Material changes will be announced by email at least 30 days before they take effect. Continued use of the service after a change constitutes acceptance.</p></div>
+
+              <div><H2>9. Governing Law</H2><p>These terms are governed by the laws of the Sultanate of Oman. Any dispute arising from the service is resolved by arbitration in Muscat unless the parties agree otherwise in writing.</p></div>
             </>
           )}
         </div>
