@@ -1,4 +1,10 @@
-const CACHE_NAME = 'hujuzatk-v2';
+const CACHE_NAME = 'hujuzatk-v3';
+
+// Paths the SW must NEVER intercept — these are standalone static pages /
+// machine-readable files served directly from /public. Intercepting them
+// risks serving a stale SPA shell and breaking AI crawlers + direct visitors.
+const BYPASS_PREFIXES = ['/ar/', '/en/'];
+const BYPASS_EXACT = ['/llms.txt', '/pricing.md', '/sitemap.xml', '/robots.txt'];
 const STATIC_ASSETS = [
   '/manifest.json'
 ];
@@ -31,6 +37,15 @@ self.addEventListener('fetch', (event) => {
 
   // Only handle same-origin requests
   if (url.origin !== self.location.origin) return;
+
+  // Never intercept static marketing pages or machine-readable files —
+  // they must go straight to the network and bypass any SW caching.
+  if (
+    BYPASS_PREFIXES.some((p) => url.pathname.startsWith(p)) ||
+    BYPASS_EXACT.includes(url.pathname)
+  ) {
+    return;
+  }
 
   // Network-first for navigation (HTML pages)
   if (request.mode === 'navigate' || request.headers.get('accept')?.includes('text/html')) {
