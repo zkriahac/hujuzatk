@@ -1,30 +1,34 @@
 # Tracking plan
 
-GTM container: `GTM-MZF9WH37` (loaded in [index.html](../index.html)).
-All events are pushed via [src/lib/analytics.ts](../src/lib/analytics.ts). GA4 lives inside the GTM container — there is no hard-coded `gtag.js` snippet on the site, so all destination tagging is configured in the GTM workspace.
+GA4 measurement ID: **`G-WF9CRGDX9G`** (loaded directly via `gtag.js` in [index.html](../index.html)).
+All events are emitted via [src/lib/analytics.ts](../src/lib/analytics.ts).
+
+GTM is **not** used. If you want to add Meta / TikTok / etc. pixels later, easiest path is to add them alongside `gtag.js` rather than reintroducing GTM.
 
 ## Identification
 
-`setAnalyticsUser({ user_id, tenant_id, plan, subscription_status, language, is_admin })` is called:
+`setAnalyticsUser({ user_id, tenant_id, plan, subscription_status, language, is_admin })` calls:
 
+- `gtag('config', 'G-WF9CRGDX9G', { user_id })` — sets `user_id` on every subsequent hit
+- `gtag('set', 'user_properties', { tenant_id, plan, ... })` — sets user properties globally
+
+Triggers:
 - after `login` / `sign_up` succeed
 - after `getCurrentUser` resolves a stored session (root + workspace shells)
 - after the user changes their language in Settings (partial update)
 
-`clearAnalyticsUser()` runs on logout.
+`clearAnalyticsUser()` runs on logout — clears `user_id` and user_properties via gtag with `null`.
 
-Every `dataLayer.push` merges in the current user context, so **every event downstream carries `tenant_id`, `plan`, `subscription_status`, `language`, `is_admin`** unless they're missing. These should be promoted to GA4 user properties in the GTM workspace.
+## Consent (GA4 consent mode v2)
 
-## Consent
-
-Default consent state is set inline in [index.html](../index.html) **before** the GTM script tag, so it lands before any tag fires. State is read from `localStorage['analytics-consent']`.
+Default consent state is set inline in [index.html](../index.html) **before** `gtag.js` loads. State is read from `localStorage['analytics-consent']`.
 
 | Storage value | `ad_storage` | `ad_user_data` | `ad_personalization` | `analytics_storage` |
 |---|---|---|---|---|
 | `granted` | granted | granted | granted | granted |
 | `denied` or missing | denied | denied | denied | denied |
 
-The [ConsentBanner](../src/components/ConsentBanner.tsx) is mounted globally in `App.tsx` and:
+The [ConsentBanner](../src/components/ConsentBanner.tsx) is mounted globally in [App.tsx](../src/App.tsx) and:
 - shows when `localStorage['analytics-consent']` is missing
 - calls `setConsent('granted' | 'denied')` on click, which `gtag('consent', 'update', …)`s and persists
 
@@ -33,7 +37,7 @@ The [ConsentBanner](../src/components/ConsentBanner.tsx) is mounted globally in 
 | Event | Fired from | Properties |
 |---|---|---|
 | `page_view` | `App.tsx` route change | `page_path`, `page_location`, `page_title` |
-| `identify` | `setAnalyticsUser` | (user context only) |
+| `identify` | `setAnalyticsUser` | (sets user_id + user_properties) |
 | `reset` | `clearAnalyticsUser` | — |
 | `consent_update` | banner accept/reject | `consent_state` |
 | `login` | `AuthShell` | `method` (`email`) |
@@ -48,58 +52,33 @@ The [ConsentBanner](../src/components/ConsentBanner.tsx) is mounted globally in 
 | `booking_canceled` | `TenantApp.handleUpdateBookingStatus` | `booking_id` |
 | `invoice_generated` | `BookingDetailsModal.onPrintInvoice` | `booking_id` |
 
-## GTM workspace setup (one-time)
+Note: `send_page_view: false` is set on the `gtag('config', …)` call. This is because `App.tsx` fires `page_view` on every SPA route change — disabling auto-page-view avoids double-counting the initial load.
 
-These changes need to be made inside the GTM workspace by someone with edit access:
+## GA4 setup (one-time, in the GA4 UI)
 
-1. **GA4 Configuration tag**
-   - Tag type: *Google Analytics: GA4 Configuration*
-   - Measurement ID: `G-XXXXXXXXXX` (production property)
-   - Trigger: All Pages
-   - **Do not** set `user_id` only here — the Config tag fires before `authService.getCurrentUser()` resolves, so the value is `undefined` at that point. Set it per-event instead (see step 3).
+1. **Register custom dimensions** so user_properties are queryable in reports.
+   - GA4 → Admin → Custom definitions → Create custom dimensions.
+   - For each of `tenant_id`, `plan`, `subscription_status`, `language`, `is_admin`:
+     - Scope: **User**
+     - User property: same name as the dimension
+   - Custom dimensions can take 24 hours to start populating reports — events still capture in DebugView immediately.
 
-   User properties on the Config tag are still useful as a fallback for the very first hit, but rely on per-event mapping for accuracy.
-
-2. **DataLayer variables** — create one for every property in the catalog above plus the user-context fields. Naming convention: `DLV - <name>`.
-
-3. **GA4 Event tags** — one per event in the catalog. Each forwards the relevant DLV variables. Custom trigger fires when `{{Event}}` equals the event name (e.g. `booking_created`).
-
-   On every event tag, also map:
-   - **More Settings → Fields to set** → `user_id` = `{{DLV - user_id}}`
-   - **More Settings → User Properties**: `tenant_id`, `plan`, `subscription_status`, `language`, `is_admin`
-
-   This ensures `user_id` is attached per hit and isn't lost when the Config tag's value was empty on the first page load.
-
-4. **Custom dimensions in GA4** (Admin → Custom definitions):
-   - `tenant_id` (user-scoped) — to segment retention by tenant
-   - `plan` (user-scoped) — to compare trial vs paid behaviour
-   - `subscription_status` (user-scoped)
-   - `language` (user-scoped)
-   - `is_admin` (user-scoped) — exclude staff from funnels
-
-5. **Mark conversions** in GA4 (Admin → Events → Mark as conversion):
+2. **Mark conversions** (Admin → Events → toggle "Mark as conversion"):
    - `sign_up`
    - `booking_created`
    - `invoice_generated`
 
-## Why user_id is per-event, not on the Config tag
-
-`gtag('set', 'user_properties', …)` is intentionally **not** called from `analytics.ts`. With GTM as the only tag manager (no hard-coded `gtag.js`), those `gtag('set', …)` calls turn into `dataLayer.push(['set', 'user_properties', {…}])` entries that GTM's GA4 Config tag does **not** auto-forward to GA4. The reliable path is:
-
-1. `analytics.ts` merges the user context into **every** `dataLayer.push`.
-2. GTM event tags pull those fields off the dataLayer and attach them to the GA4 event.
-
-Don't reintroduce `gtag('set', …)` calls thinking they're the source of truth — they aren't.
+3. **Optional: domain config**. Admin → Data Streams → your stream → Configure tag settings → Configure your domains. Add `hujuzatk.com` if cross-subdomain tracking is needed.
 
 ## Verifying
 
-- Open GTM Preview Mode → load the site → check that `page_view`, `identify`, and the merged user-context fields appear on every event.
-- Open GA4 DebugView (Admin → DebugView) with `?gtm_debug=1` in the URL.
-- In the browser console: `window.dataLayer` lists every push.
-- Confirm the banner: clear `localStorage['analytics-consent']`, reload, accept, and confirm the next `dataLayer` push includes a `consent_update` event and that `analytics_storage` flips to `granted` in GA4 DebugView.
+- Open `https://hujuzatk.com` with `?gtm_debug=1` (or just open GA4 → Admin → DebugView).
+- In DevTools console: `window.dataLayer` lists every gtag call.
+- Test the consent flow: clear `localStorage['analytics-consent']`, reload, click Accept, watch DebugView flip to receiving events.
+- Test identification: log in, then in DebugView confirm the `login` event carries `user_id` and the user_properties panel shows `tenant_id`, `plan`, etc.
 
 ## Known gaps (next iteration)
 
-- No server-side events for `subscription_started` / `subscription_cancelled` — currently the only revenue signal is the trial flow on the landing page. These should be fired from the Elysia backend (Measurement Protocol) when Stripe webhooks fire.
+- No server-side events for `subscription_started` / `subscription_cancelled` — currently the only revenue signal is the trial flow on the landing page. These should fire from the Elysia backend (Measurement Protocol API) when Stripe webhooks fire.
 - No channel-sync events (Airbnb / Gathern / Booking.com). `channel_connected` and `channel_sync_failed` would tighten the Pro upsell funnel.
 - No first-booking / first-invoice / first-channel-sync activation events. Useful for onboarding emails.

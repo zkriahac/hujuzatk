@@ -76,13 +76,12 @@
       "operatingSystem": "Web, Android, iOS (PWA)",
       "offers": {
         "@type": "AggregateOffer",
-        "lowPrice": "35",
-        "highPrice": "65",
+        "lowPrice": "40",
+        "highPrice": "140",
         "priceCurrency": "USD",
-        "offerCount": "2",
-        "priceValidUntil": "2026-12-31",
+        "offerCount": "3",
         "availability": "https://schema.org/InStock",
-        "description": "Basic $35/year (~131 SAR) and Pro $58/year (~217 SAR) — year-end 2026 promo. Pro adds automatic Airbnb + Gathern + Booking.com channel sync. 14-day free trial, no credit card required.",
+        "description": "Three paid tiers, annual billing: Basic $40/year (~150 SAR, up to 10 rooms), Pro $90/year (~338 SAR, up to 30 rooms, includes Airbnb + Gathern + Booking.com channel sync), Enterprise $140/year (~525 SAR, unlimited rooms). 14-day free trial (3 rooms) available before any paid tier, no credit card required.",
         "seller": {
           "@type": "Organization",
           "name": "Hujuzatk"
@@ -152,7 +151,7 @@
           "name": "How much does Hujuzatk cost?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "Two plans: Basic at $35/year (~131 SAR, year-end 2026 promo — normally $40) and Pro at $58/year (~217 SAR, normally $65) with automatic Airbnb, Gathern, and Booking.com channel sync. Both include unlimited bookings, up to 50 rooms, full reporting, multi-language support, and a 5-year calendar. A 14-day free trial is included — no credit card required."
+            "text": "Four tiers, annual billing in USD: Trial (free 14 days, 3 rooms), Basic $40/year (~150 SAR, 10 rooms), Pro $90/year (~338 SAR, 30 rooms, includes Airbnb + Gathern + Booking.com channel sync), Enterprise $140/year (~525 SAR, unlimited rooms). All paid tiers include the 5-year calendar, automated invoicing, financial reports, and full Arabic + English UI. No credit card required to start the trial."
           }
         },
         {
@@ -168,7 +167,7 @@
           "name": "كم تكلفة حجوزاتك؟",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "خطتان: الأساسية 35$/سنة (~131 ريال سعودي، عرض نهاية 2026 بدلاً من 40$)، والمحترفة 58$/سنة (~217 ريال، بدلاً من 65$) مع مزامنة تلقائية لـ Airbnb وجاثرين وBooking.com. الخطتان تشملان حجوزات غير محدودة وحتى 50 غرفة وتقارير كاملة ودعم متعدد اللغات وتقويم 5 سنوات. تجربة مجانية 14 يوماً بدون بطاقة ائتمان."
+            "text": "أربع خطط بفوترة سنوية بالدولار: التجريبية (مجانية 14 يوم، 3 غرف)، الأساسية 40$/سنة (~150 ريال، 10 غرف)، المحترفة 90$/سنة (~338 ريال، 30 غرفة، تشمل مزامنة Airbnb وجاثرين وBooking.com)، المؤسسات 140$/سنة (~525 ريال، غرف غير محدودة). كل الخطط المدفوعة تشمل تقويم 5 سنوات، فوترة تلقائية، تقارير مالية كاملة، وواجهة عربية + إنجليزية. لا حاجة لبطاقة ائتمان لبدء التجربة."
           }
         },
         {
@@ -191,9 +190,10 @@
     }
     </script>
 
-    <!-- GA4 / Google consent mode v2 — defaults set BEFORE GTM loads.
-         Banner in src/components/ConsentBanner.tsx flips these to 'granted'
-         once the user accepts. -->
+    <!-- GA4 / Google consent mode v2.
+         Defaults set BEFORE gtag.js so the first hit is consent-aware.
+         Banner in src/components/ConsentBanner.tsx flips state to 'granted'
+         on accept; analytics.ts re-issues 'consent', 'update' at runtime. -->
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
@@ -212,13 +212,15 @@
       })();
     </script>
 
-    <!-- Google Tag Manager -->
-    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-    })(window,document,'script','dataLayer','GTM-MZF9WH37');</script>
-    <!-- End Google Tag Manager -->
+    <!-- Google Analytics 4 (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-WF9CRGDX9G"></script>
+    <script>
+      gtag('js', new Date());
+      // send_page_view: false because App.tsx fires page_view on every route change
+      // (manual SPA tracking). Avoids double-counting the initial load.
+      gtag('config', 'G-WF9CRGDX9G', { send_page_view: false });
+    </script>
+    <!-- End Google Analytics 4 -->
 
     <meta name="theme-color" content="#0E9F6E">
     <link rel="icon" href="/favicon.svg?v=2" type="image/svg+xml">
@@ -230,10 +232,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet" />
   </head>
   <body>
-    <!-- Google Tag Manager (noscript) -->
-    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-MZF9WH37"
-    height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
-    <!-- End Google Tag Manager (noscript) -->
     <div id="root"></div>
 
     <!--
@@ -264,14 +262,16 @@
         <h2>الأسعار</h2>
         <table border="1" cellpadding="8" cellspacing="0" style="border-collapse:collapse;width:100%">
           <thead>
-            <tr><th>الخطة</th><th>سعر العرض 2026</th><th>السعر الأصلي</th><th>مزامنة القنوات</th><th>الغرف</th></tr>
+            <tr><th>الخطة</th><th>السعر السنوي</th><th>الغرف</th><th>مزامنة القنوات</th></tr>
           </thead>
           <tbody>
-            <tr><td>Basic (الأساسية)</td><td>35$ / سنة (~131 ريال)</td><td>40$ / سنة</td><td>لا</td><td>حتى 50</td></tr>
-            <tr><td>Pro (المحترفة)</td><td>58$ / سنة (~217 ريال)</td><td>65$ / سنة</td><td><strong>نعم</strong> — Airbnb + جاثرين + Booking.com</td><td>حتى 50</td></tr>
+            <tr><td>Trial (تجريبية)</td><td>مجانية 14 يوم</td><td>3</td><td>لا</td></tr>
+            <tr><td>Basic (الأساسية)</td><td>40$ / سنة (~150 ريال)</td><td>حتى 10</td><td>لا</td></tr>
+            <tr><td>Pro (المحترفة)</td><td>90$ / سنة (~338 ريال)</td><td>حتى 30</td><td><strong>نعم</strong> — Airbnb + جاثرين + Booking.com</td></tr>
+            <tr><td>Enterprise (مؤسسات)</td><td>140$ / سنة (~525 ريال)</td><td>غير محدودة</td><td>نعم</td></tr>
           </tbody>
         </table>
-        <p>الخطتان تشملان: حجوزات غير محدودة، تقويم 5 سنوات، فوترة تلقائية، تقارير مالية كاملة، واجهة عربية + إنجليزية، تطبيق جوال قابل للتثبيت. تجربة مجانية 14 يوماً على جميع الخطط بدون بطاقة ائتمان.</p>
+        <p>كل الخطط المدفوعة تشمل: حجوزات غير محدودة، تقويم 5 سنوات، فوترة تلقائية، تقارير مالية كاملة، واجهة عربية + إنجليزية، تطبيق جوال قابل للتثبيت. تجربة مجانية 14 يوماً بدون بطاقة ائتمان.</p>
 
         <h2>الأسئلة الشائعة</h2>
 
@@ -279,7 +279,7 @@
         <p>حجوزاتك نظام سحابي لإدارة الحجوزات والفنادق، مصمم للفنادق والشقق والإيجارات السياحية في السعودية والخليج. يوفر تقويم 5 سنوات، فوترة تلقائية، تحليلات مالية، مزامنة تلقائية مع Airbnb وجاثرين وBooking.com، ودعم كامل للعربية والإنجليزية.</p>
 
         <h3>كم تكلفة حجوزاتك؟</h3>
-        <p>خطتان: الأساسية 35$/سنة (~131 ريال، عرض نهاية 2026 بدلاً من 40$)، والمحترفة 58$/سنة (~217 ريال، بدلاً من 65$) مع مزامنة Airbnb وجاثرين وBooking.com. تجربة مجانية 14 يوم بدون بطاقة ائتمان.</p>
+        <p>أربع خطط بفوترة سنوية بالدولار: التجريبية (مجانية 14 يوم، 3 غرف)، الأساسية 40$/سنة (~150 ريال، 10 غرف)، المحترفة 90$/سنة (~338 ريال، 30 غرفة، تشمل مزامنة Airbnb وجاثرين وBooking.com)، المؤسسات 140$/سنة (~525 ريال، غرف غير محدودة). كل الخطط المدفوعة تشمل تقويم 5 سنوات وفوترة تلقائية وتقارير كاملة وواجهة عربية + إنجليزية. لا حاجة لبطاقة ائتمان للتجربة.</p>
 
         <h3>هل يدعم حجوزاتك اللغة العربية؟</h3>
         <p>نعم — دعم عربي أصيل مع تخطيط RTL كامل، تنسيقات التاريخ العربية، الريال السعودي وعملات الخليج. العربية لغة من الدرجة الأولى، وليست طبقة ترجمة فوق نظام إنجليزي.</p>
@@ -312,14 +312,16 @@
           <h2>Pricing</h2>
           <table border="1" cellpadding="8" cellspacing="0" style="border-collapse:collapse;width:100%">
             <thead>
-              <tr><th>Plan</th><th>2026 promo</th><th>Standard price</th><th>Channel sync</th><th>Rooms</th></tr>
+              <tr><th>Plan</th><th>Annual price</th><th>Rooms</th><th>Channel sync</th></tr>
             </thead>
             <tbody>
-              <tr><td>Basic</td><td>$35 / year (~131 SAR)</td><td>$40 / year</td><td>No</td><td>up to 50</td></tr>
-              <tr><td>Pro</td><td>$58 / year (~217 SAR)</td><td>$65 / year</td><td><strong>Yes</strong> — Airbnb + Gathern + Booking.com</td><td>up to 50</td></tr>
+              <tr><td>Trial</td><td>Free 14 days</td><td>3</td><td>No</td></tr>
+              <tr><td>Basic</td><td>$40 / year (~150 SAR)</td><td>up to 10</td><td>No</td></tr>
+              <tr><td>Pro</td><td>$90 / year (~338 SAR)</td><td>up to 30</td><td><strong>Yes</strong> — Airbnb + Gathern + Booking.com</td></tr>
+              <tr><td>Enterprise</td><td>$140 / year (~525 SAR)</td><td>unlimited</td><td>Yes</td></tr>
             </tbody>
           </table>
-          <p>Both plans include: unlimited bookings, 5-year calendar, automated invoicing, full financial reports, Arabic + English UI, installable mobile app. 14-day free trial on all plans, no credit card required.</p>
+          <p>All paid plans include: unlimited bookings, 5-year calendar, automated invoicing, full financial reports, Arabic + English UI, installable mobile app. 14-day free trial on signup, no credit card required.</p>
 
           <h2>Frequently asked questions</h2>
 
@@ -327,7 +329,7 @@
           <p>Hujuzatk is a cloud-based hotel and property management system designed for hotels, apartments, and vacation rentals in Saudi Arabia and the GCC. It offers a 5-year booking calendar, automated invoicing, financial analytics, automatic channel sync with Airbnb, Gathern, and Booking.com, and full Arabic and English support.</p>
 
           <h3>How much does Hujuzatk cost?</h3>
-          <p>Two plans: Basic at $35/year (~131 SAR) and Pro at $58/year (~217 SAR). Pro adds automatic Airbnb, Gathern, and Booking.com channel sync. Both plans include unlimited bookings, up to 50 rooms, full reporting, and the 5-year calendar. A 14-day free trial is included, no credit card required.</p>
+          <p>Four tiers, annual billing in USD: Trial (free 14 days, 3 rooms), Basic $40/year (~150 SAR, 10 rooms), Pro $90/year (~338 SAR, 30 rooms, includes Airbnb + Gathern + Booking.com channel sync), Enterprise $140/year (~525 SAR, unlimited rooms). All paid tiers include the 5-year calendar, automated invoicing, full reports, and Arabic + English UI. No credit card required for the trial.</p>
 
           <h3>Does Hujuzatk support Arabic?</h3>
           <p>Yes — fully native Arabic RTL throughout the application, including Arabic date formats, SAR and GCC currencies, and right-to-left layout. Arabic is a first-class language, not a translation overlay.</p>
