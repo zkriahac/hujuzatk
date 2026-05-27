@@ -6,7 +6,7 @@ import {
   ArrowsClockwise, Wallet,
 } from 'phosphor-react';
 import { authService } from '../lib/authService';
-import { trackCTA, trackWorkspaceSearch } from '../lib/analytics';
+import { trackCTA, trackWorkspaceSearch, trackLanguageChange } from '../lib/analytics';
 import { cn } from '../utils/cn';
 import PromoPopup from '../components/PromoPopup';
 import {
@@ -1169,7 +1169,7 @@ export function LandingPage() {
     return () => clearTimeout(timer);
   }, [sessionResolved, loggedInUser]);
 
-  const setLangTo = (l: Lang) => { setLang(l); localStorage.setItem('landing-lang', l); };
+  const setLangTo = (l: Lang) => { setLang(l); localStorage.setItem('landing-lang', l); trackLanguageChange(l); };
   const cycleLang = () => {
     const order: Lang[] = ['en', 'ar', 'tr'];
     setLangTo(order[(order.indexOf(lang) + 1) % order.length]);

@@ -191,6 +191,27 @@
     }
     </script>
 
+    <!-- GA4 / Google consent mode v2 — defaults set BEFORE GTM loads.
+         Banner in src/components/ConsentBanner.tsx flips these to 'granted'
+         once the user accepts. -->
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      window.gtag = gtag;
+      (function(){
+        var stored = null;
+        try { stored = localStorage.getItem('analytics-consent'); } catch (e) {}
+        var state = stored === 'granted' ? 'granted' : 'denied';
+        gtag('consent', 'default', {
+          ad_storage: state,
+          ad_user_data: state,
+          ad_personalization: state,
+          analytics_storage: state,
+          wait_for_update: 500
+        });
+      })();
+    </script>
+
     <!-- Google Tag Manager -->
     <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
     new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],

@@ -8,7 +8,8 @@ import { StoryPage } from './pages/StoryPage';
 import AboutPage from './pages/AboutPage';
 import ContactPage from './pages/ContactPage';
 import { NotFound } from './pages/NotFound';
-import { trackPageView } from './lib/analytics';
+import { trackPageView, setAnalyticsUser } from './lib/analytics';
+import { ConsentBanner } from './components/ConsentBanner';
 import { authService, type SessionUser } from './lib/authService';
 
 function RootRedirect() {
@@ -21,6 +22,14 @@ function RootRedirect() {
       setSession(s);
       setChecked(true);
       if (s) {
+        setAnalyticsUser({
+          user_id: s.tenantId,
+          tenant_id: s.tenantId,
+          plan: s.tenant.plan,
+          subscription_status: s.tenant.subscriptionStatus,
+          language: s.tenant.language,
+          is_admin: s.isAdmin,
+        });
         const slug = encodeURIComponent((s.tenant.name || 'workspace').replace(/\s+/g, '-'));
         navigate(`/${slug}`, { replace: true });
       }
@@ -47,17 +56,25 @@ export function App() {
     trackPageView(path);
   }, [path]);
 
-  if (path === '/') return <RootRedirect />;
-  if (path === '/story') return <StoryPage />;
-  if (path === '/about') return <AboutPage />;
-  if (path === '/contact') return <ContactPage />;
-  if (path === '/privacy') return <PrivacyPolicy />;
-  if (path === '/terms') return <TermsOfService />;
-  if (path === '/404') return <NotFound />;
-  if (path === '/reset-password') return <ResetPasswordPage />;
-  if (path.startsWith('/user')) return <UserAuthShell />;
-  if (path.startsWith('/superadmin')) return <SuperAdminShell />;
+  const route = (() => {
+    if (path === '/') return <RootRedirect />;
+    if (path === '/story') return <StoryPage />;
+    if (path === '/about') return <AboutPage />;
+    if (path === '/contact') return <ContactPage />;
+    if (path === '/privacy') return <PrivacyPolicy />;
+    if (path === '/terms') return <TermsOfService />;
+    if (path === '/404') return <NotFound />;
+    if (path === '/reset-password') return <ResetPasswordPage />;
+    if (path.startsWith('/user')) return <UserAuthShell />;
+    if (path.startsWith('/superadmin')) return <SuperAdminShell />;
+    const username = decodeURIComponent(path.slice(1).split('/')[0] || 'workspace');
+    return <WorkspaceShell username={username} />;
+  })();
 
-  const username = decodeURIComponent(path.slice(1).split('/')[0] || 'workspace');
-  return <WorkspaceShell username={username} />;
+  return (
+    <>
+      {route}
+      <ConsentBanner />
+    </>
+  );
 }

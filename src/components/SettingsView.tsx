@@ -3,6 +3,7 @@ import { Globe, Layout, X, CurrencyDollar, Buildings, Crown, Check, Calendar, Up
 import { authService } from '../lib/authService';
 import type { SessionUser } from '../lib/authService';
 import { t, type Language } from '../lib/i18n';
+import { trackLanguageChange, setAnalyticsUser } from '../lib/analytics';
 import type { Tenant } from '../db';
 import { apolloClient } from '../lib/apolloClient';
 import { UPDATE_TENANT_SETTINGS_MUTATION } from '../lib/graphql';
@@ -71,12 +72,17 @@ export default function SettingsView({ session, onSessionChange, lang }: Setting
   const handleSave = async () => {
     setSaving(true);
     try {
+      const langChanged = tenant.language !== session.tenant.language;
       const updated = await authService.updateTenantConfig(tenant.uuid, {
         language: tenant.language,
         currency: tenant.currency,
         timezone: tenant.timezone,
         rooms: tenant.rooms,
       });
+      if (langChanged && tenant.language) {
+        trackLanguageChange(tenant.language);
+        setAnalyticsUser({ language: tenant.language });
+      }
 
       // Save default + company settings together. Empty strings clear the field.
       await apolloClient.mutate({
