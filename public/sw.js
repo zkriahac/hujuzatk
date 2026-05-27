@@ -1,10 +1,10 @@
-const CACHE_NAME = 'hujuzatk-v3';
+const CACHE_NAME = 'hujuzatk-v4';
 
 // Paths the SW must NEVER intercept — these are standalone static pages /
 // machine-readable files served directly from /public. Intercepting them
 // risks serving a stale SPA shell and breaking AI crawlers + direct visitors.
-const BYPASS_PREFIXES = ['/ar/', '/en/'];
-const BYPASS_EXACT = ['/llms.txt', '/pricing.md', '/sitemap.xml', '/robots.txt'];
+const BYPASS_PREFIXES = ['/ar/', '/en/', '/about/'];
+const BYPASS_EXACT = ['/about', '/llms.txt', '/pricing.md', '/sitemap.xml', '/robots.txt'];
 const STATIC_ASSETS = [
   '/manifest.json'
 ];

@@ -51,13 +51,17 @@ function RootRedirect() {
 // Paths served as standalone static HTML from /public — never owned by the SPA.
 // If the SPA somehow ends up controlling one (e.g., service-worker cached shell
 // or in-app navigation), hard-navigate so the browser fetches the real file.
-const STATIC_PUBLIC_PREFIXES = ['/ar/', '/en/'];
+const STATIC_PUBLIC_PREFIXES = ['/ar/', '/en/', '/about/'];
+const STATIC_PUBLIC_EXACT = ['/about'];
 
 export function App() {
   const location = useLocation();
   const path = location.pathname || '/';
 
-  if (STATIC_PUBLIC_PREFIXES.some((p) => path.startsWith(p))) {
+  if (
+    STATIC_PUBLIC_PREFIXES.some((p) => path.startsWith(p)) ||
+    STATIC_PUBLIC_EXACT.includes(path)
+  ) {
     if (typeof window !== 'undefined') window.location.assign(path);
     return null;
   }

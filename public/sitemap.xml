@@ -44,6 +44,17 @@
   </url>
 
   <url>
+    <loc>https://hujuzatk.com/about/</loc>
+    <lastmod>2026-05-28</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://hujuzatk.com/about/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://hujuzatk.com/about/"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://hujuzatk.com/about/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://hujuzatk.com/about/"/>
+  </url>
+
+  <url>
     <loc>https://hujuzatk.com/ar/gathern-channel-manager/</loc>
     <lastmod>2026-05-28</lastmod>
     <changefreq>monthly</changefreq>

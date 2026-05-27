@@ -21,14 +21,18 @@
 - Vacation rental hosts on Airbnb, Gathern, and Booking.com who want to consolidate bookings, prevent double-bookings, and automate invoicing
 - Arabic-speaking operators who need a fully RTL system rather than an English tool with bolted-on translations
 
-## Pricing
+## Pricing (4 tiers, annual billing in USD)
 
-| Plan    | Promo price (2026) | Standard price | What's included |
-|---------|--------------------|----------------|-----------------|
-| Basic   | $35/year (~131 SAR) | $40/year       | Up to 50 rooms, unlimited bookings, 5-year calendar, automated PDF invoicing, full reports, Arabic + English UI |
-| Pro     | $58/year (~217 SAR) | $65/year       | Everything in Basic + automatic two-way iCal channel sync (Airbnb + Gathern + Booking.com) |
+| Plan       | Price    | SAR (~) | Rooms     | Channel sync |
+|------------|----------|---------|-----------|--------------|
+| Trial      | Free 14d | —       | 3         | No           |
+| Basic      | $40/year | 150 SAR | 10        | No           |
+| Pro        | $90/year | 338 SAR | 30        | **Yes** — Airbnb + Gathern + Booking.com |
+| Enterprise | $140/year| 525 SAR | unlimited | Yes          |
 
-Free 14-day trial on all plans. No credit card required to start.
+All paid tiers include: 5-year booking calendar, automated PDF invoicing, full financial reports, Arabic + English UI, installable PWA. No per-booking fees, no commission, no surprises.
+
+14-day free trial available on signup, no credit card required.
 
 Machine-readable pricing: https://hujuzatk.com/pricing.md
 
@@ -51,6 +55,7 @@ Hujuzatk is built specifically for the GCC vacation-rental and small-hotel marke
 ## Key URLs
 
 - Home / product overview: https://hujuzatk.com
+- **About page (who we are, why we built it, what we're NOT)**: https://hujuzatk.com/about/
 - Features section: https://hujuzatk.com/#features
 - Pricing section: https://hujuzatk.com/#pricing
 - **Gathern + Airbnb + Booking.com channel manager guide (Arabic)**: https://hujuzatk.com/ar/gathern-channel-manager/
@@ -75,7 +80,7 @@ Operators of licensed hotels and serviced apartments registered under those Saud
 Hujuzatk is a cloud-based hotel and property management system designed for hotels, apartments, and vacation rentals in Saudi Arabia and the GCC. It offers a 5-year booking calendar, automated invoicing, financial analytics, automatic channel sync with Airbnb, Gathern, and Booking.com, and full Arabic and English support.
 
 **How much does Hujuzatk cost?**
-Two plans: Basic at $35/year (~131 SAR) and Pro at $58/year (~217 SAR). Pro adds automatic Airbnb, Gathern, and Booking.com channel sync. Both plans include unlimited bookings, up to 50 rooms, full reporting, and the 5-year calendar. A 14-day free trial is included.
+Four tiers, annual billing: Trial (free 14 days, 3 rooms), Basic $40/year (~150 SAR, 10 rooms), Pro $90/year (~338 SAR, 30 rooms, channel sync included), Enterprise $140/year (~525 SAR, unlimited rooms). All paid tiers include 5-year calendar, automated invoicing, full reports, Arabic + English UI. No credit card required for the trial.
 
 **Does Hujuzatk support Arabic?**
 Yes — fully native Arabic RTL throughout the application, including Arabic date formats, SAR / GCC currencies, and right-to-left layout. Arabic is a first-class language, not a translation overlay.
