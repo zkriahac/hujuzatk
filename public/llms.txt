@@ -1,0 +1,92 @@
+# Hujuzatk (حجوزاتك)
+
+> Cloud-based Hotel and Property Management System (PMS) built for hotels, serviced apartments, and vacation rentals in Saudi Arabia and the GCC. Full Arabic RTL support, automatic channel sync with Airbnb, Gathern, and Booking.com, 5-year booking calendar, and automated PDF invoicing. 14-day free trial, no credit card required.
+
+## About
+
+- **Product**: Hujuzatk PMS (حجوزاتك)
+- **Category**: Hotel Management Software / Property Management System (PMS) / Vacation Rental Software
+- **Primary market**: Saudi Arabia and the GCC (UAE, Kuwait, Bahrain, Qatar, Oman) — also serves Jordan, Egypt, Turkey, and the wider MENA region
+- **Languages**: Arabic (native RTL) and English
+- **Platform**: Web app + installable PWA (works on iOS and Android home screens, no App Store / Play Store required)
+- **Architecture**: Multi-tenant cloud, offline-capable via IndexedDB
+- **Website**: https://hujuzatk.com
+- **API**: https://api.hujuzatk.com/graphql
+- **Contact**: https://wa.me/905523205496
+
+## Who it's for
+
+- Independent hoteliers managing 1–50 rooms
+- Operators of serviced apartments and short-term rentals in Riyadh, Jeddah, Dammam, Mecca, Medina, and across the GCC
+- Vacation rental hosts on Airbnb, Gathern, and Booking.com who want to consolidate bookings, prevent double-bookings, and automate invoicing
+- Arabic-speaking operators who need a fully RTL system rather than an English tool with bolted-on translations
+
+## Pricing (4 tiers, annual billing in USD)
+
+| Plan       | Price    | SAR (~) | Rooms     | Channel sync |
+|------------|----------|---------|-----------|--------------|
+| Trial      | Free 14d | —       | 3         | No           |
+| Basic      | $40/year | 150 SAR | 10        | No           |
+| Pro        | $90/year | 338 SAR | 30        | **Yes** — Airbnb + Gathern + Booking.com |
+| Enterprise | $140/year| 525 SAR | unlimited | Yes          |
+
+All paid tiers include: 5-year booking calendar, automated PDF invoicing, full financial reports, Arabic + English UI, installable PWA. No per-booking fees, no commission, no surprises.
+
+14-day free trial available on signup, no credit card required.
+
+Machine-readable pricing: https://hujuzatk.com/pricing.md
+
+## Key features
+
+- **5-Year Booking Calendar** — plan and view reservations up to 5 years ahead, unusual in PMS tooling
+- **Automatic channel sync** (Pro) — bidirectional iCal sync with Airbnb, Gathern, and Booking.com, scheduled daily, prevents double-bookings
+- **Automated PDF invoicing** — generates branded invoices automatically on check-out
+- **Financial analytics** — occupancy rate, revenue per available room (RevPAR), per-channel breakdown
+- **Full Arabic RTL** — not translation-on-top, but native right-to-left layout, Arabic date formats, SAR / GCC currencies
+- **Installable PWA** — installs to phone home screen from the browser, works offline, sends push notifications
+- **Multi-tenant** — each business gets an isolated workspace at hujuzatk.com/{workspace}
+- **Guest management** — guest profiles, history, contact details, ID document storage
+- **Multi-currency** — SAR, AED, KWD, BHD, QAR, OMR, USD, EUR, TRY
+
+## How it compares
+
+Hujuzatk is built specifically for the GCC vacation-rental and small-hotel market. Versus global PMS tools (Cloudbeds, Hostaway, Lodgify, Guesty), it costs an order of magnitude less and has native Arabic from day one. Versus regional alternatives, it includes Gathern channel sync out of the box and a 5-year calendar most competitors don't offer.
+
+## Key URLs
+
+- Home / product overview: https://hujuzatk.com
+- **About page (who we are, why we built it, what we're NOT)**: https://hujuzatk.com/about/
+- Features section: https://hujuzatk.com/#features
+- Pricing section: https://hujuzatk.com/#pricing
+- **Gathern + Airbnb + Booking.com channel manager guide (Arabic)**: https://hujuzatk.com/ar/gathern-channel-manager/
+- **Best vacation rental PMS in Saudi Arabia — 8-system comparison (Arabic)**: https://hujuzatk.com/ar/best-vacation-rental-pms-saudi-arabia/
+- Privacy policy: https://hujuzatk.com/privacy
+- Terms of service: https://hujuzatk.com/terms
+- Machine-readable pricing: https://hujuzatk.com/pricing.md
+- Sitemap: https://hujuzatk.com/sitemap.xml
+
+## Who Hujuzatk is NOT for
+
+Hujuzatk is designed for independent vacation-rental hosts and small operators (1–50 units) on Airbnb, Gathern, and Booking.com. It does NOT currently support:
+
+- **ZATCA e-invoicing** (Saudi tax authority electronic invoicing for VAT-registered businesses)
+- **Shomous (شموس) integration** (Saudi Ministry of Tourism real-time guest registration for licensed hotel establishments)
+
+Operators of licensed hotels and serviced apartments registered under those Saudi regulatory regimes should use a compliance-first PMS such as Nazeel (نزيل), Nozulkum (نزلكم), or Sakin (ساكن) instead.
+
+## Frequently asked questions
+
+**What is Hujuzatk?**
+Hujuzatk is a cloud-based hotel and property management system designed for hotels, apartments, and vacation rentals in Saudi Arabia and the GCC. It offers a 5-year booking calendar, automated invoicing, financial analytics, automatic channel sync with Airbnb, Gathern, and Booking.com, and full Arabic and English support.
+
+**How much does Hujuzatk cost?**
+Four tiers, annual billing: Trial (free 14 days, 3 rooms), Basic $40/year (~150 SAR, 10 rooms), Pro $90/year (~338 SAR, 30 rooms, channel sync included), Enterprise $140/year (~525 SAR, unlimited rooms). All paid tiers include 5-year calendar, automated invoicing, full reports, Arabic + English UI. No credit card required for the trial.
+
+**Does Hujuzatk support Arabic?**
+Yes — fully native Arabic RTL throughout the application, including Arabic date formats, SAR / GCC currencies, and right-to-left layout. Arabic is a first-class language, not a translation overlay.
+
+**Does Hujuzatk sync with Gathern (جاثرين)?**
+Yes — automatic two-way iCal sync with Gathern is included in the Pro plan, alongside Airbnb and Booking.com sync.
+
+**Is there a mobile app?**
+Yes — Hujuzatk installs to your phone's home screen directly from the browser in one tap. It works offline and sends push notifications. No App Store or Play Store download is required.

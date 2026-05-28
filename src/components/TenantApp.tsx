@@ -4,7 +4,7 @@ import { format, addMonths, differenceInCalendarDays, differenceInDays, eachMont
 import { CaretDown, CalendarBlank, ListBullets, ChartPie, GearSix, ShieldCheck, ArrowsClockwise, CloudArrowDown, CurrencyCircleDollar } from 'phosphor-react';
 import { authService, type SessionUser } from '../lib/authService';
 import { dataService } from '../lib/dataService';
-import { trackLogout, trackBookingCreated, trackBookingCanceled, trackViewChange } from '../lib/analytics';
+import { trackLogout, trackBookingCreated, trackBookingUpdated, trackBookingCanceled, trackViewChange, trackInvoiceGenerated, clearAnalyticsUser } from '../lib/analytics';
 import { getDir, type Language } from '../lib/i18n';
 import { t } from '../lib/i18n';
 import { cn } from '../utils/cn';
@@ -440,7 +440,10 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
 
   const handleUpdateBooking = async (id: number | string, updates: any) => {
     const updated = await dataService.updateBooking(id, updates);
-    if (updated) setBookings(prev => prev.map(b => b.id === updated.id ? updated : b));
+    if (updated) {
+      setBookings(prev => prev.map(b => b.id === updated.id ? updated : b));
+      trackBookingUpdated(String(updated.id), Object.keys(updates || {}));
+    }
     setSelectedBooking(null);
   };
 
@@ -622,6 +625,7 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
 
   const handleLogout = async () => {
     trackLogout();
+    clearAnalyticsUser();
     await authService.logout();
     onSessionChange(null);
     window.location.href = '/';
@@ -895,7 +899,10 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
           onDelete={handleDeleteBooking}
           onUpdateStatus={handleUpdateBookingStatus}
           onUpdate={handleUpdateBooking}
-          onPrintInvoice={() => setShowInvoiceModal(true)}
+          onPrintInvoice={() => {
+            trackInvoiceGenerated(String(selectedBooking.id));
+            setShowInvoiceModal(true);
+          }}
           currency={currency}
           lang={lang}
           tz={tz}

@@ -5,11 +5,22 @@ import { type AuthMode } from '../utils/constants';
 import { cn } from '../utils/cn';
 import { Sparkle, EnvelopeSimple, CheckCircle } from 'phosphor-react';
 import { t, getDir, type Language } from '../lib/i18n';
-import { trackLogin, trackRegister } from '../lib/analytics';
+import { trackLogin, trackRegister, setAnalyticsUser } from '../lib/analytics';
 import { addAccount } from '../lib/accountStore';
 import TenantApp from '../components/TenantApp';
 import { apolloClient } from '../lib/apolloClient';
 import { REQUEST_PASSWORD_RESET_MUTATION } from '../lib/graphql';
+
+function identifyFromSession(s: SessionUser) {
+  setAnalyticsUser({
+    user_id: s.tenantId,
+    tenant_id: s.tenantId,
+    plan: s.tenant.plan,
+    subscription_status: s.tenant.subscriptionStatus,
+    language: s.tenant.language,
+    is_admin: s.isAdmin,
+  });
+}
 
 // Save the freshly-authenticated session into the multi-account switcher store
 function rememberAccount(s: SessionUser) {
@@ -97,11 +108,13 @@ export function AuthScreen({ mode, onModeChange, onLoggedIn, error, setError, wo
         if (defaults.rooms?.length) {
           try { await authService.updateTenantConfig(s.tenantId, { rooms: defaults.rooms }); } catch {}
         }
+        identifyFromSession(s);
         trackRegister(name || email);
         rememberAccount(s);
         onLoggedIn(s);
       } else {
         const s = await authService.loginLocal(email, password);
+        identifyFromSession(s);
         trackLogin('email');
         rememberAccount(s);
         onLoggedIn(s);
@@ -429,6 +442,7 @@ export function WorkspaceShell({ username }: WorkspaceShellProps) {
     const bootstrap = async () => {
       try {
         const user = await authService.getCurrentUser();
+        if (user) identifyFromSession(user);
         setSession(user);
       } finally {
         setAuthLoading(false);

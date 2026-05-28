@@ -1,14 +1,12 @@
-// Bump on every change that affects /manifest.json or the precached icons.
-// Also bump after a deploy that changes the JS bundle structure so cache-first
-// fetches don't keep serving a broken hash (e.g., the recent vendor-chunk split
-// that triggered a class-extends runtime error for returning visitors).
-const CACHE_NAME = 'hujuzatk-v5';
+const CACHE_NAME = 'hujuzatk-v6';
+
+// Paths the SW must NEVER intercept — these are standalone static pages /
+// machine-readable files served directly from /public. Intercepting them
+// risks serving a stale SPA shell and breaking AI crawlers + direct visitors.
+const BYPASS_PREFIXES = ['/ar/', '/en/', '/about/'];
+const BYPASS_EXACT = ['/about', '/llms.txt', '/pricing.md', '/sitemap.xml', '/robots.txt'];
 const STATIC_ASSETS = [
-  '/manifest.json',
-  '/icon-192.png',
-  '/icon-512.png',
-  '/icon-512-maskable.png',
-  '/apple-touch-icon.png'
+  '/manifest.json'
 ];
 
 // Install: cache only static non-HTML assets, skip waiting immediately
@@ -39,6 +37,15 @@ self.addEventListener('fetch', (event) => {
 
   // Only handle same-origin requests
   if (url.origin !== self.location.origin) return;
+
+  // Never intercept static marketing pages or machine-readable files —
+  // they must go straight to the network and bypass any SW caching.
+  if (
+    BYPASS_PREFIXES.some((p) => url.pathname.startsWith(p)) ||
+    BYPASS_EXACT.includes(url.pathname)
+  ) {
+    return;
+  }
 
   // Network-first for navigation (HTML pages)
   if (request.mode === 'navigate' || request.headers.get('accept')?.includes('text/html')) {

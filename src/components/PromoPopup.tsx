@@ -158,23 +158,33 @@ export default function PromoPopup({ lang, strings, onStart }: Props) {
                       {plan.priceLabel}
                     </div>
                   ) : (
-                    <div className="flex items-baseline flex-wrap" style={{ gap: 6 }}>
-                      {showCrossout && (
-                        <span className="line-through font-bold" style={{
-                          fontSize: 11,
-                          color: isPopular ? 'rgba(255,255,255,0.4)' : 'var(--ink-300)',
-                        }}>
-                          {strings.was} {CURRENCY_SYMBOL}{plan.oldPrice}
+                    <>
+                      <div className="flex items-baseline flex-wrap" style={{ gap: 6 }}>
+                        {showCrossout && (
+                          <span className="line-through font-bold" style={{
+                            fontSize: 11,
+                            color: isPopular ? 'rgba(255,255,255,0.4)' : 'var(--ink-300)',
+                          }}>
+                            {strings.was} {CURRENCY_SYMBOL}{plan.oldPrice}
+                          </span>
+                        )}
+                        <span style={{ fontSize: 26, fontWeight: 800, letterSpacing: '-0.02em' }}>
+                          {CURRENCY_SYMBOL}{plan.price}
                         </span>
+                        <span style={{
+                          fontSize: 11, fontWeight: 600,
+                          color: isPopular ? 'rgba(255,255,255,0.6)' : 'var(--ink-500)',
+                        }}>{strings.perYear}</span>
+                      </div>
+                      {(lang === 'ar' || lang === 'en') && (
+                        <div style={{
+                          fontSize: 10, fontWeight: 600, marginTop: 4,
+                          color: isPopular ? 'rgba(255,255,255,0.5)' : 'var(--ink-300)',
+                        }}>
+                          ≈ {lang === 'ar' ? '﷼' : 'SAR'} {Math.round(plan.price * 3.75)} {strings.perYear}
+                        </div>
                       )}
-                      <span style={{ fontSize: 26, fontWeight: 800, letterSpacing: '-0.02em' }}>
-                        {CURRENCY_SYMBOL}{plan.price}
-                      </span>
-                      <span style={{
-                        fontSize: 11, fontWeight: 600,
-                        color: isPopular ? 'rgba(255,255,255,0.6)' : 'var(--ink-500)',
-                      }}>{strings.perYear}</span>
-                    </div>
+                    </>
                   )}
                 </div>
 
