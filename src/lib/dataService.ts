@@ -159,6 +159,7 @@ export const dataService = {
               remaining
               status
               source
+              externalChannel
               notes
               createdAt
               updatedAt

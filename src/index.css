@@ -60,7 +60,11 @@
    `var(--brand-green)` references inside design files still work.
    ============================================================ */
 :root {
-  --brand-green:      #0E9F6E;
+  /* Bumped from #0E9F6E (~3.4:1 with white text — failed WCAG AA on every
+     CTA button on the landing) to #047857 (~4.79:1, passes AA). Same value as
+     --brand-green-deep, which is kept as a separate token for places that
+     intentionally want the darker shade. */
+  --brand-green:      #047857;
   --brand-green-soft: #D1FAE5;
   --brand-green-tint: #ECFDF5;
   --brand-green-deep: #047857;
@@ -68,7 +72,10 @@
   --ink-900: #0B1B3A;
   --ink-700: #1E2D4F;
   --ink-500: #4B5878;
-  --ink-300: #94A0B9;
+  /* Bumped from #94A0B9 (~2.6:1 on white — failed WCAG AA for normal text)
+     to #64748B / slate-500 (~4.8:1, passes AA). Used for small captions and
+     the hero trust line which were the main Lighthouse contrast violations. */
+  --ink-300: #64748B;
   --ink-200: #C9D0DD;
 
   --accent-blue:        #3B82F6;

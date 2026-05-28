@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import {
-  ArrowsClockwise, Trash, WarningCircle, Link as LinkIcon,
+  CloudArrowDown, Trash, WarningCircle, Link as LinkIcon,
   GearSix, X, Plus,
 } from 'phosphor-react';
 import { apolloClient } from '../lib/apolloClient';
@@ -48,11 +48,42 @@ interface ChannelIntegration {
   label: string | null;
   isActive: boolean;
   syncBlocks: boolean;
+  syncLookbackDays: number | null;
   lastSyncedAt: string | null;
   lastSyncStatus: string | null;
   lastSyncMessage: string | null;
   lastSyncCount: number | null;
 }
+
+// UI value (string in <select>) ↔ stored number. -1 = all, 0 = future-only.
+const LOOKBACK_OPTIONS = ['future', '7', '30', '90', 'all'] as const;
+type LookbackUi = typeof LOOKBACK_OPTIONS[number];
+const lookbackToNumber = (v: LookbackUi): number => {
+  if (v === 'future') return 0;
+  if (v === 'all') return -1;
+  return parseInt(v, 10);
+};
+const numberToLookback = (n: number | null | undefined): LookbackUi => {
+  if (n === null || n === undefined || n === 0) return 'future';
+  if (n === -1) return 'all';
+  if (n >= 90) return '90';
+  if (n >= 30) return '30';
+  if (n >= 7) return '7';
+  return 'future';
+};
+
+const timeAgo = (iso: string | null, lang: Language): string => {
+  if (!iso) return t(lang, 'integrations.neverSynced');
+  const ms = Date.now() - new Date(iso).getTime();
+  if (!Number.isFinite(ms) || ms < 0) return new Date(iso).toLocaleString();
+  const m = Math.floor(ms / 60000);
+  if (m < 1) return 'just now';
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  const d = Math.floor(h / 24);
+  return `${d}d ago`;
+};
 
 interface ModalState {
   roomId: string;
@@ -104,10 +135,12 @@ export default function IntegrationsView({ session, lang, onNavigateToSettings }
 
   const [syncResults, setSyncResults] = useState<SyncResultRow[] | null>(null);
 
-  const handleSync = async (id: string, mode: 'future' | 'all' = 'future') => {
+  // mode undefined → honour the integration's stored syncLookbackDays.
+  // Header buttons pass 'future' / 'all' explicitly to override for that click.
+  const handleSync = async (id: string, mode?: 'future' | 'all') => {
     setSyncingIds(prev => new Set(prev).add(id));
     try {
-      const { data } = await apolloClient.mutate({ mutation: SYNC_CHANNEL_MUTATION, variables: { id, mode } });
+      const { data } = await apolloClient.mutate({ mutation: SYNC_CHANNEL_MUTATION, variables: { id, mode: mode ?? null } });
       const result = (data as any)?.syncChannel as SyncResultRow | undefined;
       if (result) setSyncResults([result]);
       await loadIntegrations();
@@ -145,7 +178,7 @@ export default function IntegrationsView({ session, lang, onNavigateToSettings }
     }
   };
 
-  const handleSave = async (input: { id?: string; channel: ChannelKey; roomId: string; icalUrl: string; label: string; syncBlocks: boolean }) => {
+  const handleSave = async (input: { id?: string; channel: ChannelKey; roomId: string; icalUrl: string; label: string; syncBlocks: boolean; syncLookbackDays: number }) => {
     await apolloClient.mutate({
       mutation: SAVE_CHANNEL_INTEGRATION_MUTATION,
       variables: {
@@ -156,6 +189,7 @@ export default function IntegrationsView({ session, lang, onNavigateToSettings }
           icalUrl: input.icalUrl.trim(),
           label: input.label.trim() || null,
           syncBlocks: input.syncBlocks,
+          syncLookbackDays: input.syncLookbackDays,
         },
       },
     });
@@ -201,7 +235,7 @@ export default function IntegrationsView({ session, lang, onNavigateToSettings }
               title={t(lang, 'integrations.syncFutureTip')}
               className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-emerald-600 text-white text-sm font-black hover:bg-emerald-700 disabled:opacity-50 transition-all"
             >
-              <ArrowsClockwise size={16} className={syncingAll && syncingAllMode === 'future' ? 'animate-spin' : ''} />
+              <CloudArrowDown size={16} weight="bold" className={syncingAll && syncingAllMode === 'future' ? 'animate-spin' : ''} />
               {syncingAll && syncingAllMode === 'future' ? t(lang, 'integrations.syncing') : t(lang, 'integrations.syncFuture')}
             </button>
             {/* Full re-sync: includes past bookings. Heavier — used to back-fill or audit. */}
@@ -211,7 +245,7 @@ export default function IntegrationsView({ session, lang, onNavigateToSettings }
               title={t(lang, 'integrations.syncAllTip')}
               className="flex items-center gap-2 px-4 py-2 rounded-2xl border border-slate-200 bg-white text-slate-700 text-sm font-black hover:bg-slate-50 disabled:opacity-50 transition-all"
             >
-              <ArrowsClockwise size={16} className={syncingAll && syncingAllMode === 'all' ? 'animate-spin' : ''} />
+              <CloudArrowDown size={16} weight="bold" className={syncingAll && syncingAllMode === 'all' ? 'animate-spin' : ''} />
               {syncingAll && syncingAllMode === 'all' ? t(lang, 'integrations.syncing') : t(lang, 'integrations.syncAll')}
             </button>
           </div>
@@ -337,6 +371,10 @@ function ConnectedCell(props: {
       <div className="text-[10px] text-slate-400 font-mono truncate" dir="ltr" title={i.icalUrlMasked}>
         {i.icalUrlMasked}
       </div>
+      <div className="text-[10px] text-slate-500 font-bold" title={i.lastSyncMessage || ''}>
+        {t(lang, 'integrations.lastSynced')}: {timeAgo(i.lastSyncedAt, lang)}
+        {i.lastSyncCount != null && i.lastSyncedAt ? ` · ${i.lastSyncCount}` : ''}
+      </div>
       <div className="flex items-center gap-1.5 pt-1">
         <button
           onClick={onSync}
@@ -344,7 +382,7 @@ function ConnectedCell(props: {
           title={t(lang, 'integrations.syncNow')}
           className="p-1.5 rounded-lg hover:bg-emerald-100 text-emerald-700 disabled:opacity-40"
         >
-          <ArrowsClockwise size={14} weight="bold" className={isSyncing ? 'animate-spin' : ''} />
+          <CloudArrowDown size={14} weight="bold" className={isSyncing ? 'animate-spin' : ''} />
         </button>
         <button
           onClick={onEdit}
@@ -370,7 +408,7 @@ function IntegrationModal(props: {
   state: ModalState;
   lang: Language;
   onClose: () => void;
-  onSave: (input: { id?: string; channel: ChannelKey; roomId: string; icalUrl: string; label: string; syncBlocks: boolean }) => Promise<void>;
+  onSave: (input: { id?: string; channel: ChannelKey; roomId: string; icalUrl: string; label: string; syncBlocks: boolean; syncLookbackDays: number }) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
 }) {
   const { state, lang, onClose, onSave, onDelete } = props;
@@ -382,6 +420,11 @@ function IntegrationModal(props: {
   const [icalUrl, setIcalUrl] = useState(state.existing ? '' : '');
   const [label, setLabel] = useState(state.existing?.label || '');
   const [syncBlocks, setSyncBlocks] = useState(state.existing?.syncBlocks ?? false);
+  // New integrations default to 30-day lookback so freshly-ended bookings show up.
+  // Existing rows stick with whatever they had (null → "future", preserves prior behaviour).
+  const [lookback, setLookback] = useState<LookbackUi>(
+    state.existing ? numberToLookback(state.existing.syncLookbackDays) : '30'
+  );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -406,6 +449,7 @@ function IntegrationModal(props: {
         icalUrl: url,
         label,
         syncBlocks,
+        syncLookbackDays: lookbackToNumber(lookback),
       });
     } catch (err: any) {
       setError(err.graphQLErrors?.[0]?.message || err.message || 'Failed to save');
@@ -497,6 +541,22 @@ function IntegrationModal(props: {
               <div className="text-[11px] text-slate-500 mt-1 leading-relaxed">{t(lang, 'integrations.syncBlocksHint')}</div>
             </div>
           </label>
+
+          <div>
+            <label className={labelClass}>{t(lang, 'integrations.lookback')}</label>
+            <select
+              value={lookback}
+              onChange={(e) => setLookback(e.target.value as LookbackUi)}
+              className={inputClass}
+            >
+              <option value="future">{t(lang, 'integrations.lookback.future')}</option>
+              <option value="7">{t(lang, 'integrations.lookback.7d')}</option>
+              <option value="30">{t(lang, 'integrations.lookback.30d')}</option>
+              <option value="90">{t(lang, 'integrations.lookback.90d')}</option>
+              <option value="all">{t(lang, 'integrations.lookback.all')}</option>
+            </select>
+            <p className="text-[11px] text-slate-400 mt-1.5 leading-relaxed">{t(lang, 'integrations.lookbackHint')}</p>
+          </div>
 
           {error && <p className="text-sm text-red-600 font-semibold">{error}</p>}
 

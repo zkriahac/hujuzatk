@@ -141,7 +141,7 @@ export function extractFromDescription(description: string | null | undefined): 
 
 export type SyncMode = 'all' | 'future';
 
-export async function performSync(integration: any, tenantId: string, mode: SyncMode = 'future'): Promise<SyncResult> {
+export async function performSync(integration: any, tenantId: string, mode?: SyncMode): Promise<SyncResult> {
   let imported = 0, updated = 0, canceled = 0, skipped = 0;
   const errors: string[] = [];
 
@@ -157,14 +157,25 @@ export async function performSync(integration: any, tenantId: string, mode: Sync
     return { integrationId: integration.id, tenantId, channelName: integration.channelName, roomId: integration.roomId, imported: 0, updated: 0, canceled: 0, skipped: 0, blocksRemoved: 0, errors: [message], success: false, message };
   }
 
-  // Future-only mode keeps the cron lean — drop events that already ended before today.
-  // We use event.end (not event.start) so an in-progress stay still re-syncs (cancellations,
-  // checkout updates, etc.).
-  if (mode === 'future') {
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
+  // Lookback resolution. Explicit `mode` arg wins (legacy callers + override on the row);
+  // otherwise the per-integration `syncLookbackDays` field decides.
+  //   -1 / 'all'     → no cutoff, keep every event in the feed
+  //   0 / 'future'   → events ending today onwards only (original behaviour)
+  //   N >= 1         → events ending within the last N days
+  //   null/undefined → fall back to 'future' so existing rows behave as before
+  const lookbackDays: number = (() => {
+    if (mode === 'all') return -1;
+    if (mode === 'future') return 0;
+    const stored = (integration as any).syncLookbackDays;
+    if (stored === null || stored === undefined) return 0;
+    return stored;
+  })();
+  if (lookbackDays !== -1) {
+    const cutoff = new Date();
+    cutoff.setHours(0, 0, 0, 0);
+    if (lookbackDays > 0) cutoff.setDate(cutoff.getDate() - lookbackDays);
     const before = events.length;
-    events = events.filter((e) => e.end >= todayStart);
+    events = events.filter((e) => e.end >= cutoff);
     skipped += before - events.length;
   }
 
@@ -402,7 +413,7 @@ function detectSuspiciousPatterns(events: { uid: string; start: Date; end: Date;
  * Sync all active integrations for a specific channel across ALL tenants.
  * Used by the cron endpoint — each platform runs on its own schedule.
  */
-export async function syncAllTenantsForChannel(channel: Channel, mode: SyncMode = 'future') {
+export async function syncAllTenantsForChannel(channel: Channel, mode?: SyncMode) {
   const integrations = await prisma.channelIntegration.findMany({
     where: {
       channelName: channel,

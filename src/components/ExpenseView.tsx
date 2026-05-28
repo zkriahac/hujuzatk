@@ -8,6 +8,7 @@ import { apolloClient } from '../lib/apolloClient';
 import { t, type Language } from '../lib/i18n';
 import { cn } from '../utils/cn';
 import { formatTz } from '../utils/formatTz';
+import { sanitizeNumeric } from '../utils/digits';
 import { useAnchoredPosition, type ModalAnchor } from './Modals';
 import {
   GET_EXPENSES_QUERY,
@@ -317,8 +318,14 @@ function ExpenseModal({ existing, rooms, lang, currency, anchor, onClose, onSave
             </div>
             <div>
               <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">{t(lang, 'expenses.amount')} ({currency})</label>
-              <input type="number" min="0" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-2.5 text-sm font-black focus:ring-2 focus:ring-emerald-500" />
+              <input
+                type="text"
+                inputMode="decimal"
+                pattern="[0-9]*\.?[0-9]*"
+                value={amount}
+                onChange={(e) => setAmount(sanitizeNumeric(e.target.value))}
+                className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-2.5 text-sm font-black focus:ring-2 focus:ring-emerald-500"
+              />
             </div>
           </div>
           <div>

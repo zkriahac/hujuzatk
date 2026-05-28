@@ -407,9 +407,13 @@ function CalendarScreenMock() {
     { name: 'R 4', tone: 'blue' }, { name: 'B 1', tone: 'neutral' },
     { name: 'B 2', tone: 'neutral' }, { name: 'B 3', tone: 'green' },
   ];
+  // Booking-cell tones. Text colors picked to pass WCAG AA 4.5:1 on their pastel
+  // backgrounds — the natural blue-500 / emerald-700 combo failed contrast.
+  //   blue:  #1E40AF (blue-800) on #DBEAFE  → ~7.1:1
+  //   green: #065F46 (emerald-800) on #D1FAE5 → ~6.7:1
   const colorMap: Record<string, { bg: string; text: string; border: string }> = {
-    blue:    { bg: 'var(--accent-blue-soft)',  text: 'var(--accent-blue)',  border: 'rgba(59,130,246,.45)' },
-    green:   { bg: 'var(--brand-green-soft)',  text: 'var(--brand-green-deep)', border: 'rgba(14,159,110,.45)' },
+    blue:    { bg: 'var(--accent-blue-soft)',  text: '#1E40AF',             border: 'rgba(59,130,246,.45)' },
+    green:   { bg: 'var(--brand-green-soft)',  text: '#065F46',             border: 'rgba(14,159,110,.45)' },
     neutral: { bg: 'transparent',              text: 'var(--ink-700)',      border: 'var(--border)' },
   };
 
@@ -474,7 +478,9 @@ function CalendarScreenMock() {
           {dates.map((d, di) => (
             <div key={di} className="contents">
               <div className="flex flex-col items-center justify-center font-bold" style={{
-                fontSize: 11, color: 'var(--accent-coral)', lineHeight: 1.1,
+                // Was var(--accent-coral) #F87171 on white — ~2.8:1, failed AA.
+                // ink-700 matches the rest of the mock and is high-contrast.
+                fontSize: 11, color: 'var(--ink-700)', lineHeight: 1.1,
                 borderTop: '1px solid var(--border-soft)', borderInlineStart: '1px solid var(--border)',
               }}>
                 <span style={{ fontSize: 11 }}>{d.d}</span>
@@ -1140,6 +1146,60 @@ export function LandingPage() {
 
   useEffect(() => { applySEO(lang); }, [lang]);
 
+  // Inject FAQPage JSON-LD on the landing route only. Previously it lived in
+  // index.html and was therefore present on every SPA route — Google flagged
+  // "Duplicate field 'FAQPage'" because /terms, /privacy, /workspace, etc. all
+  // carried it. Mount-scoped script tag → only the home page emits it.
+  useEffect(() => {
+    const faq = {
+      '@context': 'https://schema.org',
+      '@type': 'FAQPage',
+      mainEntity: [
+        { '@type': 'Question', name: 'What is Hujuzatk PMS?',
+          acceptedAnswer: { '@type': 'Answer', text: 'Hujuzatk is a cloud-based Hotel and Property Management System (PMS) designed for hotels, apartments, and vacation rentals. It features a 5-year booking calendar, automated invoicing, financial analytics, and full Arabic and English support.' } },
+        { '@type': 'Question', name: 'Does Hujuzatk support Arabic language?',
+          acceptedAnswer: { '@type': 'Answer', text: 'Yes. Hujuzatk has native Arabic RTL support including Arabic date formats, OMR currency, and complete right-to-left layout throughout the entire application.' } },
+        { '@type': 'Question', name: 'How much does Hujuzatk cost?',
+          acceptedAnswer: { '@type': 'Answer', text: 'Two plans: Basic at $35/year (year-end 2026 promo, normally $40) and Pro at $58/year with automatic Airbnb, Gathern, and Booking.com channel sync (year-end 2026 promo, normally $65). Both include unlimited bookings, up to 50 rooms, full reporting, multi-language support, and a 5-year calendar. A 14-day free trial is included — no credit card required.' } },
+        { '@type': 'Question', name: 'Is Hujuzatk available as a mobile app?',
+          acceptedAnswer: { '@type': 'Answer', text: "Yes. Hujuzatk installs to your phone's home screen from the browser in one tap — works offline, sends push notifications, no App Store or Play Store download needed." } },
+        { '@type': 'Question', name: 'كم تكلفة حجوزاتك؟',
+          acceptedAnswer: { '@type': 'Answer', text: 'نقدم خطتين: الأساسية 35$/سنة (عرض نهاية 2026، بدلاً من 40$)، والمحترفة 58$/سنة مع مزامنة تلقائية لـ Airbnb وجاذبين وBooking.com (عرض نهاية 2026، بدلاً من 65$). الخطتان تشملان حجوزات غير محدودة وحتى 50 غرفة وتقارير كاملة ودعم متعدد اللغات وتقويم 5 سنوات. تتوفر تجربة مجانية لمدة 14 يوماً بدون بطاقة ائتمان.' } },
+        { '@type': 'Question', name: 'ما هو نظام حجوزاتك PMS؟',
+          acceptedAnswer: { '@type': 'Answer', text: 'حجوزاتك هو نظام إدارة الحجوزات والفنادق المبني على السحابة، مصمم للفنادق والشقق والإيجارات السياحية. يتميز بتقويم حجوزات لـ5 سنوات، وفوترة تلقائية، وتحليلات مالية، ودعم كامل للغة العربية والإنجليزية.' } },
+        { '@type': 'Question', name: 'هل حجوزاتك يدعم اللغة العربية؟',
+          acceptedAnswer: { '@type': 'Answer', text: 'نعم، يدعم حجوزاتك اللغة العربية بشكل كامل مع تخطيط RTL أصيل، وتنسيقات التواريخ العربية، وعملة OMR، وواجهة كاملة من اليمين إلى اليسار.' } },
+
+        // ── From customer questions ──
+        { '@type': 'Question', name: 'Is there a mobile app or only the website?',
+          acceptedAnswer: { '@type': 'Answer', text: 'Both. Hujuzatk is a Progressive Web App — install it to your home screen from any modern browser in one tap. It runs full-screen like a native app, works offline, and sends push notifications. No App Store or Play Store download required. On iPhone: open in Safari → Share → Add to Home Screen. On Android: Chrome shows an "Install app" prompt automatically.' } },
+        { '@type': 'Question', name: 'هل يوجد تطبيق للموبايل أم فقط موقع؟',
+          acceptedAnswer: { '@type': 'Answer', text: 'الاثنان معاً. حجوزاتك تطبيق ويب تقدمي (PWA) — ثبّته على الشاشة الرئيسية لجهازك من أي متصفح حديث بنقرة واحدة. يعمل بملء الشاشة كتطبيق أصلي، يدعم العمل دون اتصال، ويرسل إشعارات. لا تحتاج تنزيله من App Store أو Play Store. على iPhone: افتح في Safari → مشاركة → إضافة إلى الشاشة الرئيسية. على Android: Chrome يعرض زر "تثبيت التطبيق" تلقائياً.' } },
+
+        { '@type': 'Question', name: 'Does Hujuzatk work for a 60-room hotel?',
+          acceptedAnswer: { '@type': 'Answer', text: 'Yes. The Pro plan covers up to 30 rooms; for 60+ rooms we offer the Enterprise plan with unlimited rooms. The calendar grid is optimised for hundreds of rooms across a 5-year horizon with zero scroll lag — we routinely test with much larger properties. Contact us for Enterprise pricing.' } },
+        { '@type': 'Question', name: 'هل حجوزاتك يناسب فندقاً بـ 60 غرفة؟',
+          acceptedAnswer: { '@type': 'Answer', text: 'نعم. خطة Pro تدعم حتى 30 غرفة، وخطة Enterprise تدعم عدداً غير محدود من الغرف وهي المناسبة للفنادق الأكبر. تقويم الحجوزات محسّن للعمل مع مئات الغرف على مدى 5 سنوات بدون أي تأخير. تواصل معنا للحصول على سعر Enterprise.' } },
+
+        { '@type': 'Question', name: 'Can I customize the invoice design and add my logo?',
+          acceptedAnswer: { '@type': 'Answer', text: 'Yes. From Settings → Company Profile you can upload your logo, set your company name, address, phone, email, tax ID, and a custom invoice footer. All these appear automatically on every printed and PDF invoice. Invoices are bilingual (Arabic / English / Turkish) and adapt to the language of the guest entry.' } },
+        { '@type': 'Question', name: 'هل يمكنني تخصيص تصميم الفاتورة وإضافة لوجو؟',
+          acceptedAnswer: { '@type': 'Answer', text: 'نعم. من الإعدادات → بيانات الشركة يمكنك رفع شعارك، وتحديد اسم الشركة والعنوان والهاتف والبريد والرقم الضريبي ونص في تذييل الفاتورة. تظهر هذه البيانات تلقائياً على كل فاتورة مطبوعة أو PDF. الفواتير ثنائية اللغة (عربي / إنجليزي / تركي) وتتكيف مع لغة بيانات الضيف.' } },
+
+        { '@type': 'Question', name: 'How many users can use Hujuzatk at the same time? Is it cloud-based or does it work offline?',
+          acceptedAnswer: { '@type': 'Answer', text: 'Unlimited concurrent users on the same account — share the login with your entire front desk and they all get the same full-access view in real time. Hujuzatk is cloud-based (changes sync across devices instantly via our managed Postgres database) AND works offline (PWA caches data locally; the calendar, booking list, and invoice screens stay usable without internet, and pending changes sync as soon as you reconnect).' } },
+        { '@type': 'Question', name: 'كم شخص يستطيع استخدام البرنامج في نفس الوقت؟ هل هو سحابي أم يعمل بدون إنترنت؟',
+          acceptedAnswer: { '@type': 'Answer', text: 'عدد المستخدمين غير محدود على نفس الحساب — يمكنك مشاركة بيانات الدخول مع كل موظفي الاستقبال (front desk) ويحصل الجميع على صلاحيات كاملة في الوقت الفعلي. حجوزاتك سحابي (التغييرات تتزامن فوراً بين جميع الأجهزة عبر قاعدة بيانات Postgres مُدارة) ويعمل أيضاً بدون إنترنت (تطبيق الويب التقدمي يحفظ البيانات محلياً، فيبقى التقويم وقائمة الحجوزات والفواتير قابلة للاستخدام، وتتم المزامنة تلقائياً عند عودة الاتصال).' } },
+      ],
+    };
+    const script = document.createElement('script');
+    script.type = 'application/ld+json';
+    script.dataset.faq = 'hujuzatk-landing';
+    script.textContent = JSON.stringify(faq);
+    document.head.appendChild(script);
+    return () => { script.remove(); };
+  }, []);
+
   // Detect logged-in session
   useEffect(() => {
     let mounted = true;
@@ -1215,8 +1275,12 @@ export function LandingPage() {
       background: 'var(--bg)', minHeight: '100vh',
       fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-en)',
     }}>
-      {/* ───────── Nav ───────── */}
-      <nav className="relative z-11" style={{ background: 'var(--surface)', borderBottom: '1px solid var(--border)' }}>
+      {/* ───────── Nav ─────────
+          z-50 (not z-10) — the hero section below also has a z-10 inner wrapper
+          for its parallax content, so a same-z later-in-DOM sibling was painting
+          over the language dropdown panel. The dropdown's own z-[120] is capped
+          by the nav's stacking context, so the fix is at the nav level. */}
+      <nav className="relative z-50" style={{ background: 'var(--surface)', borderBottom: '1px solid var(--border)' }}>
         <div className="max-w-[1280px] mx-auto flex items-center justify-between" style={{ padding: '20px 24px' }}>
           <Link to="/" className="shrink-0"><HZLogo size={36} /></Link>
           <div className="hidden md:flex items-center gap-1">
@@ -1367,6 +1431,12 @@ export function LandingPage() {
         )}
       </nav>
 
+      {/* <main> landmark wraps the page's primary content. Lighthouse a11y
+          flagged "Document does not have a main landmark" — every page needs
+          exactly one <main> for screen-reader users to jump straight to the
+          content (skipping nav). The footer below stays outside. */}
+      <main>
+
       {/* ───────── Hero ─────────
           Decorative shapes use raw `left`/`right` (not insetInline*) so they stay in
           the same physical positions regardless of text direction — purely aesthetic
@@ -1410,6 +1480,9 @@ export function LandingPage() {
                 {c.hero.cta}
                 <ArrowRight size={18} weight="bold" style={{ transform: isRtl ? 'scaleX(-1)' : undefined }} />
               </button>
+              {/* Watch-video CTA hidden until we have a video to ship.
+                  Kept in the tree (commented) so re-enabling is a one-line
+                  uncomment + restoring c.hero.cta2 copy.
               <button
                 onClick={() => { trackCTA('hero_video', 'hero'); setVideoOpen(true); }}
                 className="inline-flex items-center transition-all hover:-translate-y-0.5"
@@ -1426,6 +1499,7 @@ export function LandingPage() {
                 </span>
                 {c.hero.cta2}
               </button>
+              */}
             </div>
             <p style={{ fontSize: 13, color: 'var(--ink-300)' }}>{c.hero.trust}</p>
           </div>
@@ -1763,38 +1837,109 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* ───────── FAQ ───────── */}
-      <section style={{ padding: '120px 24px', background: 'var(--bg)' }}>
+      {/* ───────── FAQ ─────────
+          Same Q/A set that's emitted as FAQPage JSON-LD higher up — duplicating
+          here makes them visible to users (and Google rewards in-page text that
+          matches the structured data). <details>/<summary> gives free
+          accessibility: keyboard toggle, screen-reader semantics, no JS. */}
+      <section id="faq" style={{ padding: '80px 24px', background: 'var(--surface)', borderTop: '1px solid var(--border)' }}>
         <div className="max-w-[860px] mx-auto">
-          <div className="text-center mx-auto" style={{ maxWidth: 720, marginBottom: 48 }}>
-            <span className="eyebrow">{c.faq.eyebrow}</span>
-            <h2 className="h-display" style={{ fontSize: 48, margin: '16px 0 16px', color: 'var(--ink-900)' }}>{c.faq.title}</h2>
+          <div className="text-center" style={{ marginBottom: 32 }}>
+            <span className="eyebrow inline-block" style={{ marginBottom: 12 }}>
+              {isAr ? 'الأسئلة الشائعة' : lang === 'tr' ? 'Sıkça Sorulan Sorular' : 'Frequently Asked Questions'}
+            </span>
+            <h2 className="h-display" style={{ fontSize: 40, margin: '8px 0 0', color: 'var(--ink-900)' }}>
+              {isAr ? 'الأسئلة الأكثر شيوعاً' : lang === 'tr' ? 'En çok sorulanlar' : 'Common questions'}
+            </h2>
           </div>
           <div className="flex flex-col" style={{ gap: 12 }}>
-            {c.faq.items.map((it, i) => (
-              <details key={i} className="hz-faq" style={{
-                background: '#fff',
-                border: '1px solid var(--border)',
-                borderRadius: 16,
-                padding: '20px 24px',
-                direction: isAr ? 'rtl' : 'ltr',
-              }}>
-                <summary className="hz-faq__summary" style={{
-                  cursor: 'pointer',
-                  fontSize: 17,
-                  fontWeight: 700,
-                  color: 'var(--ink-900)',
-                  listStyle: 'none',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  gap: 16,
-                }}>
-                  <span>{it.q}</span>
-                  <CaretDown size={18} weight="bold" className="hz-faq__caret" style={{ color: 'var(--ink-500)', flexShrink: 0 }} />
+            {([
+              // ── Original Q/A set ──
+              {
+                q: { en: 'What is Hujuzatk PMS?',
+                     ar: 'ما هو نظام حجوزاتك PMS؟',
+                     tr: 'Hujuzatk PMS nedir?' },
+                a: { en: 'Hujuzatk is a cloud-based Hotel and Property Management System (PMS) designed for hotels, apartments, and vacation rentals. It features a 5-year booking calendar, automated invoicing, financial analytics, and full Arabic and English support.',
+                     ar: 'حجوزاتك هو نظام إدارة الحجوزات والفنادق المبني على السحابة، مصمم للفنادق والشقق والإيجارات السياحية. يتميز بتقويم حجوزات لـ5 سنوات، وفوترة تلقائية، وتحليلات مالية، ودعم كامل للغة العربية والإنجليزية.',
+                     tr: 'Hujuzatk; oteller, daireler ve kısa süreli kiralamalar için tasarlanmış, bulut tabanlı bir Otel ve Mülk Yönetim Sistemidir (PMS). 5 yıllık rezervasyon takvimi, otomatik faturalama, finansal analitik ve tam Arapça / İngilizce desteği sunar.' },
+              },
+              {
+                q: { en: 'Does Hujuzatk support Arabic language?',
+                     ar: 'هل حجوزاتك يدعم اللغة العربية؟',
+                     tr: 'Hujuzatk Arapça dilini destekler mi?' },
+                a: { en: 'Yes. Hujuzatk has native Arabic RTL support including Arabic date formats, SAR and GCC currencies, and a complete right-to-left layout throughout the entire application.',
+                     ar: 'نعم، يدعم حجوزاتك اللغة العربية بشكل كامل مع تخطيط RTL أصيل، وتنسيقات التواريخ العربية، والريال السعودي وعملات الخليج، وواجهة كاملة من اليمين إلى اليسار.',
+                     tr: 'Evet. Hujuzatk; Arapça tarih formatları, SAR ve Körfez para birimleri ve uygulama genelinde tam sağdan-sola düzen dahil olmak üzere yerel Arapça RTL desteğine sahiptir.' },
+              },
+              {
+                q: { en: 'How much does Hujuzatk cost?',
+                     ar: 'كم تكلفة حجوزاتك؟',
+                     tr: 'Hujuzatk ne kadar?' },
+                a: { en: 'Four tiers, billed annually: Trial (free 14 days, 3 rooms), Basic $40/year (up to 10 rooms), Pro $90/year (up to 30 rooms, with automatic Airbnb / Gathern / Booking.com channel sync), and Enterprise $140/year (unlimited rooms). All paid tiers include unlimited bookings, full reporting, multi-language support, and the 5-year calendar. A 14-day free trial is included — no credit card required.',
+                     ar: 'أربع خطط بفوترة سنوية: التجريبية (مجانية 14 يوم، 3 غرف)، الأساسية 40$/سنة (حتى 10 غرف)، المحترفة 90$/سنة (حتى 30 غرفة، مع مزامنة تلقائية لـ Airbnb وجاثرين وBooking.com)، والمؤسسات 140$/سنة (غرف غير محدودة). كل الخطط المدفوعة تشمل حجوزات غير محدودة وتقارير كاملة ودعم متعدد اللغات وتقويم 5 سنوات. تتوفر تجربة مجانية 14 يوماً بدون بطاقة ائتمان.',
+                     tr: 'Dört plan, yıllık faturalandırma: Deneme (14 gün ücretsiz, 3 oda), Basic 40 $/yıl (10 odaya kadar), Pro 90 $/yıl (30 odaya kadar, otomatik Airbnb / Gathern / Booking.com kanal senkronizasyonu ile) ve Enterprise 140 $/yıl (sınırsız oda). Tüm ücretli planlar sınırsız rezervasyon, tam raporlama, çoklu dil desteği ve 5 yıllık takvim içerir. 14 gün ücretsiz deneme dahildir — kredi kartı gerekmez.' },
+              },
+
+              // ── From customer questions ──
+              {
+                q: { en: 'Is there a mobile app, or only a website?',
+                     ar: 'هل يوجد تطبيق للموبايل أم فقط موقع؟',
+                     tr: 'Mobil uygulama var mı, yoksa sadece web sitesi mi?' },
+                a: { en: 'Both. Hujuzatk is a Progressive Web App — install it to your home screen from any modern browser in one tap. It runs full-screen like a native app, works offline, and sends push notifications. No App Store or Play Store download required. On iPhone: open in Safari → Share → Add to Home Screen. On Android: Chrome shows an "Install app" prompt automatically.',
+                     ar: 'الاثنان معاً. حجوزاتك تطبيق ويب تقدمي (PWA) — ثبّته على الشاشة الرئيسية لجهازك من أي متصفح حديث بنقرة واحدة. يعمل بملء الشاشة كتطبيق أصلي، يدعم العمل دون اتصال، ويرسل إشعارات. لا تحتاج تنزيله من App Store أو Play Store. على iPhone: افتح في Safari → مشاركة → إضافة إلى الشاشة الرئيسية. على Android: Chrome يعرض زر "تثبيت التطبيق" تلقائياً.',
+                     tr: 'İkisi de. Hujuzatk bir Progressive Web App — herhangi bir modern tarayıcıdan tek dokunuşla ana ekrana yükleyin. Yerel uygulama gibi tam ekran çalışır, çevrimdışı çalışır ve push bildirimleri gönderir. App Store veya Play Store indirme gerekmez.' },
+              },
+              {
+                q: { en: 'Does Hujuzatk work for a 60-room hotel?',
+                     ar: 'هل حجوزاتك يناسب فندقاً بـ 60 غرفة؟',
+                     tr: '60 odalı bir otel için uygun mu?' },
+                a: { en: 'Yes. The Pro plan covers up to 30 rooms; for 60+ rooms we offer the Enterprise plan with unlimited rooms. The calendar grid is optimised for hundreds of rooms across a 5-year horizon with zero scroll lag — we routinely test with much larger properties. Contact us for Enterprise pricing.',
+                     ar: 'نعم. خطة Pro تدعم حتى 30 غرفة، وخطة Enterprise تدعم عدداً غير محدود من الغرف وهي المناسبة للفنادق الأكبر. تقويم الحجوزات محسّن للعمل مع مئات الغرف على مدى 5 سنوات بدون أي تأخير. تواصل معنا للحصول على سعر Enterprise.',
+                     tr: 'Evet. Pro planı 30 odaya kadar destekler; 60+ oda için Enterprise plan sınırsız oda destekler. Takvim, 5 yıllık ufkun üzerinde yüzlerce oda için sıfır gecikme ile optimize edilmiştir.' },
+              },
+              {
+                q: { en: 'Can I customize the invoice design and add my logo?',
+                     ar: 'هل يمكنني تخصيص تصميم الفاتورة وإضافة لوجو؟',
+                     tr: 'Fatura tasarımını özelleştirebilir ve logomu ekleyebilir miyim?' },
+                a: { en: 'Yes. From Settings → Company Profile you can upload your logo, set your company name, address, phone, email, tax ID, and a custom invoice footer. All these appear automatically on every printed and PDF invoice. Invoices are bilingual (Arabic / English / Turkish) and adapt to the language of the guest entry.',
+                     ar: 'نعم. من الإعدادات ← بيانات الشركة يمكنك رفع شعارك، وتحديد اسم الشركة والعنوان والهاتف والبريد والرقم الضريبي ونص في تذييل الفاتورة. تظهر هذه البيانات تلقائياً على كل فاتورة مطبوعة أو PDF. الفواتير ثنائية اللغة (عربي / إنجليزي / تركي).',
+                     tr: 'Evet. Ayarlar → Şirket Profili\'nden logonuzu yükleyebilir, şirket adınızı, adresinizi, telefonunuzu, e-postanızı, vergi numaranızı ve özel bir fatura alt bilgisi ayarlayabilirsiniz.' },
+              },
+              {
+                q: { en: 'How many users can use Hujuzatk at the same time? Is it cloud-based or does it work offline?',
+                     ar: 'كم شخص يستطيع استخدام البرنامج في نفس الوقت؟ هل هو سحابي أم يعمل بدون إنترنت؟',
+                     tr: 'Aynı anda kaç kullanıcı kullanabilir? Bulut tabanlı mı yoksa çevrimdışı çalışır mı?' },
+                a: { en: 'Unlimited concurrent users on the same account — share the login with your entire front desk and they all get the same full-access view in real time. Hujuzatk is cloud-based (changes sync across devices instantly via our managed Postgres database) AND works offline (PWA caches data locally; the calendar, booking list, and invoice screens stay usable without internet, and pending changes sync as soon as you reconnect).',
+                     ar: 'عدد المستخدمين غير محدود على نفس الحساب — يمكنك مشاركة بيانات الدخول مع كل موظفي الاستقبال ويحصل الجميع على صلاحيات كاملة في الوقت الفعلي. حجوزاتك سحابي (التغييرات تتزامن فوراً بين جميع الأجهزة عبر قاعدة بيانات Postgres مُدارة) ويعمل أيضاً بدون إنترنت (تطبيق الويب التقدمي يحفظ البيانات محلياً، فيبقى التقويم وقائمة الحجوزات والفواتير قابلة للاستخدام، وتتم المزامنة تلقائياً عند عودة الاتصال).',
+                     tr: 'Aynı hesapta sınırsız eşzamanlı kullanıcı — giriş bilgilerini tüm resepsiyon ekibinizle paylaşın, hepsi gerçek zamanlı tam erişim alır. Hujuzatk bulut tabanlı (değişiklikler yönetilen Postgres veritabanı üzerinden cihazlar arası anında senkronize) VE çevrimdışı çalışır (PWA verileri yerel olarak önbelleğe alır).' },
+              },
+            ] as const).map((item, i) => (
+              <details
+                key={i}
+                className="group"
+                style={{
+                  background: '#fff', border: '1px solid var(--border)', borderRadius: 16,
+                  padding: '18px 22px',
+                }}
+              >
+                <summary
+                  className="cursor-pointer flex items-center justify-between gap-4 list-none"
+                  style={{ fontSize: 16, fontWeight: 700, color: 'var(--ink-900)' }}
+                >
+                  <span>{item.q[lang]}</span>
+                  <span
+                    aria-hidden
+                    className="transition-transform group-open:rotate-45 shrink-0"
+                    style={{ fontSize: 22, lineHeight: 1, color: 'var(--brand-green)' }}
+                  >
+                    +
+                  </span>
                 </summary>
-                <p style={{ fontSize: 15, color: 'var(--ink-500)', lineHeight: 1.6, marginTop: 12, marginBottom: 0 }}>
-                  {it.a}
+                <p
+                  className="mt-3"
+                  style={{ fontSize: 15, lineHeight: 1.65, color: 'var(--ink-500)', margin: '12px 0 0' }}
+                >
+                  {item.a[lang]}
                 </p>
               </details>
             ))}
@@ -1833,6 +1978,8 @@ export function LandingPage() {
         </div>
       </section>
 
+      </main>
+
       {/* ───────── Footer ───────── */}
       <footer style={{ background: 'var(--ink-900)', color: '#fff', padding: '60px 24px 32px' }}>
         <div className="max-w-[1280px] mx-auto">
@@ -1855,7 +2002,7 @@ export function LandingPage() {
               </a>
             </div>
             <div>
-              <h4 className="font-bold" style={{ fontSize: 14, marginBottom: 16 }}>{c.footer.product}</h4>
+              <h3 className="font-bold" style={{ fontSize: 14, marginBottom: 16 }}>{c.footer.product}</h3>
               <ul className="flex flex-col" style={{ gap: 10, listStyle: 'none', padding: 0, margin: 0 }}>
                 {c.footer.productLinks.map((it: string, j: number) => (
                   <li key={j}>
@@ -1865,7 +2012,7 @@ export function LandingPage() {
               </ul>
             </div>
             <div>
-              <h4 className="font-bold" style={{ fontSize: 14, marginBottom: 16 }}>{c.footer.company}</h4>
+              <h3 className="font-bold" style={{ fontSize: 14, marginBottom: 16 }}>{c.footer.company}</h3>
               <ul className="flex flex-col" style={{ gap: 10, listStyle: 'none', padding: 0, margin: 0 }}>
                 <li><Link to="/about"   style={{ fontSize: 14, color: 'rgba(255,255,255,0.6)' }}>{c.footer.companyLinks[0]}</Link></li>
                 <li><Link to="/story"   style={{ fontSize: 14, color: 'rgba(255,255,255,0.6)' }}>{c.footer.companyLinks[1]}</Link></li>
@@ -1873,7 +2020,7 @@ export function LandingPage() {
               </ul>
             </div>
             <div>
-              <h4 className="font-bold" style={{ fontSize: 14, marginBottom: 16 }}>{c.footer.legal}</h4>
+              <h3 className="font-bold" style={{ fontSize: 14, marginBottom: 16 }}>{c.footer.legal}</h3>
               <ul className="flex flex-col" style={{ gap: 10, listStyle: 'none', padding: 0, margin: 0 }}>
                 <li><Link to="/privacy" style={{ fontSize: 14, color: 'rgba(255,255,255,0.6)' }}>{c.footer.legalLinks[0]}</Link></li>
                 <li><Link to="/terms" style={{ fontSize: 14, color: 'rgba(255,255,255,0.6)' }}>{c.footer.legalLinks[1]}</Link></li>
@@ -1935,16 +2082,51 @@ export function LandingPage() {
 // PrivacyPolicy + TermsOfService (kept simple, in new design language)
 // =====================================================================
 
+// Per-route SEO. SPA shares <head> with index.html, so we patch document.title +
+// meta[name=description] on mount for Legal pages. Without this, Google sees the
+// landing-page title on /terms and /privacy and may classify them as duplicates
+// or thin content.
+function useRouteHead(title: string, description: string) {
+  useEffect(() => {
+    const prevTitle = document.title;
+    document.title = title;
+    let meta = document.querySelector<HTMLMetaElement>('meta[name="description"]');
+    let created = false;
+    if (!meta) {
+      meta = document.createElement('meta');
+      meta.name = 'description';
+      document.head.appendChild(meta);
+      created = true;
+    }
+    const prevDesc = meta.content;
+    meta.content = description;
+    return () => {
+      document.title = prevTitle;
+      if (created && meta) meta.remove();
+      else if (meta) meta.content = prevDesc;
+    };
+  }, [title, description]);
+}
+
 export function PrivacyPolicy() {
   const [lang, setLang] = useState<Lang>(detectLang);
   const isAr = lang === 'ar';
+  useRouteHead(
+    isAr ? 'سياسة الخصوصية | حجوزاتك' : 'Privacy Policy | Hujuzatk PMS',
+    isAr
+      ? 'سياسة خصوصية حجوزاتك: ما البيانات التي نجمعها، كيف نستخدمها، حقوقك، وكيفية حذف حسابك أو طلب بياناتك.'
+      : 'Hujuzatk Privacy Policy — what data we collect, how we use it, your rights under GDPR, data retention, security practices, and how to delete your account or export data.'
+  );
   const cycleLang = () => {
     const order: Lang[] = ['en', 'ar', 'tr'];
     const next = order[(order.indexOf(lang) + 1) % order.length];
     setLang(next); localStorage.setItem('landing-lang', next);
   };
+  const H2 = (props: { children: React.ReactNode }) => (
+    <h2 style={{ fontSize: 18, fontWeight: 800, color: 'var(--ink-900)', marginBottom: 6 }}>{props.children}</h2>
+  );
   return (
-    <div className="min-h-screen" dir={isAr ? 'rtl' : 'ltr'} style={{ background: 'var(--bg)', padding: '60px 24px', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-en)' }}>
+    <main className="min-h-screen" dir={isAr ? 'rtl' : 'ltr'} style={{ background: 'var(--bg)', padding: '60px 24px', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-en)' }}>
       <div className="max-w-[760px] mx-auto" style={{
         background: '#fff', border: '1px solid var(--border)', borderRadius: 24, padding: 36, color: 'var(--ink-900)',
       }}>
@@ -1963,17 +2145,39 @@ export function PrivacyPolicy() {
         <div className="flex flex-col" style={{ gap: 18, color: 'var(--ink-700)', lineHeight: 1.6 }}>
           {isAr ? (
             <>
-              <p>في حجوزاتك، نأخذ خصوصيتك بجدية. تصف هذه السياسة كيفية جمع بياناتك واستخدامها وحمايتها.</p>
-              <div><h2 style={{ fontSize: 18, fontWeight: 800, color: 'var(--ink-900)', marginBottom: 6 }}>١. جمع البيانات</h2><p>نجمع المعلومات التي تقدمها مباشرة عند إنشاء حساب، مثل اسمك وبريدك الإلكتروني وتفاصيل العقار.</p></div>
-              <div><h2 style={{ fontSize: 18, fontWeight: 800, color: 'var(--ink-900)', marginBottom: 6 }}>٢. استخدام البيانات</h2><p>تُستخدم بياناتك فقط لتقديم خدمة حجوزاتك وتحسينها. لا نبيع معلوماتك الشخصية.</p></div>
-              <div><h2 style={{ fontSize: 18, fontWeight: 800, color: 'var(--ink-900)', marginBottom: 6 }}>٣. الأمان</h2><p>نطبق معايير أمان عالية المستوى لحماية بياناتك. للمستخدمين السحابيين، البيانات مشفرة في السكون وأثناء النقل.</p></div>
+              <p>تشرح هذه السياسة كيف يتعامل حجوزاتك مع المعلومات الشخصية لمالكي العقارات ومديري الفنادق والشقق الذين يستخدمون منصتنا لإدارة الحجوزات. باستخدامك للخدمة، فإنك توافق على ممارسات جمع البيانات الموضحة هنا.</p>
+
+              <div><H2>١. ما البيانات التي نجمعها</H2><p>نجمع المعلومات التي تقدمها مباشرة عند إنشاء حساب: الاسم، البريد الإلكتروني، رقم الهاتف، اسم الشركة، والعملة المفضلة. عند إضافة حجوزات، نخزن أسماء الضيوف، أرقام الهواتف، أرقام الهوية، تواريخ الإقامة، أسعار الليلة، والملاحظات. إذا فعّلت تكامل القنوات (Airbnb, Booking.com, Gathren) فإننا نستورد بيانات الحجوزات عبر روابط iCal التي تزودنا بها.</p></div>
+
+              <div><H2>٢. كيف نستخدم بياناتك</H2><p>تُستخدم بياناتك فقط لتقديم الخدمة لك: عرض تقويم الحجوزات، توليد الفواتير، إنتاج التقارير المالية، والمزامنة مع قنوات الحجز الخارجية. لا نبيع بياناتك ولا نشاركها مع جهات إعلانية. قد نستخدم البريد الإلكتروني المرتبط بحسابك لإرسال إشعارات تشغيلية (تأكيد التسجيل، إعادة تعيين كلمة المرور، تغييرات الاشتراك).</p></div>
+
+              <div><H2>٣. مكان تخزين البيانات</H2><p>تُخزن بياناتك على بنية تحتية سحابية (Supabase) في مراكز بيانات آمنة. جميع الاتصالات بين متصفحك وخوادمنا مشفرة عبر TLS. كلمات المرور مُشفرة باستخدام bcrypt ولا تُخزن بصيغة نصية أبداً.</p></div>
+
+              <div><H2>٤. حقوقك</H2><p>يحق لك في أي وقت: (١) الوصول إلى بياناتك وتنزيلها بصيغة CSV من شاشة الإعدادات، (٢) تعديل أي معلومة على حسابك، (٣) طلب حذف حسابك وجميع بياناتك المرتبطة به نهائياً عبر مراسلة الدعم. عند حذف الحساب، تُحذف البيانات خلال 30 يوماً ما عدا السجلات المطلوبة قانونياً (الفواتير الضريبية).</p></div>
+
+              <div><H2>٥. ملفات تعريف الارتباط (Cookies)</H2><p>نستخدم ملفات تعريف ارتباط أساسية للحفاظ على جلسة الدخول، تذكر تفضيلات اللغة، والقياس التحليلي المُجمَّع. لا نستخدم ملفات تعريف ارتباط إعلانية ولا نتتبعك عبر مواقع أخرى.</p></div>
+
+              <div><H2>٦. الاحتفاظ بالبيانات</H2><p>نحتفظ بحجوزاتك ومعلومات الضيوف طوال فترة نشاط حسابك. عند الإلغاء، يُعطى مهلة 90 يوماً لاستعادة البيانات، ثم تُحذف نهائياً ما عدا السجلات المالية المطلوبة بموجب القانون المحلي.</p></div>
+
+              <div><H2>٧. التواصل</H2><p>لأي سؤال أو طلب يخص الخصوصية، راسلنا عبر <a href="https://wa.me/905523205496" style={{ color: 'var(--brand-green-deep)', fontWeight: 700 }}>WhatsApp</a> أو البريد المرفق في موقعنا.</p></div>
             </>
           ) : (
             <>
-              <p>At Hujuzatk, we take your privacy seriously. This policy describes how we collect, use, and protect your data.</p>
-              <div><h2 style={{ fontSize: 18, fontWeight: 800, color: 'var(--ink-900)', marginBottom: 6 }}>1. Data Collection</h2><p>We collect information you provide directly to us when you create an account.</p></div>
-              <div><h2 style={{ fontSize: 18, fontWeight: 800, color: 'var(--ink-900)', marginBottom: 6 }}>2. Data Usage</h2><p>Your data is used solely to provide and improve the Hujuzatk service. We do not sell your personal information.</p></div>
-              <div><h2 style={{ fontSize: 18, fontWeight: 800, color: 'var(--ink-900)', marginBottom: 6 }}>3. Security</h2><p>We implement industry-standard security measures. Cloud data is encrypted at rest and in transit.</p></div>
+              <p>This policy explains how Hujuzatk handles personal information for property owners and hotel/apartment managers using our platform to manage bookings. By using the service you consent to the data practices described here.</p>
+
+              <div><H2>1. What we collect</H2><p>We collect information you provide directly when you create an account: name, email, phone, company name, and preferred currency. When you add bookings, we store guest names, phone numbers, ID numbers, stay dates, nightly rates, deposits, and notes. If you enable channel integrations (Airbnb, Booking.com, Gathren), we import booking data via the iCal URLs you provide us.</p></div>
+
+              <div><H2>2. How we use your data</H2><p>Your data is used only to deliver the service to you: rendering the booking calendar, generating invoices, producing financial reports, and syncing with external booking channels. We do not sell your data and do not share it with advertisers. We may use the email on your account to send operational notifications (signup confirmation, password reset, subscription changes).</p></div>
+
+              <div><H2>3. Where your data lives</H2><p>Your data is stored on managed cloud infrastructure (Supabase) in secure data centers. All traffic between your browser and our servers is encrypted with TLS. Passwords are hashed with bcrypt and never stored in plain text.</p></div>
+
+              <div><H2>4. Your rights</H2><p>At any time you can: (1) access and export your data as CSV from the Settings screen, (2) edit any information on your account, (3) request permanent deletion of your account and all associated data by contacting support. After deletion, data is removed within 30 days except for legally required records (tax invoices).</p></div>
+
+              <div><H2>5. Cookies</H2><p>We use essential cookies to maintain your login session, remember your language preference, and aggregate analytics. We do not use advertising cookies and do not track you across other websites.</p></div>
+
+              <div><H2>6. Data retention</H2><p>We keep your bookings and guest information for as long as your account is active. On cancellation, we give a 90-day grace period for data export, after which the data is permanently deleted except for financial records required by local law.</p></div>
+
+              <div><H2>7. Contact</H2><p>For any privacy question or request, reach us via <a href="https://wa.me/905523205496" style={{ color: 'var(--brand-green-deep)', fontWeight: 700 }}>WhatsApp</a> or the email shown on our contact page.</p></div>
             </>
           )}
         </div>
@@ -1983,20 +2187,29 @@ export function PrivacyPolicy() {
           </Link>
         </div>
       </div>
-    </div>
+    </main>
   );
 }
 
 export function TermsOfService() {
   const [lang, setLang] = useState<Lang>(detectLang);
   const isAr = lang === 'ar';
+  useRouteHead(
+    isAr ? 'شروط الخدمة | حجوزاتك' : 'Terms of Service | Hujuzatk PMS',
+    isAr
+      ? 'شروط استخدام منصة حجوزاتك لإدارة الحجوزات الفندقية: الاشتراك، التجربة المجانية، حدود المسؤولية، إنهاء الحساب، والقانون المعمول به.'
+      : 'Hujuzatk Terms of Service — subscription terms, free trial conditions, acceptable use, account termination, liability limits, and the governing law for our property management platform.'
+  );
   const cycleLang = () => {
     const order: Lang[] = ['en', 'ar', 'tr'];
     const next = order[(order.indexOf(lang) + 1) % order.length];
     setLang(next); localStorage.setItem('landing-lang', next);
   };
+  const H2 = (props: { children: React.ReactNode }) => (
+    <h2 style={{ fontSize: 18, fontWeight: 800, color: 'var(--ink-900)', marginBottom: 6 }}>{props.children}</h2>
+  );
   return (
-    <div className="min-h-screen" dir={isAr ? 'rtl' : 'ltr'} style={{ background: 'var(--bg)', padding: '60px 24px', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-en)' }}>
+    <main className="min-h-screen" dir={isAr ? 'rtl' : 'ltr'} style={{ background: 'var(--bg)', padding: '60px 24px', fontFamily: isAr ? 'var(--font-ar)' : 'var(--font-en)' }}>
       <div className="max-w-[760px] mx-auto" style={{
         background: '#fff', border: '1px solid var(--border)', borderRadius: 24, padding: 36, color: 'var(--ink-900)',
       }}>
@@ -2015,15 +2228,47 @@ export function TermsOfService() {
         <div className="flex flex-col" style={{ gap: 18, color: 'var(--ink-700)', lineHeight: 1.6 }}>
           {isAr ? (
             <>
-              <div><h2 style={{ fontSize: 18, fontWeight: 800, color: 'var(--ink-900)', marginBottom: 6 }}>١. قبول الشروط</h2><p>بالوصول إلى حجوزاتك، توافق على الالتزام بهذه الشروط. خدمتنا مقدمة "كما هي" و"كما هو متاح".</p></div>
-              <div><h2 style={{ fontSize: 18, fontWeight: 800, color: 'var(--ink-900)', marginBottom: 6 }}>٢. الاشتراك والتجارب</h2><p>تحصل الحسابات الجديدة على فترة تجريبية مجانية لمدة 14 يومًا.</p></div>
-              <div><h2 style={{ fontSize: 18, fontWeight: 800, color: 'var(--ink-900)', marginBottom: 6 }}>٣. مسؤولية المستخدم</h2><p>المستخدمون مسؤولون عن الحفاظ على سرية بيانات تسجيل الدخول.</p></div>
+              <p>تحكم هذه الشروط استخدامك لمنصة حجوزاتك لإدارة العقارات. باستخدامك للخدمة فإنك تقر بقراءتها والموافقة عليها.</p>
+
+              <div><H2>١. قبول الشروط</H2><p>بإنشائك حساباً على حجوزاتك أو باستخدامك للخدمة، توافق على الالتزام بهذه الشروط. إذا كنت تستخدم الخدمة بالنيابة عن شركة، فأنت تؤكد أن لديك الصلاحية لإلزام تلك الشركة بهذه الشروط.</p></div>
+
+              <div><H2>٢. الاشتراك والتجربة المجانية</H2><p>تحصل الحسابات الجديدة على فترة تجريبية مجانية لمدة 14 يوماً مع وصول كامل لميزات الخطة التجريبية. بعد انتهاء التجربة، يتطلب استمرار الوصول اشتراكاً نشطاً. يتم تجديد الاشتراك تلقائياً ما لم يتم إلغاؤه قبل تاريخ التجديد. الرسوم غير قابلة للاسترداد عن الفترات الجزئية.</p></div>
+
+              <div><H2>٣. مسؤوليات المستخدم</H2><p>أنت مسؤول عن: (١) الحفاظ على سرية كلمة المرور وبيانات تسجيل الدخول، (٢) دقة المعلومات التي تدخلها (أسماء الضيوف، التواريخ، الأسعار)، (٣) التأكد من امتثال استخدامك للخدمة لجميع القوانين المعمول بها في بلد عملك، بما في ذلك قوانين حماية البيانات والضرائب.</p></div>
+
+              <div><H2>٤. الاستخدام المسموح</H2><p>يُمنع منعاً باتاً: استخدام الخدمة لأي غرض غير مشروع، محاولة الوصول غير المصرح به إلى أنظمتنا، استخدام الخدمة لإرسال رسائل مزعجة، أو إعادة بيع الخدمة دون إذن خطي مسبق.</p></div>
+
+              <div><H2>٥. تكامل القنوات الخارجية</H2><p>عند ربط حساب Airbnb أو Booking.com أو Gathren عبر روابط iCal، فإنك تقر بأن البيانات المستوردة تخضع لشروط الخدمة الخاصة بتلك القنوات. حجوزاتك تستورد البيانات فقط ولا تتحكم في محتواها. اختلافات المزامنة بين القنوات (الحجز المزدوج، التأخير في التحديث) ليست من مسؤوليتنا.</p></div>
+
+              <div><H2>٦. حدود المسؤولية</H2><p>تُقدم الخدمة "كما هي" دون ضمانات صريحة أو ضمنية. لن نكون مسؤولين عن أي خسارة مالية، فقدان بيانات، أو ضرر تبعي ناتج عن استخدام الخدمة. مسؤوليتنا القصوى في أي حال محدودة بالمبلغ الذي دفعته خلال 12 شهراً السابقة.</p></div>
+
+              <div><H2>٧. إنهاء الحساب</H2><p>يمكنك إلغاء حسابك في أي وقت من شاشة الإعدادات. نحتفظ بحقنا في تعليق أو إنهاء حسابك إذا انتهكت هذه الشروط. عند الإلغاء، يمكنك تصدير بياناتك خلال 90 يوماً قبل الحذف النهائي.</p></div>
+
+              <div><H2>٨. التعديلات</H2><p>قد نُحدّث هذه الشروط من وقت لآخر. التعديلات الجوهرية ستُعلَن عبر البريد الإلكتروني قبل 30 يوماً من سريانها. استمرار استخدامك للخدمة بعد التعديل يُعتبر موافقة.</p></div>
+
+              <div><H2>٩. القانون المعمول به</H2><p>تخضع هذه الشروط لقوانين سلطنة عُمان. أي نزاع ينشأ عن الخدمة يُحل عبر التحكيم في مسقط ما لم يتفق الطرفان كتابياً على غير ذلك.</p></div>
             </>
           ) : (
             <>
-              <div><h2 style={{ fontSize: 18, fontWeight: 800, color: 'var(--ink-900)', marginBottom: 6 }}>1. Acceptance of Terms</h2><p>By accessing Hujuzatk, you agree to be bound by these terms. Our service is provided "as is" and "as available".</p></div>
-              <div><h2 style={{ fontSize: 18, fontWeight: 800, color: 'var(--ink-900)', marginBottom: 6 }}>2. Subscription & Trials</h2><p>New accounts receive a 14-day free trial. After the trial, continued access requires an active subscription.</p></div>
-              <div><h2 style={{ fontSize: 18, fontWeight: 800, color: 'var(--ink-900)', marginBottom: 6 }}>3. User Responsibility</h2><p>Users are responsible for maintaining the confidentiality of their login credentials.</p></div>
+              <p>These terms govern your use of the Hujuzatk property management platform. By using the service, you acknowledge that you have read and agree to them.</p>
+
+              <div><H2>1. Acceptance of Terms</H2><p>By creating a Hujuzatk account or using the service, you agree to be bound by these terms. If you are using the service on behalf of a company, you represent that you have authority to bind that company to these terms.</p></div>
+
+              <div><H2>2. Subscription &amp; Free Trial</H2><p>New accounts receive a 14-day free trial with full access to trial-plan features. After the trial, continued access requires an active paid subscription. Subscriptions renew automatically unless cancelled before the renewal date. Fees are non-refundable for partial periods.</p></div>
+
+              <div><H2>3. Your Responsibilities</H2><p>You are responsible for: (1) keeping your password and login credentials confidential, (2) the accuracy of information you enter (guest names, dates, prices), (3) ensuring your use of the service complies with all applicable laws in your country of operation, including data protection and tax law.</p></div>
+
+              <div><H2>4. Acceptable Use</H2><p>You may not: use the service for any unlawful purpose, attempt unauthorized access to our systems, use the service to send spam, or resell the service without prior written permission.</p></div>
+
+              <div><H2>5. External Channel Integrations</H2><p>When you connect Airbnb, Booking.com, or Gathren via iCal URLs, you acknowledge that the imported data is subject to those channels' own terms. Hujuzatk only imports the data and does not control its content. Sync discrepancies between channels (double-bookings, update delays) are not our liability.</p></div>
+
+              <div><H2>6. Limitation of Liability</H2><p>The service is provided "as is" without express or implied warranties. We are not liable for any financial loss, data loss, or consequential damages arising from your use of the service. Our maximum liability in any case is limited to the amount you paid us during the prior 12 months.</p></div>
+
+              <div><H2>7. Termination</H2><p>You may cancel your account at any time from the Settings screen. We reserve the right to suspend or terminate your account if you violate these terms. After cancellation, you have 90 days to export your data before permanent deletion.</p></div>
+
+              <div><H2>8. Changes</H2><p>We may update these terms from time to time. Material changes will be announced by email at least 30 days before they take effect. Continued use of the service after a change constitutes acceptance.</p></div>
+
+              <div><H2>9. Governing Law</H2><p>These terms are governed by the laws of the Sultanate of Oman. Any dispute arising from the service is resolved by arbitration in Muscat unless the parties agree otherwise in writing.</p></div>
             </>
           )}
         </div>
@@ -2033,6 +2278,6 @@ export function TermsOfService() {
           </Link>
         </div>
       </div>
-    </div>
+    </main>
   );
 }

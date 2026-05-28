@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Layout, ChartPie, CreditCard, Calendar, Users, Target, FileXls, TrendDown, Scales, CaretDown, CaretLeft, CaretRight, ChartBar, Table } from 'phosphor-react';
+import { Layout, ChartPie, CreditCard, Calendar, Users, Target, FileXls, TrendDown, Scales, CaretDown, CaretLeft, CaretRight, ChartBar, Table, Wallet, Hourglass } from 'phosphor-react';
 import { t, type Language } from '../lib/i18n';
 import { apolloClient } from '../lib/apolloClient';
 import { GET_EXPENSES_QUERY } from '../lib/graphql';
@@ -84,48 +84,83 @@ export default function ReportsView({
     return m;
   }, [expenses]);
 
+  // Excel sheet names are capped at 31 chars and can't contain : \ / ? * [ ] — sanitize.
+  // Sheet labels and column headers are translated to the user's current language so
+  // an Arabic / Turkish user gets an exported file that's actually usable. The xlsx
+  // library already handles UTF-8 in cell values, so guest/room/category names in any
+  // script flow through unchanged.
+  const safeSheetName = (s: string) => s.replace(/[\\/?*[\]:]/g, '').slice(0, 31);
+
   // Dynamic-import xlsx so it only loads when the user clicks Export
   const handleExportExcel = async () => {
     const XLSX = await import('xlsx');
     const wb = XLSX.utils.book_new();
     // Sheet 1: Summary
     const summaryRows = [
-      ['Hujuzatk Report', tenantName || ''],
-      ['Range', `${reportStartDate} → ${reportEndDate}`],
-      ['Room filter', reportRoomFilter === 'ALL' ? 'All' : reportRoomFilter],
+      [t(lang, 'export.title'), tenantName || ''],
+      [t(lang, 'export.range'), `${reportStartDate} → ${reportEndDate}`],
+      [t(lang, 'export.roomFilterLabel'), reportRoomFilter === 'ALL' ? t(lang, 'export.all') : (rooms.find((r: any) => r.id === reportRoomFilter)?.name || reportRoomFilter)],
       [],
-      ['Total revenue', reportData.totalRevenue],
-      ['Total expenses', totalExpenses],
-      ['Net income', netIncome],
-      ['Total nights', reportData.totalNights],
-      ['Bookings', reportData.bookingCount],
-      ['Avg fill rate %', avgFill.toFixed(2)],
+      [t(lang, 'reports.totalRevenue'), reportData.totalRevenue],
+      [t(lang, 'reports.totalDeposit'), reportData.totalDeposit],
+      [t(lang, 'reports.totalRemaining'), reportData.totalRemaining],
+      [t(lang, 'reports.expenses'), totalExpenses],
+      [t(lang, 'reports.netIncome'), netIncome],
+      [t(lang, 'reports.totalNights'), reportData.totalNights],
+      [t(lang, 'reports.totalBookings'), reportData.bookingCount],
+      [t(lang, 'reports.avgFillRate') + ' %', avgFill.toFixed(2)],
     ];
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(summaryRows), 'Summary');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(summaryRows), safeSheetName(t(lang, 'export.summary')));
     // Sheet 2: Per-room
     const roomMap = Object.fromEntries(rooms.map((r: any) => [r.id, r.name]));
-    const perRoom = [['Room', 'Revenue', 'Expenses', 'Net', 'Occupancy %']];
+    const perRoom = [[
+      t(lang, 'reports.room'),
+      t(lang, 'reports.revenue'),
+      t(lang, 'reports.deposit'),
+      t(lang, 'reports.remaining'),
+      t(lang, 'reports.expenses'),
+      t(lang, 'reports.net'),
+      t(lang, 'reports.occupancy') + ' %',
+    ]];
     reportData.roomStats.forEach((s: any) => {
       const exp = expensesByRoom[s.roomId] || 0;
-      perRoom.push([s.roomName || s.roomId, s.totalRevenue, exp, s.totalRevenue - exp, s.occupancyRate.toFixed(1)]);
+      perRoom.push([
+        s.roomName || s.roomId,
+        s.totalRevenue,
+        s.totalDeposit ?? 0,
+        s.totalRemaining ?? 0,
+        exp,
+        s.totalRevenue - exp,
+        s.occupancyRate.toFixed(1),
+      ]);
     });
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(perRoom), 'Per-room');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(perRoom), safeSheetName(t(lang, 'export.perRoom')));
     // Sheet 3: Expenses
-    const expSheet = [['Date', 'Room', 'Category', 'Reason', 'Amount']];
+    const expSheet = [[
+      t(lang, 'export.date'),
+      t(lang, 'reports.room'),
+      t(lang, 'export.category'),
+      t(lang, 'export.reason'),
+      t(lang, 'export.amount'),
+    ]];
     expenses.forEach((e) => {
       expSheet.push([
         e.date.split('T')[0],
-        e.roomId ? (roomMap[e.roomId] || e.roomId) : 'General',
+        e.roomId ? (roomMap[e.roomId] || e.roomId) : t(lang, 'export.general'),
         e.category,
         e.reason,
         String(e.amount),
       ]);
     });
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(expSheet), 'Expenses');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(expSheet), safeSheetName(t(lang, 'export.expensesSheet')));
     // Sheet 4: Monthly
-    const monthly = [['Month', 'Revenue', 'Fill rate %']];
+    const monthly = [[
+      t(lang, 'reports.month'),
+      t(lang, 'reports.revenue'),
+      t(lang, 'reports.fillRate') + ' %',
+    ]];
     reportData.monthlyStats.forEach((s: any) => monthly.push([s.month, s.revenue, s.fillRate.toFixed(1)]));
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(monthly), 'Monthly');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(monthly), safeSheetName(t(lang, 'export.monthly')));
     XLSX.writeFile(wb, `hujuzatk-report-${(tenantName || 'tenant').replace(/\s+/g, '_')}-${reportStartDate}-${reportEndDate}.xlsx`);
   };
 
@@ -217,6 +252,19 @@ export default function ReportsView({
                   Icon={Scales} />
       </div>
 
+      {/* Cash row — what's been collected vs what's still owed across the date range.
+          Pastel surface so it reads as supporting context for the bold P&L row above. */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+        <StatCard variant="bold" tone="emerald"
+                  label={t(lang, 'reports.totalDeposit')}
+                  value={`${currency} ${(reportData.totalDeposit ?? 0).toLocaleString()}`}
+                  Icon={Wallet} />
+        <StatCard variant="bold" tone="amber"
+                  label={t(lang, 'reports.totalRemaining')}
+                  value={`${currency} ${(reportData.totalRemaining ?? 0).toLocaleString()}`}
+                  Icon={Hourglass} />
+      </div>
+
       {/* KPI row */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
         <StatCard variant="bold" tone="blue"
@@ -245,6 +293,8 @@ export default function ReportsView({
                 <tr className="text-[10px] font-black uppercase tracking-widest">
                   <th className="px-6 py-4 text-start">{t(lang, 'reports.room')}</th>
                   <th className="px-6 py-4 text-end">{t(lang, 'reports.revenue')}</th>
+                  <th className="px-6 py-4 text-end">{t(lang, 'reports.deposit')}</th>
+                  <th className="px-6 py-4 text-end">{t(lang, 'reports.remaining')}</th>
                   <th className="px-6 py-4 text-end">{t(lang, 'reports.expenses')}</th>
                   <th className="px-6 py-4 text-center">{t(lang, 'reports.occupancy')}</th>
                 </tr>
@@ -252,11 +302,19 @@ export default function ReportsView({
               <tbody className="divide-y divide-slate-50">
                 {reportData.roomStats.map((s: any) => {
                   const exp = expensesByRoom[s.roomId] || 0;
+                  const dep = s.totalDeposit ?? 0;
+                  const rem = s.totalRemaining ?? 0;
                   return (
                     <tr key={s.roomId} className="hover:bg-slate-50 transition-colors">
                       <td className="px-6 py-5 font-black text-slate-900 text-lg">{s.roomName || s.roomId}</td>
                       <td className="px-6 py-5 text-end text-emerald-600 font-black">
                         {currency} {s.totalRevenue.toLocaleString()}
+                      </td>
+                      <td className={`px-6 py-5 text-end font-black ${dep > 0 ? 'text-emerald-700' : 'text-slate-300'}`}>
+                        {currency} {dep.toLocaleString()}
+                      </td>
+                      <td className={`px-6 py-5 text-end font-black ${rem > 0 ? 'text-amber-600' : 'text-slate-300'}`}>
+                        {currency} {rem.toLocaleString()}
                       </td>
                       <td className={`px-6 py-5 text-end font-black ${exp > 0 ? 'text-rose-600' : 'text-slate-300'}`}>
                         {currency} {exp.toLocaleString()}

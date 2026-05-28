@@ -6,7 +6,9 @@ import { t, type Language } from '../lib/i18n';
 import { formatTz } from '../utils/formatTz';
 import CornerActionMenu, { type ActionItem } from './CornerActionMenu';
 
-// Room group color palettes — header bg/text and booking cell bg/border/text
+// Room group color palettes — used ONLY for the room-name column headers so rooms
+// stay visually distinct. Booking cells use the channel hex map below (4 colours
+// keyed by source: manual / Airbnb / Gathern / Booking.com).
 export const ROOM_GROUP_PALETTES = [
   { header: 'bg-blue-100 text-blue-800',       booking: { bg: 'bg-blue-50',    border: 'border-blue-300',    text: 'text-blue-800'    } },
   { header: 'bg-emerald-100 text-emerald-800', booking: { bg: 'bg-emerald-50', border: 'border-emerald-300', text: 'text-emerald-800' } },
@@ -17,6 +19,66 @@ export const ROOM_GROUP_PALETTES = [
   { header: 'bg-fuchsia-100 text-fuchsia-800', booking: { bg: 'bg-fuchsia-50', border: 'border-fuchsia-300', text: 'text-fuchsia-800' } },
   { header: 'bg-lime-100 text-lime-800',       booking: { bg: 'bg-lime-50',    border: 'border-lime-300',    text: 'text-lime-800'    } },
 ];
+
+// Channel brand hex (exact values per channel guidelines):
+//   Airbnb       → #FF5A5F  (red)
+//   Booking.com  → #003B95  (navy)
+//   Gathern      → #7C3AED  (violet)
+//   Direct/manual→ #10B981  (emerald)
+type ChannelKey = 'manual' | 'airbnb' | 'gathern' | 'booking.com';
+export const CHANNEL_HEX: Record<ChannelKey, string> = {
+  'manual':     '#10B981',
+  'airbnb':     '#FF5A5F',
+  'gathern':    '#7C3AED',
+  'booking.com':'#003B95',
+};
+
+// Solid pale background per channel. We use opaque pastels (not alpha blends
+// of the brand hex) so the underlying day-row borders don't bleed through and
+// give the booking that "ribbed" look across cells. Border + text still use
+// the full saturated brand hex so the channel is unmistakable at a glance.
+const CHANNEL_BG: Record<ChannelKey, string> = {
+  'manual':     '#D1FAE5', // emerald-100
+  'airbnb':     '#FFE4E5', // pale rose tuned to #FF5A5F
+  'gathern':    '#EDE6FB', // pale violet tuned to #7C3AED
+  'booking.com':'#DBE6F4', // pale navy tuned to #003B95
+};
+
+export function channelStyle(channel: ChannelKey): React.CSSProperties {
+  return {
+    backgroundColor: CHANNEL_BG[channel],
+    borderColor: CHANNEL_HEX[channel],
+    color: CHANNEL_HEX[channel],
+  };
+}
+
+// Cancelled bookings override the channel colour with a saturated red so they
+// stand out unambiguously on the calendar. Inline style → wins over any class.
+export const CANCELED_STYLE: React.CSSProperties = {
+  backgroundColor: '#FEE2E2', // red-100
+  borderColor: '#DC2626',     // red-600
+  color: '#7F1D1D',           // red-900
+  textDecoration: 'line-through',
+};
+
+// No-show override — amber, matches the legacy STATUS_OVERLAY hue.
+export const NO_SHOW_STYLE: React.CSSProperties = {
+  backgroundColor: '#FEF3C7', // amber-100
+  borderColor: '#F59E0B',     // amber-500
+  color: '#92400E',           // amber-900
+};
+
+// Resolve a booking to one of the four channels. externalChannel wins (set by
+// channelSync). Fallback: parse the free-text `source` field (case-insensitive)
+// because older manual entries pre-channelSync only had `source`. Anything that
+// doesn't match a known channel falls back to "manual".
+export function bookingChannel(b: { externalChannel?: string | null; source?: string | null }): ChannelKey {
+  const raw = (b.externalChannel || b.source || '').toLowerCase().trim();
+  if (raw === 'airbnb') return 'airbnb';
+  if (raw === 'gathern') return 'gathern';
+  if (raw === 'booking.com' || raw === 'booking') return 'booking.com';
+  return 'manual';
+}
 
 // Visual overlay applied on top of the room-palette per booking status. Room hue still wins
 // for normal upcoming/active bookings (empty overlay); other statuses get a distinguishing
@@ -30,11 +92,14 @@ export const ROOM_GROUP_PALETTES = [
 // COMPLETED has no override on purpose — past bookings render in their normal room
 // palette, same as upcoming. The visual cue for "what's happening now" is a thicker
 // border applied per-render to active + imminent (checkIn within 1 day) bookings.
+// Status-driven class overlay — used to be applied to booking cells, but bg /
+// border / text are now driven by inline style (channelStyle + CANCELED_STYLE).
+// Kept exported in case other surfaces want to mirror the visual language.
 export const STATUS_OVERLAY: Record<string, string> = {
   UPCOMING: '',
   ACTIVE: '',
   COMPLETED: '',
-  CANCELED: 'line-through bg-red-50! border-red-300! text-red-700!',
+  CANCELED: 'line-through',
   'NO-SHOW': 'bg-amber-100! border-amber-400! text-amber-800!',
 };
 
@@ -73,6 +138,8 @@ interface CalendarViewProps {
   onSync?: () => Promise<void> | void;
   refreshing?: boolean;
   syncing?: boolean;
+  /** When false, hide the channel sync action — the user's plan can't talk to channels. */
+  integrationsEnabled?: boolean;
   onLoadMorePast: () => Promise<void>;
   onLoadMoreFuture: () => Promise<void>;
   lang: Language;
@@ -100,6 +167,7 @@ export default function CalendarView({
   onSync,
   refreshing,
   syncing,
+  integrationsEnabled = true,
   onLoadMorePast,
   onLoadMoreFuture,
   lang,
@@ -212,7 +280,9 @@ export default function CalendarView({
                     style={{ width: colW, minWidth: colW }}
                     className={cn(
                       'p-1 sm:p-3 border-b border-r border-slate-200 text-[10px] sm:text-xs font-black uppercase tracking-widest text-center whitespace-nowrap',
-                      ROOM_GROUP_PALETTES[roomPaletteMap[r.id] ?? 0].header,
+                      // Uniform slate header across all rooms — colour is reserved for the booking
+                      // cells (per-channel hex), not the room columns.
+                      'bg-slate-50 text-slate-700',
                     )}
                   >
                     {r.name}
@@ -289,19 +359,25 @@ export default function CalendarView({
                       {rooms.map((r: any) => {
                         const cellBookings = bookings
                           .filter((b: any) => {
-                            // Show canceled too — just visually faded
+                            // Hide cancelled — user can still see them via the booking-table
+                            // filter (List view → Canceled tab). Keeps the calendar focused on
+                            // active occupancy. Status is normalized for both 'canceled' and
+                            // 'CANCELED' (server stores lowercase, resolver uppercases on read).
+                            if ((b.status || '').toUpperCase() === 'CANCELED') return false;
                             const inRoom = b.room === r.id;
                             const checkInStr = b.checkIn.split('T')[0];
                             const checkOutStr = b.checkOut.split('T')[0];
                             return inRoom && dStr >= checkInStr && dStr < checkOutStr;
                           })
-                          // Canceled/completed render first (lower z-index) so active bookings sit on top
+                          // Render active first, then completed/no-show, then CANCELED last so a
+                          // cancelled booking that overlaps a replacement is still visible (DOM
+                          // order = stacking order for siblings without explicit z-index).
                           .sort((a: any, b: any) => {
                             const zScore = (s: string) => {
                               const u = (s || '').toUpperCase();
-                              if (u === 'CANCELED') return 0;
+                              if (u === 'CANCELED') return 2;
                               if (u === 'COMPLETED' || u === 'NO-SHOW' || u === 'NO_SHOW') return 1;
-                              return 2;
+                              return 0;
                             };
                             return zScore(a.status) - zScore(b.status);
                           });
@@ -333,15 +409,25 @@ export default function CalendarView({
                               </div>
                             )}
                             {cellBookings.map((b: any) => {
-                              const palette = ROOM_GROUP_PALETTES[roomPaletteMap[b.room] ?? 0].booking;
-                              const statusOverlay = STATUS_OVERLAY[(b.status || '').toUpperCase()] || '';
+                              // Colour by channel — Airbnb / Booking.com / Gathern / Direct each get
+                              // their brand hex (inline style, exact values). Cancelled bookings get
+                              // a saturated red override that wins because it's also inline.
+                              const channel = bookingChannel(b);
+                              const statusU = (b.status || '').toUpperCase();
+                              const isCanceled = statusU === 'CANCELED';
+                              const isNoShow = statusU === 'NO_SHOW' || statusU === 'NO-SHOW';
+                              const cellStyle: React.CSSProperties = isCanceled
+                                ? CANCELED_STYLE
+                                : isNoShow
+                                  ? NO_SHOW_STYLE
+                                  : channelStyle(channel);
                               const checkInStr = b.checkIn.split('T')[0];
                               const checkOutStr = b.checkOut.split('T')[0];
                               // Imminent = currently active OR checkIn is tomorrow.
                               // We compare strings so timezone shifts don't sneak in.
                               const isActiveNow = todayStr >= checkInStr && todayStr < checkOutStr;
                               const startsTomorrow = checkInStr === tomorrowStr;
-                              const isImminent = (isActiveNow || startsTomorrow) && b.status?.toUpperCase() !== 'CANCELED';
+                              const isImminent = (isActiveNow || startsTomorrow) && !isCanceled;
                               const isFirst = dStr === checkInStr;
                               // Last night = day right before checkout
                               const prevDay = new Date(dStr + 'T12:00:00');
@@ -366,31 +452,50 @@ export default function CalendarView({
                                   }}
                                   onMouseEnter={() => setHoveredBookingId(b.id)}
                                   onMouseLeave={() => setHoveredBookingId((cur) => (cur === b.id ? null : cur))}
+                                  // Inline style controls bg / per-side border widths / colour. We
+                                  // drive widths per-side (never via the `borderWidth` shorthand)
+                                  // because the shorthand would override Tailwind's `border-y-0`
+                                  // strip classes and paint interior cell borders inside the
+                                  // multi-day card — exactly the bug we're avoiding.
+                                  style={(() => {
+                                    const w =
+                                      isCanceled  ? 2 :
+                                      isSelected  ? 3 :
+                                      isHovered   ? 3 :
+                                      isImminent  ? 2 :
+                                      1;
+                                    return {
+                                      ...cellStyle,
+                                      borderTopWidth:    (isFirst || isSingle) ? w : 0,
+                                      borderBottomWidth: (isLast  || isSingle) ? w : 0,
+                                      borderLeftWidth:   w,
+                                      borderRightWidth:  w,
+                                      borderStyle:       isCanceled ? 'dashed' : 'solid',
+                                      ...(isSelected ? { borderColor: '#10B981' } : {}),
+                                    };
+                                  })()}
                                   className={cn(
-                                    'absolute left-0.5 right-0.5 font-black text-center leading-tight flex items-center justify-center shadow-sm cursor-pointer transition-all px-0.5 border truncate',
+                                    'absolute left-0.5 right-0.5 font-black text-center leading-tight flex items-center justify-center cursor-pointer transition-all px-0.5 truncate',
                                     bookingText,
-                                    palette.bg,
-                                    palette.border,
-                                    palette.text,
-                                    // Bold edge for "happening right now / starts tomorrow".
-                                    // Goes through the same merge logic, so multi-day imminent
-                                    // bookings get a thick continuous bar — not per-cell rings.
-                                    isImminent && 'border-2',
-                                    // Merge visual: round only outer edges, strip interior borders so slices look continuous
+                                    // Drop shadow on middle slices — slice-by-slice shadow-sm creates ridges
+                                    // at every cell boundary. Keep shadow on the outermost slices only so the
+                                    // whole booking still has a soft outer drop shadow.
+                                    (isFirst || isLast || isSingle) && 'shadow-sm',
+                                    // Rounding: outer corners only on the slice that owns each edge.
                                     isSingle
                                       ? 'inset-y-0.5 rounded-md'
                                       : isFirst
-                                      ? 'top-0.5 -bottom-px rounded-t-md rounded-b-none border-b-0'
+                                      ? 'top-0.5 -bottom-px rounded-t-md rounded-b-none'
                                       : isLast
-                                      ? '-top-px bottom-0.5 rounded-b-md rounded-t-none border-t-0'
-                                      : '-top-px -bottom-px rounded-none border-y-0',
-                                    // Status-aware overlay (canceled, completed, no-show)
-                                    statusOverlay,
-                                    // Unified emphasis across every slice of the same booking (state-driven, not per-slice :hover)
-                                    (isHovered || isSelected) && 'shadow-lg z-10',
-                                    isSelected && 'ring-2 ring-emerald-500 ring-inset',
+                                      ? '-top-px bottom-0.5 rounded-b-md rounded-t-none'
+                                      : '-top-px -bottom-px rounded-none',
+                                    // Unified emphasis across every slice (z-lift only — thicker
+                                    // border already signals selection / hover).
+                                    (isHovered || isSelected) && 'z-10',
+                                    // Cancelled bookings always render above replacements so they stay visible
+                                    isCanceled && 'z-20',
                                   )}
-                                  title={`${b.bookingNumber ? '#' + String(b.bookingNumber).padStart(4, '0') + ' • ' : ''}${b.guestName}${b.notes ? ' 📝' : ''}`}
+                                  title={`${b.bookingNumber ? '#' + String(b.bookingNumber).padStart(4, '0') + ' • ' : ''}${b.guestName}${isCanceled ? ' • CANCELED' : ''}${b.notes ? ' 📝' : ''}`}
                                 >
                                   {/* Note corner fold — amber dog-ear in the top-right, visible on first/single slice */}
                                   {b.notes && (isFirst || isSingle) && (
@@ -398,6 +503,16 @@ export default function CalendarView({
                                       className="absolute top-0 right-0 pointer-events-none z-10"
                                       style={{ width: 9, height: 9, background: '#f59e0b', clipPath: 'polygon(100% 0, 0 0, 100% 100%)' }}
                                     />
+                                  )}
+                                  {/* CANCELED pill on the first / single slice so cancellations
+                                      are obvious even when no guest name is shown on this slice */}
+                                  {isCanceled && (isFirst || isSingle) && (
+                                    <span
+                                      className="absolute top-0.5 left-1 px-1 py-0.5 rounded text-[8px] font-black uppercase tracking-wider bg-red-600 text-white shadow-sm"
+                                      style={{ textDecoration: 'none' }}
+                                    >
+                                      ✕
+                                    </span>
                                   )}
                                   {/* Guest name on the middle slice; booking # appended on first slice when zoom permits */}
                                   <span className="truncate">
@@ -461,6 +576,10 @@ export default function CalendarView({
               disabled: syncing || refreshing,
               spin: syncing,
               tone: 'emerald',
+              // Hide on plans without channel integrations (trial / basic) — the action
+              // is a no-op there and surfacing it just confuses users into thinking
+              // it's broken.
+              hidden: !integrationsEnabled,
             },
             {
               icon: <ArrowsClockwise size={16} weight="bold" />,

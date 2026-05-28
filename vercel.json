@@ -1,13 +1,39 @@
 {
-  "buildCommand": "npm run build",
+  "installCommand": "bun install --no-save",
+  "buildCommand": "bun run build",
   "outputDirectory": "dist",
   "redirects": [
     {
-      "source": "/:path*",
+      "source": "/(.*)",
       "has": [{ "type": "host", "value": "www.hujuzatk.com" }],
-      "destination": "https://hujuzatk.com/:path*",
-      "permanent": true
+      "destination": "https://hujuzatk.com/$1",
+      "statusCode": 301
     }
   ],
-  "rewrites": [{ "source": "/((?!index.html).*)", "destination": "/index.html" }]
+  "rewrites": [
+    { "source": "/((?!.*\\.[a-zA-Z0-9]+$|index.html).*)", "destination": "/index.html" }
+  ],
+  "headers": [
+    {
+      "source": "/assets/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" },
+        { "key": "Cloudflare-CDN-Cache-Control", "value": "public, max-age=31536000, immutable" }
+      ]
+    },
+    {
+      "source": "/",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" },
+        { "key": "Cloudflare-CDN-Cache-Control", "value": "no-store" }
+      ]
+    },
+    {
+      "source": "/index.html",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" },
+        { "key": "Cloudflare-CDN-Cache-Control", "value": "no-store" }
+      ]
+    }
+  ]
 }

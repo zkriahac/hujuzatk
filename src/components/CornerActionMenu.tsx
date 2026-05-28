@@ -6,7 +6,7 @@
  * Pure CSS transitions — no framer-motion or other animation libs.
  */
 import { useEffect, useRef, useState } from 'react';
-import { Plus, X } from 'phosphor-react';
+import { DotsThree, X } from 'phosphor-react';
 import { cn } from '../utils/cn';
 
 export interface ActionItem {
@@ -70,9 +70,9 @@ export default function CornerActionMenu({
 
   return (
     <div ref={ref} className={cn('relative', className)} style={{ width: itemSize, height: itemSize }}>
-      {/* Trigger — Plus icon swaps to X when open. Active-press uses a quick scale
-          (95%) for tactile feedback; hover only changes color (no scale, so the click
-          target doesn't move under the cursor). */}
+      {/* Trigger — three-dot (kebab) icon swaps to X when open. Active-press uses
+          a quick scale (95%) for tactile feedback; hover only changes color (no
+          scale, so the click target doesn't move under the cursor). */}
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
@@ -84,7 +84,7 @@ export default function CornerActionMenu({
         )}
         style={{ width: itemSize, height: itemSize }}
       >
-        {open ? <X size={20} weight="bold" /> : <Plus size={20} weight="bold" />}
+        {open ? <X size={20} weight="bold" /> : <DotsThree size={24} weight="bold" />}
       </button>
 
       {/* Action items — absolutely positioned, animated to their arc target.

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { format, addMonths, differenceInCalendarDays, differenceInDays, eachMonthOfInterval, endOfMonth, parseISO, startOfMonth } from 'date-fns';
-import { CaretDown, CalendarBlank, ListBullets, ChartPie, GearSix, ShieldCheck, ArrowsClockwise, CurrencyCircleDollar } from 'phosphor-react';
+import { CaretDown, CalendarBlank, ListBullets, ChartPie, GearSix, ShieldCheck, ArrowsClockwise, CloudArrowDown, CurrencyCircleDollar } from 'phosphor-react';
 import { authService, type SessionUser } from '../lib/authService';
 import { dataService } from '../lib/dataService';
 import { trackLogout, trackBookingCreated, trackBookingUpdated, trackBookingCanceled, trackViewChange, trackInvoiceGenerated, clearAnalyticsUser } from '../lib/analytics';
@@ -370,9 +370,10 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
       // 1) Channel sync (best-effort)
       if (session.tenant.integrationsEnabled !== false) {
         try {
+          // No mode → each integration uses its own `syncLookbackDays` setting (Settings → Channel Integrations).
           const { data } = await apolloClient.mutate({
             mutation: SYNC_ALL_CHANNELS_MUTATION,
-            variables: { mode: 'future' },
+            variables: { mode: null },
           });
           const results = (data as any)?.syncAllChannels;
           if (results && results.length > 0) {
@@ -558,10 +559,19 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
       return inRange && roomMatch;
     });
 
+    // remaining is stored on the booking but fall back to (totalPrice - deposit) for
+    // older rows where the server didn't compute it.
+    const remainingOf = (b: Booking): number =>
+      typeof (b as any).remaining === 'number'
+        ? (b as any).remaining
+        : Math.max(0, (b.totalPrice || 0) - (b.deposit || 0));
+
     const roomStats = rooms.map((room) => {
       const roomBookings = filtered.filter((b: Booking) => b.room === room.id);
       const totalNights = roomBookings.reduce((sum: number, b: Booking) => sum + b.nights, 0);
       const totalRevenue = roomBookings.reduce((sum: number, b: Booking) => sum + b.totalPrice, 0);
+      const totalDeposit = roomBookings.reduce((sum: number, b: Booking) => sum + (b.deposit || 0), 0);
+      const totalRemaining = roomBookings.reduce((sum: number, b: Booking) => sum + remainingOf(b), 0);
       const start = parseISO(reportStartDate);
       const end = parseISO(reportEndDate);
       const daysInReport = differenceInDays(end, start) + 1;
@@ -576,10 +586,12 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
         }
       }
       const occupancyRate = daysInReport > 0 ? (occupiedDays / daysInReport) * 100 : 0;
-      return { roomId: room.id, roomName: room.name, totalNights, totalRevenue, occupancyRate };
+      return { roomId: room.id, roomName: room.name, totalNights, totalRevenue, totalDeposit, totalRemaining, occupancyRate };
     });
 
     const totalRevenue = filtered.reduce((sum: number, b: Booking) => sum + b.totalPrice, 0);
+    const totalDeposit = filtered.reduce((sum: number, b: Booking) => sum + (b.deposit || 0), 0);
+    const totalRemaining = filtered.reduce((sum: number, b: Booking) => sum + remainingOf(b), 0);
     const totalNights = filtered.reduce((sum: number, b: Booking) => sum + b.nights, 0);
 
     const months = eachMonthOfInterval({ start: parseISO(reportStartDate), end: parseISO(reportEndDate) });
@@ -608,7 +620,7 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
       return { month: formatTz(month, 'MMM yyyy', tz, lang), revenue, fillRate };
     });
 
-    return { roomStats, totalRevenue, totalNights, bookingCount: filtered.length, monthlyStats };
+    return { roomStats, totalRevenue, totalDeposit, totalRemaining, totalNights, bookingCount: filtered.length, monthlyStats };
   }, [bookings, reportStartDate, reportEndDate, reportRoomFilter, reportType, rooms, tz, lang]);
 
   const handleLogout = async () => {
@@ -631,7 +643,7 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
       })();
   const ICONS: Record<View, any> = {
     calendar: CalendarBlank, list: ListBullets, reports: ChartPie,
-    integrations: ArrowsClockwise, expenses: CurrencyCircleDollar,
+    integrations: CloudArrowDown, expenses: CurrencyCircleDollar,
     settings: GearSix, admin: ShieldCheck,
   };
 
@@ -707,7 +719,7 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
                 data-tour="view-switcher"
                 className="flex items-center gap-1.5 px-2.5 py-2.5 rounded-lg bg-emerald-50 text-emerald-700 text-[10px] sm:text-[11px] font-black uppercase tracking-widest hover:bg-emerald-100 transition-colors"
               >
-                {(() => { const I = { calendar: CalendarBlank, list: ListBullets, reports: ChartPie, integrations: ArrowsClockwise, expenses: CurrencyCircleDollar, settings: GearSix, admin: ShieldCheck }[currentView]; return <I size={14} weight="fill" />; })()}
+                {(() => { const I = { calendar: CalendarBlank, list: ListBullets, reports: ChartPie, integrations: CloudArrowDown, expenses: CurrencyCircleDollar, settings: GearSix, admin: ShieldCheck }[currentView]; return <I size={14} weight="fill" />; })()}
                 {t(lang, `nav.${currentView}`)}
                 <CaretDown size={11} weight="bold" className={cn('transition-transform', showViewMenu && 'rotate-180')} />
               </button>
@@ -719,7 +731,7 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
                       ? ['admin'] as View[]
                       : (['calendar', 'list', 'expenses', 'reports'] as View[])
                     ).map((v) => {
-                      const Icon = { calendar: CalendarBlank, list: ListBullets, reports: ChartPie, integrations: ArrowsClockwise, expenses: CurrencyCircleDollar, settings: GearSix, admin: ShieldCheck }[v];
+                      const Icon = { calendar: CalendarBlank, list: ListBullets, reports: ChartPie, integrations: CloudArrowDown, expenses: CurrencyCircleDollar, settings: GearSix, admin: ShieldCheck }[v];
                       return (
                         <button
                           key={v}
@@ -776,6 +788,7 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
             onSync={syncCalendar}
             refreshing={refreshingCalendar}
             syncing={syncingCalendar}
+            integrationsEnabled={session.tenant.integrationsEnabled !== false}
             onLoadMorePast={loadMorePast}
             onLoadMoreFuture={loadMoreFuture}
             lang={lang}
@@ -875,6 +888,7 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
           currency={currency}
           lang={lang}
           anchor={modalAnchor}
+          defaultNightPrice={(session.tenant as any).defaultNightPrice}
         />
       )}
 

@@ -671,6 +671,7 @@ export const resolvers = {
 						...(label !== undefined && { label }),
 						...(input.isActive !== undefined && { isActive: input.isActive }),
 					...(input.syncBlocks !== undefined && { syncBlocks: input.syncBlocks }),
+					...(input.syncLookbackDays !== undefined && { syncLookbackDays: input.syncLookbackDays }),
 					},
 				});
 			} else {
@@ -682,6 +683,7 @@ export const resolvers = {
 						icalUrl: input.icalUrl,
 						label: label ?? null,
 						...(input.syncBlocks !== undefined && { syncBlocks: input.syncBlocks }),
+						...(input.syncLookbackDays !== undefined && { syncLookbackDays: input.syncLookbackDays }),
 						isActive: input.isActive !== undefined ? input.isActive : true,
 					},
 				});
@@ -700,14 +702,15 @@ export const resolvers = {
 			await assertIntegrationsAllowed(context.user.tenantId);
 			const integration = await prisma.channelIntegration.findFirst({ where: { id, tenantId: context.user.tenantId } });
 			if (!integration) throw new GraphQLError('Integration not found', { extensions: { code: 'NOT_FOUND' } });
-			const syncMode = mode === 'all' ? 'all' : 'future';
+			// mode is an optional one-shot override; absent → honour integration.syncLookbackDays.
+			const syncMode = mode === 'all' || mode === 'future' ? mode : undefined;
 			return performSync(integration, context.user.tenantId, syncMode);
 		},
 		async syncAllChannels(_: any, { mode }: { mode?: string }, context: any) {
 			requireAuth(context);
 			await assertIntegrationsAllowed(context.user.tenantId);
 			const integrations = await prisma.channelIntegration.findMany({ where: { tenantId: context.user.tenantId, isActive: true } });
-			const syncMode = mode === 'all' ? 'all' : 'future';
+			const syncMode = mode === 'all' || mode === 'future' ? mode : undefined;
 			const results = [];
 			for (const integration of integrations) {
 				results.push(await performSync(integration, context.user.tenantId, syncMode));

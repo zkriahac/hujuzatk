@@ -1,4 +1,9 @@
-const CACHE_NAME = 'hujuzatk-v4';
+// Bump on every change that affects /manifest.json or the precached icons.
+// Also bump after a deploy that changes the JS bundle structure so cache-first
+// fetches don't keep serving a broken hash (e.g., the recent vendor-chunk split
+// that triggered a class-extends runtime error for returning visitors).
+// v6: merge of the static-page bypass logic — evicts all prior caches (v3/v4/v5).
+const CACHE_NAME = 'hujuzatk-v6';
 
 // Paths the SW must NEVER intercept — these are standalone static pages /
 // machine-readable files served directly from /public. Intercepting them
@@ -6,7 +11,11 @@ const CACHE_NAME = 'hujuzatk-v4';
 const BYPASS_PREFIXES = ['/ar/', '/en/', '/about/'];
 const BYPASS_EXACT = ['/about', '/llms.txt', '/pricing.md', '/sitemap.xml', '/robots.txt'];
 const STATIC_ASSETS = [
-  '/manifest.json'
+  '/manifest.json',
+  '/icon-192.png',
+  '/icon-512.png',
+  '/icon-512-maskable.png',
+  '/apple-touch-icon.png'
 ];
 
 // Install: cache only static non-HTML assets, skip waiting immediately

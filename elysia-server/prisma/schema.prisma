@@ -212,6 +212,8 @@ model ChannelIntegration {
 
   isActive        Boolean   @default(true)
   syncBlocks      Boolean   @default(false)  // Whether to import "[…block]" host-block events. OFF by default — most users only want real bookings.
+  // null = future-only (events ending today onwards), 0 same as null, N>=1 = events ending within last N days, -1 = no cutoff.
+  syncLookbackDays Int?
 
   lastSyncedAt    DateTime?
   lastSyncStatus  String?   // 'success' | 'error' | 'partial'

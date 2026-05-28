@@ -184,6 +184,9 @@ export const GET_BOOKINGS_BY_DATE_RANGE_QUERY = gql`
       nightPrice
       totalPrice
       status
+      source
+      externalChannel
+      notes
     }
   }
 `;
@@ -451,6 +454,7 @@ export const GET_CHANNEL_INTEGRATIONS_QUERY = gql`
       label
       isActive
       syncBlocks
+      syncLookbackDays
       lastSyncedAt
       lastSyncStatus
       lastSyncMessage
@@ -471,6 +475,7 @@ export const SAVE_CHANNEL_INTEGRATION_MUTATION = gql`
       label
       isActive
       syncBlocks
+      syncLookbackDays
       lastSyncedAt
       lastSyncStatus
       lastSyncMessage

@@ -14,11 +14,11 @@
     <meta name="rating" content="general" />
     <meta name="revisit-after" content="7 days" />
 
-    <!-- Canonical & hreflang -->
-    <link rel="canonical" href="https://hujuzatk.com" />
-    <link rel="alternate" hreflang="en" href="https://hujuzatk.com" />
-    <link rel="alternate" hreflang="ar" href="https://hujuzatk.com" />
-    <link rel="alternate" hreflang="x-default" href="https://hujuzatk.com" />
+    <!-- Canonical. We don't emit hreflang en/ar because the same URL serves all
+         languages (client-side toggle) — pointing en and ar at the same href is
+         an invalid signal in Google's eyes and gets dropped. x-default is enough. -->
+    <link rel="canonical" href="https://hujuzatk.com/" />
+    <link rel="alternate" hreflang="x-default" href="https://hujuzatk.com/" />
 
     <!-- Open Graph -->
     <meta property="og:site_name" content="Hujuzatk PMS" />
@@ -26,7 +26,9 @@
     <meta property="og:description" content="نظام إدارة الحجوزات للفنادق والشقق والإيجارات السياحية. مزامنة Airbnb وجاثرين وBooking.com، تقويم 5 سنوات، فوترة تلقائية، عربي كامل. من 40$/سنة، تجربة مجانية 14 يوم." />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://hujuzatk.com" />
-    <meta property="og:image" content="https://hujuzatk.com/og-image.png?v=2026-05" />
+    <meta property="og:image" content="https://hujuzatk.com/og-image.png" />
+    <meta property="og:image:secure_url" content="https://hujuzatk.com/og-image.png" />
+    <meta property="og:image:type" content="image/png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta property="og:image:alt" content="Hujuzatk PMS — Hotel and Vacation Rental Property Management System for Saudi Arabia and the GCC" />
@@ -125,71 +127,11 @@
     }
     </script>
 
-    <!-- Structured Data: FAQPage -->
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "FAQPage",
-      "mainEntity": [
-        {
-          "@type": "Question",
-          "name": "What is Hujuzatk PMS?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "Hujuzatk is a cloud-based Hotel and Property Management System (PMS) designed for hotels, apartments, and vacation rentals. It features a 5-year booking calendar, automated invoicing, financial analytics, and full Arabic and English support."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "Does Hujuzatk support Arabic language?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "Yes. Hujuzatk has native Arabic RTL support including Arabic date formats, SAR / GCC currencies, and complete right-to-left layout throughout the entire application."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "How much does Hujuzatk cost?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "Four tiers, annual billing in USD: Trial (free 14 days, 3 rooms), Basic $40/year (~150 SAR, 10 rooms), Pro $90/year (~338 SAR, 30 rooms, includes Airbnb + Gathern + Booking.com channel sync), Enterprise $140/year (~525 SAR, unlimited rooms). All paid tiers include the 5-year calendar, automated invoicing, financial reports, and full Arabic + English UI. No credit card required to start the trial."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "Is Hujuzatk available as a mobile app?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "Yes. Hujuzatk installs to your phone's home screen from the browser in one tap — works offline, sends push notifications, no App Store or Play Store download needed."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "كم تكلفة حجوزاتك؟",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "أربع خطط بفوترة سنوية بالدولار: التجريبية (مجانية 14 يوم، 3 غرف)، الأساسية 40$/سنة (~150 ريال، 10 غرف)، المحترفة 90$/سنة (~338 ريال، 30 غرفة، تشمل مزامنة Airbnb وجاثرين وBooking.com)، المؤسسات 140$/سنة (~525 ريال، غرف غير محدودة). كل الخطط المدفوعة تشمل تقويم 5 سنوات، فوترة تلقائية، تقارير مالية كاملة، وواجهة عربية + إنجليزية. لا حاجة لبطاقة ائتمان لبدء التجربة."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "ما هو نظام حجوزاتك PMS؟",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "حجوزاتك هو نظام إدارة الحجوزات والفنادق المبني على السحابة، مصمم للفنادق والشقق والإيجارات السياحية. يتميز بتقويم حجوزات لـ5 سنوات، وفوترة تلقائية، وتحليلات مالية، ودعم كامل للغة العربية والإنجليزية."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "هل حجوزاتك يدعم اللغة العربية؟",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "نعم، يدعم حجوزاتك اللغة العربية بشكل كامل مع تخطيط RTL أصيل، وتنسيقات التواريخ العربية، والريال السعودي وعملات الخليج، وواجهة كاملة من اليمين إلى اليسار."
-          }
-        }
-      ]
-    }
-    </script>
+    <!-- FAQPage structured data is injected dynamically by the LandingPage component
+         on `/` only. Keeping it inline here put it on every SPA route (/terms,
+         /privacy, etc.), which Google flags as "Duplicate field 'FAQPage'". The
+         standalone static pages under /ar/ and /about/ carry their own inline
+         FAQPage — those are genuine FAQ pages, one per file, so no duplication. -->
 
     <!-- GA4 / Google consent mode v2.
          Defaults set BEFORE gtag.js so the first hit is consent-aware.
@@ -226,15 +168,49 @@
     <meta name="theme-color" content="#0E9F6E">
     <link rel="icon" href="/favicon.svg?v=2" type="image/svg+xml">
     <link rel="manifest" href="/manifest.json" />
-    <link rel="apple-touch-icon" href="/favicon.svg?v=2" />
+
+    <!-- iOS PWA install support. iOS Safari ignores manifest icons for Add-to-Home-Screen
+         and requires a PNG apple-touch-icon. apple-mobile-web-app-capable hides the Safari
+         chrome once installed; status-bar-style + the theme-color above match the brand. -->
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Hujuzatk" />
     <link rel="sitemap" type="application/xml" href="/sitemap.xml" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <!-- Async-load Google Fonts so it doesn't block first paint. media="print"
+         tells the browser it doesn't apply to screen rendering — once the file
+         downloads, the onload swaps media back to all. display=swap on the URL
+         keeps text painted in fallback fonts during the swap (no FOIT). -->
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap"
+      media="print"
+      onload="this.media='all'"
+    />
+    <noscript>
+      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" />
+    </noscript>
+
+    <!-- www → apex redirect (defensive).
+         The Vercel-level 301 redirect in vercel.json works for non-cached paths,
+         but Cloudflare (which fronts the domain) had cached an old 200 response
+         for `/` on www. This inline script catches the case before React mounts:
+         if the hostname is www.hujuzatk.com, immediately replace the location
+         with the apex equivalent. location.replace() avoids polluting back
+         history. No <noscript> meta-refresh fallback because conditional
+         redirects can't be expressed in HTML without JS — and emitting a
+         meta-refresh to apex unconditionally would loop on apex itself. -->
+    <script>
+      if (typeof window !== 'undefined' && window.location.hostname === 'www.hujuzatk.com') {
+        window.location.replace('https://hujuzatk.com' + window.location.pathname + window.location.search + window.location.hash);
+      }
+    </script>
   </head>
   <body>
-    <div id="root"></div>
-
     <!--
       Static fallback content for non-JS-executing crawlers (GPTBot, ClaudeBot,
       PerplexityBot, etc.). Real users never see this — <noscript> renders only
@@ -352,6 +328,33 @@
       </main>
     </noscript>
 
+    <!-- Static hero shell — paints from the HTML stream, no JS needed. Captures
+         the LCP timing the moment HTML+inline-CSS parses (~FCP), instead of
+         waiting for the full React bundle to download + parse + render the
+         landing component (~3s+ on slow-4G). React's createRoot replaces the
+         children of #root when it mounts; LCP locks the EARLIER paint time as
+         long as the React-rendered hero is the same size or smaller.
+
+         Defaults to English copy. Returning AR/TR users see a brief flash of
+         English before React rehydrates the right language — acceptable trade
+         for the LCP win. -->
+    <div id="root">
+      <div id="hero-shell" style="min-height:100vh;background:#fafaf9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;display:flex;align-items:flex-start;justify-content:center;padding:96px 24px 32px;box-sizing:border-box;">
+        <div style="max-width:880px;width:100%;text-align:center;">
+          <span style="display:inline-block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.16em;color:#059669;background:#ecfdf5;padding:6px 14px;border-radius:999px;margin-bottom:16px;">The smartest booking OS for the Arab world</span>
+          <h1 style="font-size:clamp(2.75rem,6.5vw,5rem);margin:0 0 18px;color:#0f172a;line-height:1.05;font-weight:900;letter-spacing:-.02em;">
+            Booking management, <span style="color:#0f172a;">made simpler</span>
+          </h1>
+          <p style="font-size:18px;line-height:1.6;color:#64748b;max-width:680px;margin:0 auto 28px;">
+            Scale your hotel, apartments, or short-term rentals with our blazing-fast calendar, automatic invoicing, financial analytics, and channel sync.
+          </p>
+          <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-bottom:14px;">
+            <a href="/user?tab=register" style="background:#0E9F6E;color:#fff;padding:16px 30px;font-size:16px;font-weight:700;border-radius:999px;text-decoration:none;box-shadow:0 8px 20px -8px rgba(14,159,110,.6);">Start 14-day free trial</a>
+          </div>
+          <p style="font-size:13px;color:#94a3b8;">Trusted by chalet owners, guesthouses, and serviced-apartment operators</p>
+        </div>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
