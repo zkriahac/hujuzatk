@@ -1075,10 +1075,10 @@ function applySEO(lang: Lang) {
   const isAr = lang === 'ar';
   const title = isAr
     ? 'حجوزاتك — نظام إدارة الفنادق والإيجارات السياحية'
-    : 'Hujuzatk — Hotel & Vacation Rental PMS for Saudi & GCC';
+    : 'Hujuzatk — Arabic-First Hotel & Vacation Rental PMS';
   const description = isAr
-    ? 'حجوزاتك هو نظام إدارة الفنادق والإيجارات السياحية. تقويم حجوزات 5 سنوات، فوترة تلقائية، مزامنة Airbnb وجاثرين وBooking.com، دعم عربي كامل RTL. جرّب مجاناً 14 يوم بدون بطاقة ائتمان.'
-    : 'Hujuzatk is a Hotel & Vacation Rental PMS for Saudi Arabia & the GCC. 5-year calendar, automated invoicing, Airbnb / Gathern / Booking.com sync, native Arabic RTL. Free 14-day trial.';
+    ? 'حجوزاتك نظام إدارة الفنادق والإيجارات السياحية، عربي أولاً ويخدم المضيفين حول العالم. تقويم 5 سنوات، فوترة تلقائية، مزامنة Airbnb وجاثرين وBooking.com، عملات متعددة، دعم عربي كامل RTL. جرّب مجاناً 14 يوم.'
+    : 'Hujuzatk is an Arabic-first Hotel & Vacation Rental PMS used by hosts worldwide. 5-year calendar, automated invoicing, Airbnb / Gathern / Booking.com sync, multi-currency, native Arabic RTL. Free 14-day trial.';
   document.title = title;
   document.documentElement.lang = lang;
   document.documentElement.dir = isAr ? 'rtl' : 'ltr';

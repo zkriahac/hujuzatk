@@ -1,13 +1,14 @@
 # Hujuzatk (حجوزاتك)
 
-> Cloud-based Hotel and Property Management System (PMS) built for hotels, serviced apartments, and vacation rentals in Saudi Arabia and the GCC. Full Arabic RTL support, automatic channel sync with Airbnb, Gathern, and Booking.com, 5-year booking calendar, and automated PDF invoicing. 14-day free trial, no credit card required.
+> Cloud-based Hotel and Property Management System (PMS) for hotels, serviced apartments, and vacation rentals. Arabic-first with full native RTL support — strongest in Saudi Arabia and the GCC, used by hosts worldwide. Automatic channel sync with Airbnb, Gathern, and Booking.com, 5-year booking calendar, automated PDF invoicing, and multi-currency support. 14-day free trial, no credit card required.
 
 ## About
 
 - **Product**: Hujuzatk PMS (حجوزاتك)
 - **Category**: Hotel Management Software / Property Management System (PMS) / Vacation Rental Software
-- **Primary market**: Saudi Arabia and the GCC (UAE, Kuwait, Bahrain, Qatar, Oman) — also serves Jordan, Egypt, Turkey, and the wider MENA region
-- **Languages**: Arabic (native RTL) and English
+- **Positioning**: Arabic-first and Saudi-first, but a global product — suitable for vacation-rental hosts and small hotels anywhere
+- **Strongest market**: Saudi Arabia and the GCC (UAE, Kuwait, Bahrain, Qatar, Oman); also Jordan, Egypt, Turkey, the wider MENA region, and hosts worldwide
+- **Languages**: Arabic (native RTL) and English; multi-currency (SAR, AED, KWD, BHD, QAR, OMR, USD, EUR, TRY)
 - **Platform**: Web app + installable PWA (works on iOS and Android home screens, no App Store / Play Store required)
 - **Architecture**: Multi-tenant cloud, offline-capable via IndexedDB
 - **Website**: https://hujuzatk.com
@@ -77,7 +78,7 @@ Operators of licensed hotels and serviced apartments registered under those Saud
 ## Frequently asked questions
 
 **What is Hujuzatk?**
-Hujuzatk is a cloud-based hotel and property management system designed for hotels, apartments, and vacation rentals in Saudi Arabia and the GCC. It offers a 5-year booking calendar, automated invoicing, financial analytics, automatic channel sync with Airbnb, Gathern, and Booking.com, and full Arabic and English support.
+Hujuzatk is an Arabic-first cloud hotel and property management system for hotels, apartments, and vacation rentals — strongest in Saudi Arabia and the GCC, used by hosts worldwide. It offers a 5-year booking calendar, automated invoicing, financial analytics, automatic channel sync with Airbnb, Gathern, and Booking.com, multi-currency support, and full Arabic and English UI.
 
 **How much does Hujuzatk cost?**
 Four tiers, annual billing: Trial (free 14 days, 3 rooms), Basic $40/year (~150 SAR, 10 rooms), Pro $90/year (~338 SAR, 30 rooms, channel sync included), Enterprise $140/year (~525 SAR, unlimited rooms). All paid tiers include 5-year calendar, automated invoicing, full reports, Arabic + English UI. No credit card required for the trial.
