@@ -338,23 +338,67 @@
          Defaults to English copy. Returning AR/TR users see a brief flash of
          English before React rehydrates the right language — acceptable trade
          for the LCP win. -->
+    <!-- Static hero shell — paints from the HTML stream before the React bundle
+         loads, so the LCP element (the headline) is visible almost immediately
+         instead of waiting ~3s for JS. React's createRoot replaces #root's
+         children on mount; because the shell mirrors the React hero's copy,
+         layout, and fonts, the swap is seamless (CLS ~0). Inline script below
+         localizes the copy to ar/tr (mirroring detectLang) before first paint
+         so Arabic/Turkish visitors don't see an English flash. Keep the copy in
+         sync with c.hero in src/pages/LandingPage.tsx. -->
     <div id="root">
-      <div id="hero-shell" style="min-height:100vh;background:#fafaf9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;display:flex;align-items:flex-start;justify-content:center;padding:96px 24px 32px;box-sizing:border-box;">
+      <div id="hero-shell" style="min-height:100vh;background:#ffffff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;display:flex;align-items:flex-start;justify-content:center;padding:104px 24px 32px;box-sizing:border-box;">
         <div style="max-width:880px;width:100%;text-align:center;">
-          <span style="display:inline-block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.16em;color:#059669;background:#ecfdf5;padding:6px 14px;border-radius:999px;margin-bottom:16px;">The smartest booking OS for the Arab world</span>
-          <h1 style="font-size:clamp(2.75rem,6.5vw,5rem);margin:0 0 18px;color:#0f172a;line-height:1.05;font-weight:900;letter-spacing:-.02em;">
-            Booking management, <span style="color:#0f172a;">made simpler</span>
-          </h1>
-          <p style="font-size:18px;line-height:1.6;color:#64748b;max-width:680px;margin:0 auto 28px;">
-            Scale your hotel, apartments, or short-term rentals with our blazing-fast calendar, automatic invoicing, financial analytics, and channel sync.
-          </p>
+          <span id="hs-eyebrow" style="display:inline-block;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.14em;color:#047857;margin-bottom:16px;">Built for chalet, apartment and guesthouse owners in Saudi Arabia and the Gulf</span>
+          <h1 id="hs-title" style="font-size:clamp(2.75rem,6.5vw,5rem);margin:0 0 18px;color:#0B1B3A;line-height:1.05;font-weight:700;letter-spacing:-.025em;">Run your properties from one calendar</h1>
+          <p id="hs-sub" style="font-size:18px;line-height:1.6;color:#4B5878;max-width:680px;margin:0 auto 28px;">Track bookings, send Arabic invoices, log expenses, and see real revenue per room — on any phone. Sync Airbnb, Booking.com and Gathern when you're ready.</p>
           <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-bottom:14px;">
-            <a href="/user?tab=register" style="background:#0E9F6E;color:#fff;padding:16px 30px;font-size:16px;font-weight:700;border-radius:999px;text-decoration:none;box-shadow:0 8px 20px -8px rgba(14,159,110,.6);">Start 14-day free trial</a>
+            <a id="hs-cta" href="/user?tab=register" style="background:#047857;color:#fff;padding:16px 30px;font-size:16px;font-weight:700;border-radius:999px;text-decoration:none;box-shadow:0 8px 20px -8px rgba(4,120,87,.55);">Start free — no card needed</a>
           </div>
-          <p style="font-size:13px;color:#94a3b8;">Trusted by chalet owners, guesthouses, and serviced-apartment operators</p>
+          <p id="hs-trust" style="font-size:13px;color:#64748B;">For chalets, apartments, guesthouses and serviced rentals across Saudi Arabia and the Gulf</p>
         </div>
       </div>
     </div>
+    <script>
+      (function () {
+        var l = null;
+        try { l = localStorage.getItem('landing-lang'); } catch (e) {}
+        if (l !== 'en' && l !== 'ar' && l !== 'tr') {
+          var nav = (navigator.language || '').toLowerCase();
+          l = nav.indexOf('ar') === 0 ? 'ar' : nav.indexOf('tr') === 0 ? 'tr' : 'en';
+        }
+        if (l === 'en') return; // default markup is already English
+        var copy = {
+          ar: {
+            eyebrow: 'مصمَّم لملّاك الشاليهات والشقق والاستراحات في السعودية والخليج',
+            title: 'أدر عقاراتك من تقويم واحد',
+            sub: 'تابع الحجوزات، أصدر فواتير عربية، سجّل المصروفات، واطّلع على إيرادات كل غرفة — من أي هاتف. اربط Airbnb وBooking.com وجاذبين عند الحاجة.',
+            cta: 'ابدأ مجاناً — بدون بطاقة',
+            trust: 'لإدارة الشاليهات والشقق والاستراحات والوحدات المخدومة في السعودية والخليج'
+          },
+          tr: {
+            eyebrow: 'Körfez bölgesindeki şale, daire ve pansiyon sahipleri için tasarlandı',
+            title: 'Mülklerinizi tek takvimden yönetin',
+            sub: 'Rezervasyonları takip edin, Arapça faturalar gönderin, giderleri kaydedin ve oda başına gerçek geliri görün — her telefonda. Hazır olduğunuzda Airbnb, Booking.com ve Gathern’i senkronize edin.',
+            cta: 'Ücretsiz başla — kart gerekmez',
+            trust: 'Suudi Arabistan ve Körfez bölgesindeki şale, daire, pansiyon ve hizmet kiraları için'
+          }
+        };
+        var c = copy[l];
+        var set = function (id, txt) { var el = document.getElementById(id); if (el) el.textContent = txt; };
+        set('hs-eyebrow', c.eyebrow);
+        set('hs-title', c.title);
+        set('hs-sub', c.sub);
+        set('hs-cta', c.cta);
+        set('hs-trust', c.trust);
+        if (l === 'ar') {
+          var shell = document.getElementById('hero-shell');
+          if (shell) { shell.setAttribute('dir', 'rtl'); }
+          var ti = document.getElementById('hs-title'); if (ti) { ti.style.lineHeight = '1.25'; ti.style.letterSpacing = '0'; }
+          var ey = document.getElementById('hs-eyebrow'); if (ey) { ey.style.textTransform = 'none'; ey.style.letterSpacing = '0'; ey.style.fontSize = '13px'; }
+        }
+      })();
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
