@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" fill="none">
+  <!-- Background -->
+  <rect width="1200" height="630" fill="#ffffff"/>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1200" y2="630" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ECFDF5"/>
+      <stop offset="1" stop-color="#ffffff"/>
+    </linearGradient>
+    <linearGradient id="logoG" x1="0" y1="0" x2="220" y2="220" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0E9F6E"/>
+      <stop offset="1" stop-color="#047857"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Decorative soft circles -->
+  <circle cx="1080" cy="90" r="240" fill="#D1FAE5" opacity="0.45"/>
+  <circle cx="120" cy="560" r="180" fill="#D1FAE5" opacity="0.4"/>
+
+  <!-- Logo mark (favicon paths scaled ×5.5, centered horizontally) -->
+  <g transform="translate(490, 90) scale(5.5)">
+    <rect x="2" y="2" width="36" height="36" rx="11" fill="url(#logoG)"/>
+    <path d="M11 14 C 11 12, 13 11, 15 11 L 27 11 C 29 11, 30 12.5, 30 14.5 C 30 19, 28 24, 23 27 C 19.5 29, 14 29, 11 27" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round" fill="none"/>
+    <circle cx="14" cy="22" r="1.6" fill="#ffffff"/>
+  </g>
+
+  <!-- Arabic brand name -->
+  <text x="600" y="400" text-anchor="middle" font-family="SF Arabic, Geeza Pro, Arial" font-size="86" font-weight="800" fill="#0B1B3A">حجوزاتك</text>
+
+  <!-- English tagline -->
+  <text x="600" y="470" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="38" font-weight="700" fill="#047857">Hujuzatk · Hotel &amp; Property Management</text>
+
+  <!-- Sub tagline -->
+  <text x="600" y="528" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="27" font-weight="500" fill="#4B5878">5-year calendar · Invoicing · Channel sync · Full Arabic support</text>
+
+  <!-- Domain -->
+  <text x="600" y="582" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="24" font-weight="700" fill="#94A0B9" letter-spacing="2">HUJUZATK.COM</text>
+</svg>
