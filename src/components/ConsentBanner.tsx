@@ -80,7 +80,7 @@ export function ConsentBanner() {
           <button
             type="button"
             onClick={() => decide('granted')}
-            className="px-3 py-1.5 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 font-semibold"
+            className="px-3 py-1.5 rounded-lg bg-emerald-700 text-white hover:bg-emerald-800 font-semibold"
           >
             {c.accept}
           </button>
