@@ -1074,11 +1074,11 @@ function setJsonLD(id: string, data: object) {
 function applySEO(lang: Lang) {
   const isAr = lang === 'ar';
   const title = isAr
-    ? 'حجوزاتك PMS – نظام إدارة الفنادق والحجوزات | برنامج الحجوزات العربي'
-    : 'Hujuzatk PMS – Hotel & Property Management System | Free 14-Day Trial';
+    ? 'حجوزاتك — نظام إدارة الفنادق والإيجارات السياحية'
+    : 'Hujuzatk — Hotel & Vacation Rental PMS for Saudi & GCC';
   const description = isAr
-    ? 'حجوزاتك هو نظام إدارة الفنادق والحجوزات الأحدث جيلاً. تقويم حجوزات 3 سنوات، فوترة تلقائية، تحليلات مالية متعمقة، دعم عربي كامل RTL. جرّب مجاناً 14 يوم بدون بطاقة ائتمان.'
-    : 'Hujuzatk is the next-gen Hotel & Property Management System. 3-year calendar, automated PDF invoicing, financial analytics, native Arabic RTL. Start free 14-day trial.';
+    ? 'حجوزاتك هو نظام إدارة الفنادق والإيجارات السياحية. تقويم حجوزات 5 سنوات، فوترة تلقائية، مزامنة Airbnb وجاثرين وBooking.com، دعم عربي كامل RTL. جرّب مجاناً 14 يوم بدون بطاقة ائتمان.'
+    : 'Hujuzatk is a Hotel & Vacation Rental PMS for Saudi Arabia & the GCC. 5-year calendar, automated invoicing, Airbnb / Gathern / Booking.com sync, native Arabic RTL. Free 14-day trial.';
   document.title = title;
   document.documentElement.lang = lang;
   document.documentElement.dir = isAr ? 'rtl' : 'ltr';

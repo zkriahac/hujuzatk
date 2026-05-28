@@ -166,7 +166,11 @@
     <!-- End Google Analytics 4 -->
 
     <meta name="theme-color" content="#0E9F6E">
-    <link rel="icon" href="/favicon.svg?v=2" type="image/svg+xml">
+    <!-- Favicons: .ico for legacy crawlers/validators that don't read SVG,
+         32px PNG fallback, then the SVG for modern browsers. -->
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2" />
     <link rel="manifest" href="/manifest.json" />
 
     <!-- iOS PWA install support. iOS Safari ignores manifest icons for Add-to-Home-Screen
@@ -220,7 +224,7 @@
     <noscript>
       <main lang="ar" dir="rtl" style="max-width:900px;margin:0 auto;padding:24px;font-family:system-ui,sans-serif;line-height:1.6;color:#0b1b3a">
 
-        <h1>حجوزاتك — نظام إدارة الفنادق والحجوزات للسعودية والخليج</h1>
+        <h2 style="font-size:1.6rem">حجوزاتك — نظام إدارة الفنادق والحجوزات للسعودية والخليج</h2>
         <p><strong>حجوزاتك</strong> هو نظام إدارة الحجوزات والفنادق (PMS) السحابي، مصمم خصيصاً للفنادق المستقلة والشقق المخدومة والإيجارات السياحية في السعودية ودول الخليج. يجمع لك الحجوزات من Airbnb وجاثرين وBooking.com في مكان واحد، مع تقويم لـ5 سنوات، وفوترة تلقائية، ودعم كامل للعربية من اليمين إلى اليسار.</p>
         <p><a href="https://hujuzatk.com/user?tab=register">ابدأ تجربتك المجانية 14 يوم</a> — بدون بطاقة ائتمان.</p>
 
@@ -270,7 +274,7 @@
         <hr/>
 
         <section lang="en" dir="ltr">
-          <h1>Hujuzatk — Hotel &amp; Property Management System for Saudi Arabia &amp; the GCC</h1>
+          <h2 style="font-size:1.6rem">Hujuzatk — Hotel &amp; Property Management System for Saudi Arabia &amp; the GCC</h2>
           <p><strong>Hujuzatk</strong> is a cloud-based Hotel and Property Management System (PMS) built for independent hotels, serviced apartments, and vacation rentals in Saudi Arabia and the GCC. Consolidate bookings from Airbnb, Gathern, and Booking.com in one place, with a 5-year calendar, automated invoicing, and full Arabic RTL support.</p>
           <p><a href="https://hujuzatk.com/user?tab=register">Start your 14-day free trial</a> — no credit card required.</p>
 
