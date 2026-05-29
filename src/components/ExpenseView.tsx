@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
-import { format, startOfMonth, endOfMonth, parseISO } from 'date-fns';
+import { format, startOfMonth, endOfMonth } from 'date-fns';
 import {
-  CurrencyCircleDollar, Plus, Trash, X, Pencil, Lightning,
-  Drop, Wrench, Package, DotsThree, CaretDown,
+  CurrencyCircleDollar, Trash, X, Pencil, Lightning,
+  Drop, Wrench, Package, DotsThree, CaretDown, FileXls, Receipt, Warning,
 } from 'phosphor-react';
 import { apolloClient } from '../lib/apolloClient';
 import { t, type Language } from '../lib/i18n';
@@ -50,6 +50,13 @@ const CATEGORY_COLORS: Record<string, string> = {
   supplies: 'text-emerald-600 bg-emerald-50',
   other: 'text-slate-600 bg-slate-100',
 };
+const CATEGORY_BAR: Record<string, string> = {
+  utilities: 'bg-amber-500',
+  cleaning: 'bg-sky-500',
+  maintenance: 'bg-orange-500',
+  supplies: 'bg-emerald-500',
+  other: 'bg-slate-400',
+};
 
 export default function ExpenseView({ session, lang, tz, currency }: Props) {
   const isRtl = lang === 'ar';
@@ -63,6 +70,8 @@ export default function ExpenseView({ session, lang, tz, currency }: Props) {
   const [editing, setEditing] = useState<Expense | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [modalAnchor, setModalAnchor] = useState<ModalAnchor>(null);
+  const [deleting, setDeleting] = useState<Expense | null>(null);
+  const [deleteBusy, setDeleteBusy] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -89,12 +98,84 @@ export default function ExpenseView({ session, lang, tz, currency }: Props) {
     });
     return map;
   }, [expenses]);
+  const totalsByCategory = useMemo(() => {
+    const map: Record<string, number> = {};
+    expenses.forEach((e) => {
+      const key = e.category || 'other';
+      map[key] = (map[key] || 0) + e.amount;
+    });
+    return CATEGORIES
+      .map((c) => ({ category: c, amount: map[c] || 0 }))
+      .filter((r) => r.amount > 0)
+      .sort((a, b) => b.amount - a.amount);
+  }, [expenses]);
   const roomNameMap = Object.fromEntries(rooms.map((r: any) => [r.id, r.name]));
+  // Per-room rows, all rooms with any spend, highest first (General included).
+  const roomBreakdown = useMemo(() => {
+    return Object.entries(totalsByRoom)
+      .map(([key, amount]) => ({
+        key,
+        name: key === 'general' ? t(lang, 'expenses.general') : (roomNameMap[key] || key),
+        amount,
+      }))
+      .sort((a, b) => b.amount - a.amount);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [totalsByRoom, lang]);
 
-  const handleDelete = async (id: string) => {
-    if (!confirm(t(lang, 'expenses.delete') + '?')) return;
-    await apolloClient.mutate({ mutation: DELETE_EXPENSE_MUTATION, variables: { id } });
-    await load();
+  const confirmDelete = async () => {
+    if (!deleting) return;
+    setDeleteBusy(true);
+    try {
+      await apolloClient.mutate({ mutation: DELETE_EXPENSE_MUTATION, variables: { id: deleting.id } });
+      await load();
+      setDeleting(null);
+    } finally {
+      setDeleteBusy(false);
+    }
+  };
+
+  const handleExport = async () => {
+    const XLSX = await import('xlsx');
+    const wb = XLSX.utils.book_new();
+    const sheet = (name: string) => name.replace(/[\\/?*[\]:]/g, '').slice(0, 31) || 'Sheet';
+
+    const summaryRows: (string | number)[][] = [
+      [t(lang, 'export.title'), session.tenant.name || ''],
+      [t(lang, 'export.range'), `${startDate} → ${endDate}`],
+      [t(lang, 'export.roomFilterLabel'), roomFilter === 'all' ? t(lang, 'export.all') : roomFilter === 'general' ? t(lang, 'export.general') : (roomNameMap[roomFilter] || roomFilter)],
+      [],
+      [t(lang, 'expenses.totalRange'), total],
+      [t(lang, 'expenses.entries'), expenses.length],
+    ];
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(summaryRows), sheet(t(lang, 'export.summary')));
+
+    const listSheet: (string | number)[][] = [[
+      t(lang, 'export.date'),
+      t(lang, 'expenses.category'),
+      t(lang, 'expenses.reason'),
+      t(lang, 'expenses.room'),
+      t(lang, 'export.amount'),
+    ]];
+    expenses.forEach((e) => {
+      listSheet.push([
+        e.date.split('T')[0],
+        t(lang, `expenses.cat_${e.category}`),
+        e.reason,
+        e.roomId ? (roomNameMap[e.roomId] || e.roomId) : t(lang, 'export.general'),
+        e.amount,
+      ]);
+    });
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(listSheet), sheet(t(lang, 'export.expensesSheet')));
+
+    const roomSheet: (string | number)[][] = [[t(lang, 'expenses.room'), t(lang, 'export.amount')]];
+    roomBreakdown.forEach((r) => roomSheet.push([r.name, r.amount]));
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(roomSheet), sheet(t(lang, 'export.perRoom')));
+
+    const catSheet: (string | number)[][] = [[t(lang, 'expenses.category'), t(lang, 'export.amount')]];
+    totalsByCategory.forEach((r) => catSheet.push([t(lang, `expenses.cat_${r.category}`), r.amount]));
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(catSheet), sheet(t(lang, 'expenses.byCategory')));
+
+    XLSX.writeFile(wb, `hujuzatk-expenses-${(session.tenant.name || 'tenant').replace(/\s+/g, '_')}-${startDate}-${endDate}.xlsx`);
   };
 
   return (
@@ -104,12 +185,22 @@ export default function ExpenseView({ session, lang, tz, currency }: Props) {
           <CurrencyCircleDollar size={32} weight="duotone" className="text-emerald-500" />
           <h1 className="text-2xl font-black text-slate-800">{t(lang, 'expenses.title')}</h1>
         </div>
-        <button
-          onClick={(e) => { setEditing(null); setModalAnchor({ x: e.clientX, y: e.clientY }); setShowModal(true); }}
-          className="bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-black px-5 py-2.5 rounded-2xl flex items-center gap-2"
-        >
-          {t(lang, 'expenses.add')}
-        </button>
+        <div className="flex items-center gap-2.5">
+          {expenses.length > 0 && (
+            <button
+              onClick={handleExport}
+              className="bg-white border border-slate-200 hover:border-emerald-300 hover:text-emerald-700 text-slate-600 text-sm font-black px-4 py-2.5 rounded-2xl flex items-center gap-2 shadow-sm"
+            >
+              <FileXls size={18} weight="bold" /> {t(lang, 'reports.exportExcel')}
+            </button>
+          )}
+          <button
+            onClick={(e) => { setEditing(null); setModalAnchor({ x: e.clientX, y: e.clientY }); setShowModal(true); }}
+            className="bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-black px-5 py-2.5 rounded-2xl flex items-center gap-2"
+          >
+            {t(lang, 'expenses.add')}
+          </button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -137,31 +228,80 @@ export default function ExpenseView({ session, lang, tz, currency }: Props) {
             <CaretDown size={14} weight="bold" className="pointer-events-none absolute top-1/2 -translate-y-1/2 end-4 text-slate-400" />
           </div>
         </div>
-        <div className="flex-1 text-end">
-          <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">{t(lang, 'expenses.totalRange')}</div>
-          <div className="text-2xl font-black text-slate-900 tabular-nums" dir="ltr">
-            {currency} {total.toFixed(2)}
-          </div>
-        </div>
       </div>
 
-      {/* Per-room totals strip */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <div className="bg-white border border-slate-200 rounded-xl p-3 shadow-sm">
-          <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">{t(lang, 'expenses.general')}</p>
-          <p className="text-lg font-black text-slate-900 tabular-nums" dir="ltr">{currency} {(totalsByRoom['general'] || 0).toFixed(2)}</p>
-        </div>
-        {rooms.slice(0, 6).map((r: any) => (
-          <div key={r.id} className="bg-white border border-slate-200 rounded-xl p-3 shadow-sm">
-            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">{r.name}</p>
-            <p className="text-lg font-black text-slate-900 tabular-nums" dir="ltr">{currency} {(totalsByRoom[r.id] || 0).toFixed(2)}</p>
-          </div>
-        ))}
+      {/* Summary cards: Total + Entries */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+        <SummaryCard
+          tone="rose" Icon={CurrencyCircleDollar}
+          label={t(lang, 'expenses.totalRange')}
+          value={total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          unit={currency}
+        />
+        <SummaryCard
+          tone="slate" Icon={Receipt}
+          label={t(lang, 'expenses.entries')}
+          value={String(expenses.length)}
+          unit={t(lang, 'expenses.title')}
+        />
       </div>
+
+      {/* Breakdown: by category + by room */}
+      {expenses.length > 0 && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          {/* By category */}
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
+            <h3 className="text-sm font-black text-slate-600 tracking-tight mb-4">{t(lang, 'expenses.byCategory')}</h3>
+            <div className="space-y-3.5">
+              {totalsByCategory.map((c) => {
+                const Icon = CATEGORY_ICONS[c.category] || DotsThree;
+                const pct = total > 0 ? (c.amount / total) * 100 : 0;
+                return (
+                  <div key={c.category}>
+                    <div className="flex items-center justify-between gap-2 mb-1">
+                      <span className="inline-flex items-center gap-1.5 text-xs font-black text-slate-700">
+                        <span className={cn('w-6 h-6 rounded-lg flex items-center justify-center', CATEGORY_COLORS[c.category] || CATEGORY_COLORS.other)}>
+                          <Icon size={13} weight="bold" />
+                        </span>
+                        {t(lang, `expenses.cat_${c.category}`)}
+                      </span>
+                      <span className="text-xs font-black text-slate-900 tabular-nums" dir="ltr">{currency} {c.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    </div>
+                    <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
+                      <div className={cn('h-full rounded-full', CATEGORY_BAR[c.category] || CATEGORY_BAR.other)} style={{ width: `${pct}%` }} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* By room */}
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
+            <h3 className="text-sm font-black text-slate-600 tracking-tight mb-4">{t(lang, 'expenses.byRoom')}</h3>
+            <div className="space-y-3.5">
+              {roomBreakdown.map((r) => {
+                const pct = total > 0 ? (r.amount / total) * 100 : 0;
+                return (
+                  <div key={r.key}>
+                    <div className="flex items-center justify-between gap-2 mb-1">
+                      <span className="text-xs font-black text-slate-700 truncate">{r.name}</span>
+                      <span className="text-xs font-black text-slate-900 tabular-nums shrink-0" dir="ltr">{currency} {r.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    </div>
+                    <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
+                      <div className={cn('h-full rounded-full', r.key === 'general' ? 'bg-slate-400' : 'bg-emerald-500')} style={{ width: `${pct}%` }} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Expense list */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-xl overflow-hidden">
-        {loading && <div className="text-center py-12 text-slate-400 text-sm">Loading…</div>}
+        {loading && <div className="text-center py-12 text-slate-400 text-sm">{t(lang, 'expenses.loading')}</div>}
         {!loading && expenses.length === 0 && (
           <div className="text-center py-16 text-slate-400">
             <CurrencyCircleDollar size={48} weight="duotone" className="mx-auto mb-3" />
@@ -213,7 +353,7 @@ export default function ExpenseView({ session, lang, tz, currency }: Props) {
                           <Pencil size={15} weight="bold" />
                         </button>
                         <button
-                          onClick={() => handleDelete(e.id)}
+                          onClick={() => setDeleting(e)}
                           className="p-1.5 text-slate-400 hover:text-red-600 transition-colors"
                         >
                           <Trash size={15} weight="bold" />
@@ -239,6 +379,62 @@ export default function ExpenseView({ session, lang, tz, currency }: Props) {
           onSaved={async () => { await load(); setShowModal(false); setEditing(null); }}
         />
       )}
+
+      {deleting && (
+        <div
+          className="fixed inset-0 z-[200] bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4"
+          onClick={() => !deleteBusy && setDeleting(null)}
+          dir={isRtl ? 'rtl' : 'ltr'}
+        >
+          <div onClick={(e) => e.stopPropagation()} className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-7 text-center">
+            <div className="w-14 h-14 rounded-2xl bg-red-50 text-red-500 flex items-center justify-center mx-auto mb-4">
+              <Warning size={28} weight="duotone" />
+            </div>
+            <h2 className="text-lg font-black text-slate-900 mb-1.5">{t(lang, 'expenses.delete')}</h2>
+            <p className="text-sm font-bold text-slate-500 mb-1">{deleting.reason}</p>
+            <p className="text-xs font-semibold text-slate-400 mb-5">{t(lang, 'expenses.confirmDeleteBody')}</p>
+            <div className="flex gap-3">
+              <button onClick={confirmDelete} disabled={deleteBusy}
+                className="flex-1 bg-red-600 text-white py-3 rounded-2xl text-sm font-black hover:bg-red-700 disabled:opacity-50">
+                {deleteBusy ? '…' : t(lang, 'expenses.delete')}
+              </button>
+              <button onClick={() => setDeleting(null)} disabled={deleteBusy}
+                className="flex-1 bg-slate-100 text-slate-700 py-3 rounded-2xl text-sm font-black hover:bg-slate-200 disabled:opacity-50">
+                {t(lang, 'expenses.cancel')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Summary card — matches the Reports overview theme: accent bar + icon chip.
+type SummaryTone = 'rose' | 'slate' | 'emerald' | 'amber';
+const SUM_TONE: Record<SummaryTone, { bar: string; chip: string }> = {
+  rose:    { bar: 'bg-rose-500',    chip: 'bg-rose-50 text-rose-500' },
+  slate:   { bar: 'bg-slate-700',   chip: 'bg-slate-100 text-slate-600' },
+  emerald: { bar: 'bg-emerald-500', chip: 'bg-emerald-50 text-emerald-600' },
+  amber:   { bar: 'bg-amber-500',   chip: 'bg-amber-50 text-amber-600' },
+};
+function SummaryCard({ tone, label, value, unit, Icon }: {
+  tone: SummaryTone; label: string; value: string; unit: string; Icon: any;
+}) {
+  const c = SUM_TONE[tone];
+  return (
+    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm relative overflow-hidden p-6 sm:p-7 min-h-[150px] flex flex-col justify-between gap-3">
+      <span className={`absolute inset-y-0 start-0 w-1.5 ${c.bar}`} />
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-sm font-black text-slate-600 tracking-tight">{label}</span>
+        <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${c.chip}`}>
+          <Icon size={20} weight="duotone" />
+        </div>
+      </div>
+      <div className="flex items-baseline gap-2 flex-wrap">
+        <span className="text-4xl sm:text-5xl font-black tabular-nums tracking-tighter text-slate-900" dir="ltr">{value}</span>
+        <span className="text-sm font-bold text-slate-400">{unit}</span>
+      </div>
     </div>
   );
 }
