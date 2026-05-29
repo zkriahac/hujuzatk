@@ -16,6 +16,7 @@ interface ReportsViewProps {
   reportRoomFilter: string;
   setReportRoomFilter: (v: string) => void;
   reportData: any;
+  reportLoading: boolean;
   currency: string;
   lang: Language;
   tenantName?: string;
@@ -41,6 +42,7 @@ export default function ReportsView({
   reportRoomFilter,
   setReportRoomFilter,
   reportData,
+  reportLoading,
   currency,
   lang,
   tenantName,
@@ -229,13 +231,30 @@ export default function ReportsView({
         <div className="flex justify-end mt-5">
           <button
             onClick={handleExportExcel}
-            className="bg-emerald-600 text-white px-6 py-3 rounded-full text-[11px] font-black uppercase tracking-widest hover:bg-emerald-700 transition-all active:scale-95 flex items-center gap-2 shadow-sm"
+            disabled={reportLoading || reportData.bookingCount === 0}
+            className="bg-emerald-600 text-white px-6 py-3 rounded-full text-[11px] font-black uppercase tracking-widest hover:bg-emerald-700 transition-all active:scale-95 flex items-center gap-2 shadow-sm disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <FileXls size={18} weight="bold" /> {t(lang, 'reports.exportExcel')}
           </button>
         </div>
       </div>
 
+      {reportLoading ? (
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-12 flex flex-col items-center justify-center gap-3 text-slate-400">
+          <Hourglass size={28} weight="duotone" className="animate-pulse" />
+          <span className="text-sm font-black uppercase tracking-widest">
+            {lang === 'ar' ? 'جاري التحميل…' : lang === 'tr' ? 'Yükleniyor…' : 'Loading…'}
+          </span>
+        </div>
+      ) : reportData.bookingCount === 0 ? (
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-12 flex flex-col items-center justify-center gap-3 text-slate-400">
+          <ChartPie size={28} weight="duotone" />
+          <span className="text-sm font-black">
+            {lang === 'ar' ? 'لا توجد حجوزات في هذه الفترة' : lang === 'tr' ? 'Bu tarih aralığında rezervasyon yok' : 'No bookings in this date range'}
+          </span>
+        </div>
+      ) : (
+      <>
       {/* P&L row */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
         <StatCard variant="bold" tone="emerald"
@@ -377,6 +396,8 @@ export default function ReportsView({
           </div>
         </div>
       </div>
+      </>
+      )}
 
       {/* Annual Occupancy Heatmap */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">

@@ -133,6 +133,11 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
   const [reportEndDate, setReportEndDate] = useState(format(endOfMonth(new Date()), 'yyyy-MM-dd'));
   const [reportRoomFilter, setReportRoomFilter] = useState<string>('ALL');
   const [reportType, setReportType] = useState<'stay' | 'created'>('stay');
+  // Reports fetch their own bookings for the selected range, independent of the
+  // calendar's lazy month-loading — otherwise changing the date range wouldn't
+  // pull in data for months the calendar never loaded.
+  const [reportBookings, setReportBookings] = useState<Booking[]>([]);
+  const [reportLoading, setReportLoading] = useState(false);
 
   const [listSearchTerm, setListSearchTerm] = useState('');
   const [listFilter, setListFilter] = useState<ListFilter>('today_checkin');
@@ -550,8 +555,19 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
 
   useEffect(() => { setVisibleListCount(30); }, [listFilter, listSearchTerm]);
 
+  useEffect(() => {
+    if (currentView !== 'reports') return;
+    let cancelled = false;
+    setReportLoading(true);
+    dataService
+      .getBookingsByDateRange(reportStartDate, reportEndDate, reportType === 'created' ? 'created' : 'stay')
+      .then((rows) => { if (!cancelled) setReportBookings(rows); })
+      .finally(() => { if (!cancelled) setReportLoading(false); });
+    return () => { cancelled = true; };
+  }, [currentView, reportStartDate, reportEndDate, reportType]);
+
   const reportData = useMemo(() => {
-    const filtered = bookings.filter((b: Booking) => {
+    const filtered = reportBookings.filter((b: Booking) => {
       if (b.status === 'CANCELED') return false;
       const dateToCompare = reportType === 'stay' ? b.checkIn : b.createdAt.split('T')[0];
       const inRange = dateToCompare >= reportStartDate && dateToCompare <= reportEndDate;
@@ -598,7 +614,7 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
     const monthlyStats = months.map((month) => {
       const monthEnd = format(endOfMonth(month), 'yyyy-MM-dd');
       const realStart = format(startOfMonth(month), 'yyyy-MM-dd');
-      const monthBookings = bookings.filter(
+      const monthBookings = reportBookings.filter(
         (b) =>
           b.status !== 'CANCELED' &&
           b.checkIn <= monthEnd &&
@@ -621,7 +637,7 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
     });
 
     return { roomStats, totalRevenue, totalDeposit, totalRemaining, totalNights, bookingCount: filtered.length, monthlyStats };
-  }, [bookings, reportStartDate, reportEndDate, reportRoomFilter, reportType, rooms, tz, lang]);
+  }, [reportBookings, reportStartDate, reportEndDate, reportRoomFilter, reportType, rooms, tz, lang]);
 
   const handleLogout = async () => {
     trackLogout();
@@ -845,6 +861,7 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
             reportRoomFilter={reportRoomFilter}
             setReportRoomFilter={setReportRoomFilter}
             reportData={reportData}
+            reportLoading={reportLoading}
             currency={currency}
             tenantName={session.tenant.name}
             lang={lang}

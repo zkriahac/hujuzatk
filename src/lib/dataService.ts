@@ -135,13 +135,14 @@ export const dataService = {
     }
   },
 
-  // Get bookings filtered by date range (for month-based lazy loading)
-  async getBookingsByDateRange(startDate: string, endDate: string) {
+  // Get bookings filtered by date range (for month-based lazy loading).
+  // mode 'created' filters by createdAt (for created-date reports); default is stay-overlap.
+  async getBookingsByDateRange(startDate: string, endDate: string, mode?: 'stay' | 'created') {
     try {
       const { data } = await apolloClient.query({
         query: gql`
-          query GetBookingsByDateRange($startDate: DateTime!, $endDate: DateTime!) {
-            getBookingsByDateRange(startDate: $startDate, endDate: $endDate) {
+          query GetBookingsByDateRange($startDate: DateTime!, $endDate: DateTime!, $mode: String) {
+            getBookingsByDateRange(startDate: $startDate, endDate: $endDate, mode: $mode) {
               id
               tenantId
               guestName
@@ -166,10 +167,10 @@ export const dataService = {
             }
           }
         `,
-        variables: { startDate, endDate },
+        variables: { startDate, endDate, mode },
         fetchPolicy: 'network-only'
       });
-      
+
       return (data as any)?.getBookingsByDateRange || [];
     } catch (error) {
       console.warn('Failed to fetch bookings for date range:', error);

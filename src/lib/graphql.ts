@@ -292,46 +292,6 @@ export const BULK_DELETE_BOOKINGS_MUTATION = gql`
   }
 `;
 
-// ============= REPORT QUERIES =============
-
-export const GET_OCCUPANCY_REPORT_QUERY = gql`
-  query GetOccupancyReport($room: String, $year: Int!, $month: Int!) {
-    getOccupancyReport(room: $room, year: $year, month: $month) {
-      room
-      month
-      totalNights
-      occupiedNights
-      occupancyRate
-    }
-  }
-`;
-
-export const GET_REVENUE_REPORT_QUERY = gql`
-  query GetRevenueReport($year: Int!, $month: Int) {
-    getRevenueReport(year: $year, month: $month) {
-      year
-      month
-      totalRevenue
-      totalDeposits
-      totalOutstanding
-      bookingCount
-      averageBookingValue
-    }
-  }
-`;
-
-export const GET_GUEST_STATISTICS_QUERY = gql`
-  query GetGuestStatistics {
-    getGuestStatistics {
-      totalGuests
-      uniqueCities
-      averageNightStay
-      repeatGuestRate
-      cancellationRate
-    }
-  }
-`;
-
 // ============= TENANT MUTATIONS =============
 
 export const UPDATE_TENANT_MUTATION = gql`

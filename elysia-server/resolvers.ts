@@ -10,7 +10,7 @@
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { GraphQLError } from 'graphql';
-import { differenceInCalendarDays, getDaysInMonth, subMonths } from 'date-fns';
+import { differenceInCalendarDays, subMonths } from 'date-fns';
 import { prisma } from './prisma';
 import { performSync, VALID_CHANNELS } from './channelSync';
 import { PLANS, isValidPlan } from './planConfig';
@@ -121,13 +121,17 @@ export const resolvers = {
 			if (!booking) throw new GraphQLError('Booking not found', { extensions: { code: 'NOT_FOUND', http: { status: 404 } } });
 			return normalizeBooking(booking);
 		},
-		async getBookingsByDateRange(_: any, { startDate, endDate }: { startDate: string; endDate: string }, context: any) {
+		async getBookingsByDateRange(_: any, { startDate, endDate, mode }: { startDate: string; endDate: string; mode?: string }, context: any) {
 			requireAuth(context);
 			const start = new Date(startDate);
 			const end = new Date(endDate);
 			if (start > end) throw new GraphQLError('Start date must be before end date', { extensions: { code: 'BAD_USER_INPUT', http: { status: 400 } } });
-			// Overlap: booking overlaps the range when checkIn < rangeEnd AND checkOut > rangeStart
-			const bookings = await prisma.booking.findMany({ where: { tenantId: context.user.tenantId, checkIn: { lt: end }, checkOut: { gt: start } }, orderBy: { checkIn: 'asc' } });
+			// 'created' mode: bookings whose createdAt falls in the range (for created-date reports).
+			// Default (stay): booking overlaps the range when checkIn < rangeEnd AND checkOut > rangeStart.
+			const where = mode === 'created'
+				? { tenantId: context.user.tenantId, createdAt: { gte: start, lte: end } }
+				: { tenantId: context.user.tenantId, checkIn: { lt: end }, checkOut: { gt: start } };
+			const bookings = await prisma.booking.findMany({ where, orderBy: { checkIn: 'asc' } });
 			return bookings.map(normalizeBooking);
 		},
 		async getBookingsByRoom(_: any, { room }: { room: string }, context: any) {
@@ -137,40 +141,6 @@ export const resolvers = {
 		},
 
 		// Reports
-		async getOccupancyReport(_: any, { room, year, month }: { room?: string; year: number; month: number }, context: any) {
-			requireAuth(context);
-			if (month < 1 || month > 12) throw new GraphQLError('Month must be between 1 and 12', { extensions: { code: 'BAD_USER_INPUT', http: { status: 400 } } });
-			const startDate = new Date(year, month - 1, 1);
-			const endDate = new Date(year, month, 0);
-			const daysInMonth = getDaysInMonth(startDate);
-			const query: any = { where: { tenantId: context.user.tenantId, checkIn: { lte: endDate }, checkOut: { gte: startDate }, status: { not: 'CANCELED' } } };
-			if (room) query.where.room = room;
-			const bookings = await prisma.booking.findMany(query);
-			let occupiedNights = 0;
-			bookings.forEach((booking: any) => {
-				const checkIn = new Date(booking.checkIn);
-				const checkOut = new Date(booking.checkOut);
-				const start = checkIn > startDate ? checkIn : startDate;
-				const end = checkOut < endDate ? checkOut : endDate;
-				const nights = Math.floor((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
-				occupiedNights += Math.max(0, nights);
-			});
-			const totalNights = daysInMonth * (room ? 1 : 5);
-			const occupancyRate = totalNights > 0 ? (occupiedNights / totalNights) * 100 : 0;
-			return { room: room || 'All', month: `${year}-${String(month).padStart(2, '0')}`, totalNights, occupiedNights, occupancyRate: Math.round(occupancyRate * 100) / 100 };
-		},
-		async getRevenueReport(_: any, { year, month }: { year: number; month?: number }, context: any) {
-			requireAuth(context);
-			const startDate = month ? new Date(year, month - 1, 1) : new Date(year, 0, 1);
-			const endDate = month ? new Date(year, month, 0) : new Date(year, 11, 31);
-			const bookings = await prisma.booking.findMany({ where: { tenantId: context.user.tenantId, createdAt: { gte: startDate, lte: endDate } } });
-			const totalRevenue = bookings.reduce((sum: number, b: any) => sum + b.totalPrice, 0);
-			const totalDeposits = bookings.reduce((sum: number, b: any) => sum + b.deposit, 0);
-			const totalOutstanding = bookings.reduce((sum: number, b: any) => sum + b.remaining, 0);
-			const bookingCount = bookings.length;
-			const averageBookingValue = bookingCount > 0 ? totalRevenue / bookingCount : 0;
-			return { year, month, totalRevenue: Math.round(totalRevenue * 100) / 100, totalDeposits: Math.round(totalDeposits * 100) / 100, totalOutstanding: Math.round(totalOutstanding * 100) / 100, bookingCount, averageBookingValue: Math.round(averageBookingValue * 100) / 100 };
-		},
 		async getYearlyOccupancy(_: any, { year }: { year: number }, context: any) {
 			requireAuth(context);
 			const tenantId = context.user.tenantId;
@@ -190,23 +160,6 @@ export const resolvers = {
 				};
 			});
 		},
-		async getGuestStatistics(_: any, __: any, context: any) {
-			requireAuth(context);
-			const bookings = await prisma.booking.findMany({ where: { tenantId: context.user.tenantId } });
-			const totalGuests = bookings.length;
-			const cities = new Set(bookings.map((b: any) => b.city).filter(Boolean));
-			const uniqueCities = cities.size;
-			const totalNights = bookings.reduce((sum: number, b: any) => sum + b.nights, 0);
-			const averageNightStay = totalGuests > 0 ? totalNights / totalGuests : 0;
-			const guestNames = bookings.map((b: any) => b.guestName);
-			const uniqueGuests = new Set(guestNames);
-			const repeatBookings = bookings.length - uniqueGuests.size;
-			const repeatGuestRate = totalGuests > 0 ? (repeatBookings / totalGuests) * 100 : 0;
-			const canceledBookings = bookings.filter((b: any) => b.status === 'CANCELED').length;
-			const cancellationRate = totalGuests > 0 ? (canceledBookings / totalGuests) * 100 : 0;
-			return { totalGuests, uniqueCities, averageNightStay: Math.round(averageNightStay * 100) / 100, repeatGuestRate: Math.round(repeatGuestRate * 100) / 100, cancellationRate: Math.round(cancellationRate * 100) / 100 };
-		},
-
 		// Audit
 		async getAuditLogs(_: any, { limit = 100, offset = 0, action }: { limit?: number; offset?: number; action?: string }, context: any) {
 			requireAuth(context);

@@ -12,9 +12,6 @@ import {
   UPDATE_BOOKING_MUTATION,
   DELETE_BOOKING_MUTATION,
   BULK_IMPORT_BOOKINGS_MUTATION,
-  GET_OCCUPANCY_REPORT_QUERY,
-  GET_REVENUE_REPORT_QUERY,
-  GET_GUEST_STATISTICS_QUERY,
   GET_YEARLY_OCCUPANCY_QUERY,
   BOOKING_CREATED_SUBSCRIPTION,
   BOOKING_UPDATED_SUBSCRIPTION,
@@ -291,42 +288,6 @@ export function useBulkImportBookings() {
 }
 
 // ============= REPORT HOOKS =============
-
-export function useOccupancyReport(room?: string, year?: number, month?: number) {
-  const { data, loading, error } = useQuery(GET_OCCUPANCY_REPORT_QUERY, {
-    variables: { room, year: year || new Date().getFullYear(), month: month || new Date().getMonth() + 1 },
-    skip: !year || !month,
-  });
-
-  return {
-    report: data?.getOccupancyReport,
-    loading,
-    error,
-  };
-}
-
-export function useRevenueReport(year?: number, month?: number) {
-  const { data, loading, error } = useQuery(GET_REVENUE_REPORT_QUERY, {
-    variables: { year: year || new Date().getFullYear(), month },
-    skip: !year,
-  });
-
-  return {
-    report: data?.getRevenueReport,
-    loading,
-    error,
-  };
-}
-
-export function useGuestStatistics() {
-  const { data, loading, error } = useQuery(GET_GUEST_STATISTICS_QUERY);
-
-  return {
-    statistics: data?.getGuestStatistics,
-    loading,
-    error,
-  };
-}
 
 export function useYearlyOccupancy(year: number) {
   const { data, loading, error, refetch } = useQuery(GET_YEARLY_OCCUPANCY_QUERY, {

@@ -128,14 +128,6 @@ export const typeDefs = `
     updatedAt: DateTime!
   }
 
-  type OccupancyReport {
-    room: String!
-    month: String!
-    totalNights: Int!
-    occupiedNights: Int!
-    occupancyRate: Float!
-  }
-
   type RoomMonthOccupancy {
     roomId: String!
     roomName: String!
@@ -144,24 +136,6 @@ export const typeDefs = `
     occupiedNights: Int!
     totalNights: Int!
     occupancyRate: Float!
-  }
-
-  type RevenueReport {
-    year: Int!
-    month: Int
-    totalRevenue: Float!
-    totalDeposits: Float!
-    totalOutstanding: Float!
-    bookingCount: Int!
-    averageBookingValue: Float!
-  }
-
-  type GuestStatistics {
-    totalGuests: Int!
-    uniqueCities: Int!
-    averageNightStay: Float!
-    repeatGuestRate: Float!
-    cancellationRate: Float!
   }
 
   type GlobalSettings {
@@ -259,12 +233,9 @@ export const typeDefs = `
     getChannelIntegrations: [ChannelIntegration!]!
     getBookings(filter: BookingFilter, limit: Int, offset: Int, sortBy: String, sortOrder: String): [Booking!]!
     getBooking(id: ID!): Booking
-    getBookingsByDateRange(startDate: DateTime!, endDate: DateTime!): [Booking!]!
+    getBookingsByDateRange(startDate: DateTime!, endDate: DateTime!, mode: String): [Booking!]!
     getBookingsByRoom(room: String!): [Booking!]!
-    getOccupancyReport(room: String, year: Int!, month: Int!): OccupancyReport!
     getYearlyOccupancy(year: Int!): [RoomMonthOccupancy!]!
-    getRevenueReport(year: Int!, month: Int): RevenueReport!
-    getGuestStatistics: GuestStatistics!
     getAuditLogs(limit: Int, offset: Int, action: AuditAction): [AuditLog!]!
     getGlobalSettings: GlobalSettings!
     getExpenses(startDate: DateTime, endDate: DateTime, roomId: String): [Expense!]!
