@@ -399,14 +399,11 @@ export default function ReportsView({
                             label={t(lang, 'reports.totalRemaining')}
                             value={(reportData.totalRemaining ?? 0).toLocaleString()} unit={currency}
                             caption={t(lang, 'reports.capDueOnArrival')} />
-              <OverviewCard tone="blue" Icon={Calendar}
-                            label={t(lang, 'reports.totalNights')}
-                            value={String(reportData.totalNights)} unit={t(lang, 'reports.unitNights')}
+              <OverviewDualCard tone="violet" Icon={Users}
+                            label={t(lang, 'reports.bookingsAndNights')}
+                            primaryValue={String(reportData.bookingCount)} primaryUnit={t(lang, 'reports.unitBookings')} primaryLabel={t(lang, 'reports.totalBookings')}
+                            secondaryValue={String(reportData.totalNights)} secondaryUnit={t(lang, 'reports.unitNights')} secondaryLabel={t(lang, 'reports.totalNights')}
                             caption={`${t(lang, 'reports.capAvgPrefix')} ${avgNights.toFixed(1)} ${t(lang, 'reports.capNightsPerBooking')}`} />
-              <OverviewCard tone="violet" Icon={Users}
-                            label={t(lang, 'reports.totalBookings')}
-                            value={String(reportData.bookingCount)} unit={t(lang, 'reports.unitBookings')}
-                            caption={t(lang, 'reports.capWithinPeriod')} />
             </div>
           )}
         </>
@@ -814,6 +811,52 @@ function OverviewCard({ tone, label, value, unit, caption, Icon }: {
       <div className="flex items-baseline gap-2 flex-wrap">
         <span className="text-4xl sm:text-5xl font-black tabular-nums tracking-tighter text-slate-900" dir="ltr">{value}</span>
         <span className="text-sm font-bold text-slate-400">{unit}</span>
+      </div>
+      <p className={`text-xs font-black ${c.caption}`}>{caption}</p>
+    </div>
+  );
+}
+
+// Overview dual-metric card — same shell as OverviewCard but shows two related
+// numbers side by side (bookings + nights), split by a thin divider.
+function OverviewDualCard({ tone, label, Icon, primaryValue, primaryUnit, primaryLabel, secondaryValue, secondaryUnit, secondaryLabel, caption }: {
+  tone: OverviewTone;
+  label: string;
+  Icon: any;
+  primaryValue: string;
+  primaryUnit: string;
+  primaryLabel: string;
+  secondaryValue: string;
+  secondaryUnit: string;
+  secondaryLabel: string;
+  caption: string;
+}) {
+  const c = OV_TONE[tone];
+  return (
+    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm relative overflow-hidden p-6 sm:p-7 min-h-[170px] flex flex-col justify-between gap-3">
+      <span className={`absolute inset-y-0 start-0 w-1.5 ${c.bar}`} />
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-sm font-black text-slate-600 tracking-tight">{label}</span>
+        <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${c.chip}`}>
+          <Icon size={20} weight="duotone" />
+        </div>
+      </div>
+      <div className="flex items-stretch gap-4">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-baseline gap-1.5 flex-wrap">
+            <span className="text-3xl sm:text-4xl font-black tabular-nums tracking-tighter text-slate-900" dir="ltr">{primaryValue}</span>
+            <span className="text-xs font-bold text-slate-400">{primaryUnit}</span>
+          </div>
+          <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mt-1 truncate">{primaryLabel}</p>
+        </div>
+        <div className="w-px bg-slate-100" />
+        <div className="flex-1 min-w-0">
+          <div className="flex items-baseline gap-1.5 flex-wrap">
+            <span className="text-3xl sm:text-4xl font-black tabular-nums tracking-tighter text-slate-900" dir="ltr">{secondaryValue}</span>
+            <span className="text-xs font-bold text-slate-400">{secondaryUnit}</span>
+          </div>
+          <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mt-1 truncate">{secondaryLabel}</p>
+        </div>
       </div>
       <p className={`text-xs font-black ${c.caption}`}>{caption}</p>
     </div>
