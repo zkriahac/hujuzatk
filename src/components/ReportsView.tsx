@@ -68,6 +68,17 @@ export default function ReportsView({
 
   const totalExpenses = useMemo(() => expenses.reduce((s, e) => s + e.amount, 0), [expenses]);
   const netIncome = reportData.totalRevenue - totalExpenses;
+  // Top expense categories (translated) drive the Expenses card caption.
+  const topExpenseCats = useMemo(() => {
+    const byCat: Record<string, number> = {};
+    expenses.forEach((e) => { byCat[e.category] = (byCat[e.category] || 0) + e.amount; });
+    return Object.entries(byCat)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3)
+      .map(([c]) => t(lang, `expenses.cat_${c}`))
+      .join(' · ');
+  }, [expenses, lang]);
+  const avgNights = reportData.bookingCount ? reportData.totalNights / reportData.bookingCount : 0;
 
   // ============= OCCUPANCY (year / month) =============
   const [occYear, setOccYear] = useState(new Date().getFullYear());
@@ -367,47 +378,36 @@ export default function ReportsView({
               </span>
             </div>
           ) : (
-            <>
-              {/* P&L row */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-                <StatCard variant="bold" tone="emerald"
-                          label={t(lang, 'reports.income')}
-                          value={`${currency} ${reportData.totalRevenue.toLocaleString()}`}
-                          Icon={CreditCard} />
-                <StatCard variant="bold" tone="rose"
-                          label={t(lang, 'reports.expenses')}
-                          value={`${currency} ${totalExpenses.toLocaleString()}`}
-                          Icon={TrendDown} />
-                <StatCard variant="bold" tone={netIncome < 0 ? 'amber' : 'slate'}
-                          label={t(lang, 'reports.netIncome')}
-                          value={`${currency} ${netIncome.toLocaleString()}`}
-                          Icon={Scales} />
-              </div>
-
-              {/* Cash row — what's been collected vs what's still owed across the date range. */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                <StatCard variant="bold" tone="emerald"
-                          label={t(lang, 'reports.totalDeposit')}
-                          value={`${currency} ${(reportData.totalDeposit ?? 0).toLocaleString()}`}
-                          Icon={Wallet} />
-                <StatCard variant="bold" tone="amber"
-                          label={t(lang, 'reports.totalRemaining')}
-                          value={`${currency} ${(reportData.totalRemaining ?? 0).toLocaleString()}`}
-                          Icon={Hourglass} />
-              </div>
-
-              {/* KPI row */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                <StatCard variant="bold" tone="blue"
-                          label={t(lang, 'reports.totalNights')}
-                          value={String(reportData.totalNights)}
-                          Icon={Calendar} />
-                <StatCard variant="bold" tone="indigo"
-                          label={t(lang, 'reports.totalBookings')}
-                          value={String(reportData.bookingCount)}
-                          Icon={Users} />
-              </div>
-            </>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              <OverviewCard tone="emerald" Icon={CreditCard}
+                            label={t(lang, 'reports.income')}
+                            value={reportData.totalRevenue.toLocaleString()} unit={currency}
+                            caption={t(lang, 'reports.capPeriodRevenue')} />
+              <OverviewCard tone="rose" Icon={TrendDown}
+                            label={t(lang, 'reports.expenses')}
+                            value={totalExpenses.toLocaleString()} unit={currency}
+                            caption={topExpenseCats || '—'} />
+              <OverviewCard tone={netIncome < 0 ? 'rose' : 'slate'} Icon={Scales}
+                            label={t(lang, 'reports.netIncome')}
+                            value={netIncome.toLocaleString()} unit={currency}
+                            caption={t(lang, 'reports.capNetFormula')} />
+              <OverviewCard tone="emerald" Icon={Wallet}
+                            label={t(lang, 'reports.totalDeposit')}
+                            value={(reportData.totalDeposit ?? 0).toLocaleString()} unit={currency}
+                            caption={t(lang, 'reports.capPaidUpfront')} />
+              <OverviewCard tone="amber" Icon={Hourglass}
+                            label={t(lang, 'reports.totalRemaining')}
+                            value={(reportData.totalRemaining ?? 0).toLocaleString()} unit={currency}
+                            caption={t(lang, 'reports.capDueOnArrival')} />
+              <OverviewCard tone="blue" Icon={Calendar}
+                            label={t(lang, 'reports.totalNights')}
+                            value={String(reportData.totalNights)} unit={t(lang, 'reports.unitNights')}
+                            caption={`${t(lang, 'reports.capAvgPrefix')} ${avgNights.toFixed(1)} ${t(lang, 'reports.capNightsPerBooking')}`} />
+              <OverviewCard tone="violet" Icon={Users}
+                            label={t(lang, 'reports.totalBookings')}
+                            value={String(reportData.bookingCount)} unit={t(lang, 'reports.unitBookings')}
+                            caption={t(lang, 'reports.capWithinPeriod')} />
+            </div>
           )}
         </>
       ) : (
@@ -777,6 +777,46 @@ function HeatmapChart({ data, lang }: {
         ))}
       </tbody>
     </table>
+  );
+}
+
+// Overview totals card — white surface, colored accent bar on the start edge,
+// pastel icon chip, big number + unit, and a colored descriptive caption.
+type OverviewTone = 'emerald' | 'rose' | 'blue' | 'amber' | 'violet' | 'slate';
+
+const OV_TONE: Record<OverviewTone, { bar: string; chip: string; caption: string }> = {
+  emerald: { bar: 'bg-emerald-500', chip: 'bg-emerald-50 text-emerald-600', caption: 'text-emerald-600' },
+  rose:    { bar: 'bg-rose-500',    chip: 'bg-rose-50 text-rose-500',       caption: 'text-rose-500' },
+  blue:    { bar: 'bg-blue-500',    chip: 'bg-blue-50 text-blue-600',       caption: 'text-blue-600' },
+  amber:   { bar: 'bg-amber-500',   chip: 'bg-amber-50 text-amber-600',     caption: 'text-amber-600' },
+  violet:  { bar: 'bg-violet-500',  chip: 'bg-violet-50 text-violet-600',   caption: 'text-violet-600' },
+  slate:   { bar: 'bg-slate-700',   chip: 'bg-slate-100 text-slate-600',    caption: 'text-slate-500' },
+};
+
+function OverviewCard({ tone, label, value, unit, caption, Icon }: {
+  tone: OverviewTone;
+  label: string;
+  value: string;
+  unit: string;
+  caption: string;
+  Icon: any;
+}) {
+  const c = OV_TONE[tone];
+  return (
+    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm relative overflow-hidden p-6 sm:p-7 min-h-[170px] flex flex-col justify-between gap-3">
+      <span className={`absolute inset-y-0 start-0 w-1.5 ${c.bar}`} />
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-sm font-black text-slate-600 tracking-tight">{label}</span>
+        <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${c.chip}`}>
+          <Icon size={20} weight="duotone" />
+        </div>
+      </div>
+      <div className="flex items-baseline gap-2 flex-wrap">
+        <span className="text-4xl sm:text-5xl font-black tabular-nums tracking-tighter text-slate-900" dir="ltr">{value}</span>
+        <span className="text-sm font-bold text-slate-400">{unit}</span>
+      </div>
+      <p className={`text-xs font-black ${c.caption}`}>{caption}</p>
+    </div>
   );
 }
 

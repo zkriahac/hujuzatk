@@ -4,6 +4,16 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
+    <!-- The static hero shell below lives inside #root and mirrors the homepage
+         hero. It must only paint on "/" — on any other route (workspace, /user,
+         etc.) it would flash the homepage hero before React mounts. This head
+         guard tags <html> on the homepage; the style hides the shell everywhere
+         else, applied before #hero-shell is parsed so it never paints. -->
+    <script>
+      if (location.pathname === '/') document.documentElement.classList.add('is-home');
+    </script>
+    <style>html:not(.is-home) #hero-shell { display: none !important; }</style>
+
     <!-- Primary SEO -->
     <title>حجوزاتك – نظام إدارة الفنادق والحجوزات | Hujuzatk PMS</title>
     <meta name="description" content="حجوزاتك نظام إدارة الحجوزات والفنادق للفنادق والشقق والإيجارات السياحية — عربي أولاً، يخدم المضيفين في السعودية والخليج وحول العالم. تقويم 5 سنوات، فوترة تلقائية، مزامنة Airbnb وجاثرين وBooking.com، عملات متعددة، وواجهة عربية وإنجليزية. تجربة مجانية 14 يوم." />
