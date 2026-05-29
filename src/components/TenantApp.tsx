@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { format, addMonths, differenceInCalendarDays, differenceInDays, eachMonthOfInterval, endOfMonth, parseISO, startOfMonth } from 'date-fns';
+import { format, addMonths, differenceInCalendarDays, endOfMonth, parseISO, startOfMonth } from 'date-fns';
 import { CaretDown, CalendarBlank, ListBullets, ChartPie, GearSix, ShieldCheck, ArrowsClockwise, CloudArrowDown, CurrencyCircleDollar } from 'phosphor-react';
 import { authService, type SessionUser } from '../lib/authService';
 import { dataService } from '../lib/dataService';
@@ -8,7 +8,6 @@ import { trackLogout, trackBookingCreated, trackBookingUpdated, trackBookingCanc
 import { getDir, type Language } from '../lib/i18n';
 import { t } from '../lib/i18n';
 import { cn } from '../utils/cn';
-import { formatTz } from '../utils/formatTz';
 import { DEFAULT_ROOMS, type View, type ListFilter, getMonthNumber, getEffectiveStatus } from '../utils/constants';
 import type { Booking } from '../db';
 import CalendarView from './CalendarView';
@@ -566,6 +565,8 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
     return () => { cancelled = true; };
   }, [currentView, reportStartDate, reportEndDate, reportType]);
 
+  // Overview-tab totals only — cheap O(n) sums. Per-room and monthly occupancy
+  // (the expensive day-by-day loop) live in the Occupancy tab inside ReportsView.
   const reportData = useMemo(() => {
     const filtered = reportBookings.filter((b: Booking) => {
       if (b.status === 'CANCELED') return false;
@@ -582,62 +583,13 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
         ? (b as any).remaining
         : Math.max(0, (b.totalPrice || 0) - (b.deposit || 0));
 
-    const roomStats = rooms.map((room) => {
-      const roomBookings = filtered.filter((b: Booking) => b.room === room.id);
-      const totalNights = roomBookings.reduce((sum: number, b: Booking) => sum + b.nights, 0);
-      const totalRevenue = roomBookings.reduce((sum: number, b: Booking) => sum + b.totalPrice, 0);
-      const totalDeposit = roomBookings.reduce((sum: number, b: Booking) => sum + (b.deposit || 0), 0);
-      const totalRemaining = roomBookings.reduce((sum: number, b: Booking) => sum + remainingOf(b), 0);
-      const start = parseISO(reportStartDate);
-      const end = parseISO(reportEndDate);
-      const daysInReport = differenceInDays(end, start) + 1;
-      let occupiedDays = 0;
-      if (daysInReport > 0) {
-        let current = start;
-        while (current <= end) {
-          const dStr = format(current, 'yyyy-MM-dd');
-          const isOccupied = roomBookings.some((b) => dStr >= b.checkIn && dStr < b.checkOut);
-          if (isOccupied) occupiedDays++;
-          current = new Date(current.getTime() + 86400000);
-        }
-      }
-      const occupancyRate = daysInReport > 0 ? (occupiedDays / daysInReport) * 100 : 0;
-      return { roomId: room.id, roomName: room.name, totalNights, totalRevenue, totalDeposit, totalRemaining, occupancyRate };
-    });
-
     const totalRevenue = filtered.reduce((sum: number, b: Booking) => sum + b.totalPrice, 0);
     const totalDeposit = filtered.reduce((sum: number, b: Booking) => sum + (b.deposit || 0), 0);
     const totalRemaining = filtered.reduce((sum: number, b: Booking) => sum + remainingOf(b), 0);
     const totalNights = filtered.reduce((sum: number, b: Booking) => sum + b.nights, 0);
 
-    const months = eachMonthOfInterval({ start: parseISO(reportStartDate), end: parseISO(reportEndDate) });
-    const monthlyStats = months.map((month) => {
-      const monthEnd = format(endOfMonth(month), 'yyyy-MM-dd');
-      const realStart = format(startOfMonth(month), 'yyyy-MM-dd');
-      const monthBookings = reportBookings.filter(
-        (b) =>
-          b.status !== 'CANCELED' &&
-          b.checkIn <= monthEnd &&
-          b.checkOut > realStart &&
-          (reportRoomFilter === 'ALL' || b.room === reportRoomFilter),
-      );
-      const revenue = monthBookings.reduce((sum, b) => {
-        return b.checkIn >= realStart && b.checkIn <= monthEnd ? sum + b.totalPrice : sum;
-      }, 0);
-      const occupancy = monthBookings.reduce((sum, b) => {
-        const s = b.checkIn < realStart ? parseISO(realStart) : parseISO(b.checkIn);
-        const e = b.checkOut > monthEnd ? parseISO(monthEnd) : parseISO(b.checkOut);
-        const days = differenceInDays(e, s);
-        return sum + Math.max(0, days);
-      }, 0);
-      const totalPossibleNights = differenceInDays(parseISO(monthEnd), parseISO(realStart)) + 1;
-      const totalRooms = reportRoomFilter === 'ALL' ? rooms.length : 1;
-      const fillRate = totalPossibleNights > 0 ? (occupancy / (totalPossibleNights * totalRooms)) * 100 : 0;
-      return { month: formatTz(month, 'MMM yyyy', tz, lang), revenue, fillRate };
-    });
-
-    return { roomStats, totalRevenue, totalDeposit, totalRemaining, totalNights, bookingCount: filtered.length, monthlyStats };
-  }, [reportBookings, reportStartDate, reportEndDate, reportRoomFilter, reportType, rooms, tz, lang]);
+    return { totalRevenue, totalDeposit, totalRemaining, totalNights, bookingCount: filtered.length };
+  }, [reportBookings, reportStartDate, reportEndDate, reportRoomFilter, reportType]);
 
   const handleLogout = async () => {
     trackLogout();
