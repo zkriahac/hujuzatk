@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Layout, ChartPie, CreditCard, Calendar, Users, Target, FileXls, TrendDown, Scales, CaretDown, CaretLeft, CaretRight, ChartBar, Table, Wallet, Hourglass } from 'phosphor-react';
+import { Layout, ChartPie, CreditCard, Calendar, Users, Target, FileXls, TrendDown, Scales, CaretLeft, CaretRight, ChartBar, Table, Wallet, Hourglass } from 'phosphor-react';
 import { parseISO, differenceInDays, format, endOfMonth } from 'date-fns';
 import { t, type Language } from '../lib/i18n';
 import { apolloClient } from '../lib/apolloClient';
@@ -303,18 +303,14 @@ export default function ReportsView({
             <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
               <div>
                 <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2 block">{t(lang, 'reports.type')}</label>
-                <div className="relative">
-                  <select
-                    value={reportType}
-                    onChange={(e) => setReportType(e.target.value as 'stay' | 'created')}
-                    className="w-full bg-slate-50 border border-slate-100 rounded-full px-5 py-2.5 pe-10 text-sm font-black focus:ring-2 focus:ring-emerald-500 transition-all"
-                    style={{ appearance: 'none', WebkitAppearance: 'none' }}
-                  >
-                    <option value="stay">{t(lang, 'reports.stayDate')}</option>
-                    <option value="created">{t(lang, 'reports.createdDate')}</option>
-                  </select>
-                  <CaretDown size={14} weight="bold" className="pointer-events-none absolute top-1/2 -translate-y-1/2 end-4 text-slate-400" />
-                </div>
+                <select
+                  value={reportType}
+                  onChange={(e) => setReportType(e.target.value as 'stay' | 'created')}
+                  className="w-full bg-slate-50 border border-slate-100 rounded-full px-5 py-2.5 text-sm font-black focus:ring-2 focus:ring-emerald-500 transition-all"
+                >
+                  <option value="stay">{t(lang, 'reports.stayDate')}</option>
+                  <option value="created">{t(lang, 'reports.createdDate')}</option>
+                </select>
               </div>
               <div>
                 <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2 block">{t(lang, 'reports.fromDate')}</label>
@@ -336,20 +332,16 @@ export default function ReportsView({
               </div>
               <div>
                 <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2 block">{t(lang, 'reports.roomFilter')}</label>
-                <div className="relative">
-                  <select
-                    value={reportRoomFilter}
-                    onChange={(e) => setReportRoomFilter(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-100 rounded-full px-5 py-2.5 pe-10 text-sm font-black focus:ring-2 focus:ring-emerald-500"
-                    style={{ appearance: 'none', WebkitAppearance: 'none' }}
-                  >
-                    <option value="ALL">{t(lang, 'reports.allRooms')}</option>
-                    {rooms.map((r: any) => (
-                      <option key={r.id} value={r.id}>{r.name}</option>
-                    ))}
-                  </select>
-                  <CaretDown size={14} weight="bold" className="pointer-events-none absolute top-1/2 -translate-y-1/2 end-4 text-slate-400" />
-                </div>
+                <select
+                  value={reportRoomFilter}
+                  onChange={(e) => setReportRoomFilter(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-100 rounded-full px-5 py-2.5 text-sm font-black focus:ring-2 focus:ring-emerald-500"
+                >
+                  <option value="ALL">{t(lang, 'reports.allRooms')}</option>
+                  {rooms.map((r: any) => (
+                    <option key={r.id} value={r.id}>{r.name}</option>
+                  ))}
+                </select>
               </div>
             </div>
             <div className="flex justify-end mt-5">
@@ -433,20 +425,16 @@ export default function ReportsView({
               </div>
               <div className="min-w-[180px]">
                 <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2 block">{t(lang, 'reports.month')}</label>
-                <div className="relative">
-                  <select
-                    value={occMonth}
-                    onChange={(e) => setOccMonth(e.target.value === 'all' ? 'all' : Number(e.target.value))}
-                    className="w-full bg-slate-50 border border-slate-100 rounded-full px-5 py-2.5 pe-10 text-sm font-black focus:ring-2 focus:ring-emerald-500"
-                    style={{ appearance: 'none', WebkitAppearance: 'none' }}
-                  >
-                    <option value="all">{t(lang, 'reports.allMonths')}</option>
-                    {MONTH_LABELS.map((m, i) => (
-                      <option key={i} value={i + 1}>{m}</option>
-                    ))}
-                  </select>
-                  <CaretDown size={14} weight="bold" className="pointer-events-none absolute top-1/2 -translate-y-1/2 end-4 text-slate-400" />
-                </div>
+                <select
+                  value={occMonth}
+                  onChange={(e) => setOccMonth(e.target.value === 'all' ? 'all' : Number(e.target.value))}
+                  className="w-full bg-slate-50 border border-slate-100 rounded-full px-5 py-2.5 text-sm font-black focus:ring-2 focus:ring-emerald-500"
+                >
+                  <option value="all">{t(lang, 'reports.allMonths')}</option>
+                  {MONTH_LABELS.map((m, i) => (
+                    <option key={i} value={i + 1}>{m}</option>
+                  ))}
+                </select>
               </div>
               <div className="ms-auto">
                 <button

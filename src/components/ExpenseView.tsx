@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
 import {
   CurrencyCircleDollar, Trash, X, Pencil, Lightning,
-  Drop, Wrench, Package, DotsThree, CaretDown, FileXls, Receipt, Warning,
+  Drop, Wrench, Package, DotsThree, FileXls, Receipt, Warning,
 } from 'phosphor-react';
 import { apolloClient } from '../lib/apolloClient';
 import { t, type Language } from '../lib/i18n';
@@ -217,16 +217,12 @@ export default function ExpenseView({ session, lang, tz, currency }: Props) {
         </div>
         <div className="flex flex-col gap-1">
           <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">{t(lang, 'expenses.room')}</label>
-          <div className="relative">
-            <select value={roomFilter} onChange={(e) => setRoomFilter(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-2 pe-10 text-sm font-black focus:ring-2 focus:ring-emerald-500"
-              style={{ appearance: 'none', WebkitAppearance: 'none' }}>
-              <option value="all">{t(lang, 'expenses.allRooms')}</option>
-              <option value="general">{t(lang, 'expenses.general')}</option>
-              {rooms.map((r: any) => <option key={r.id} value={r.id}>{r.name}</option>)}
-            </select>
-            <CaretDown size={14} weight="bold" className="pointer-events-none absolute top-1/2 -translate-y-1/2 end-4 text-slate-400" />
-          </div>
+          <select value={roomFilter} onChange={(e) => setRoomFilter(e.target.value)}
+            className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-2 text-sm font-black focus:ring-2 focus:ring-emerald-500">
+            <option value="all">{t(lang, 'expenses.allRooms')}</option>
+            <option value="general">{t(lang, 'expenses.general')}</option>
+            {rooms.map((r: any) => <option key={r.id} value={r.id}>{r.name}</option>)}
+          </select>
         </div>
       </div>
 
