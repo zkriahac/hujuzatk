@@ -372,6 +372,22 @@
             <a href="/privacy" style="color:#047857;text-decoration:none;margin:0 10px;">Privacy</a>
             <a href="/terms" style="color:#047857;text-decoration:none;margin:0 10px;">Terms</a>
           </nav>
+
+          <!-- Crawlable prose in the raw HTML stream (outside <noscript>, inside
+               #root). Non-JS crawlers and word-count tools that strip <noscript>
+               read this; React's createRoot wipes #root on mount, so JS visitors
+               get the full landing page instead. Keep facts in sync with
+               src/pages/LandingPage.tsx and the <noscript> block above. -->
+          <section id="hs-seo" style="max-width:760px;margin:56px auto 0;text-align:start;font-size:15px;line-height:1.75;color:#475569;">
+            <h2 style="font-size:1.4rem;color:#0B1B3A;font-weight:700;margin:0 0 10px;">Arabic-first booking management for hotels and vacation rentals</h2>
+            <p style="margin:0 0 18px;">Hujuzatk is a cloud property management system (PMS) for independent hotels, furnished apartments, chalets, guesthouses, and short-term rentals. It is built Arabic-first — native right-to-left layout, Arabic date formats, and the Saudi Riyal alongside other Gulf currencies — so Arabic is a first-class language, not a translation bolted onto an English product. It is strongest in Saudi Arabia and the GCC, and is used by hosts worldwide. You manage every property from a single booking calendar that plans reservations up to five years ahead, on any phone, with no app-store download required.</p>
+
+            <h2 style="font-size:1.4rem;color:#0B1B3A;font-weight:700;margin:0 0 10px;">One calendar across Airbnb, Gathern, and Booking.com</h2>
+            <p style="margin:0 0 18px;">Connect your listings and let Hujuzatk keep availability in sync. The Pro plan adds bidirectional iCal channel sync with Airbnb, Gathern, and Booking.com, scheduled daily to prevent double-bookings. Beyond the calendar, Hujuzatk generates branded PDF invoices automatically at check-out, tracks expenses per property, and reports the numbers that matter — occupancy rate, revenue per available room (RevPAR), and a per-channel revenue breakdown — so you can see what each room and each platform actually earns.</p>
+
+            <h2 style="font-size:1.4rem;color:#0B1B3A;font-weight:700;margin:0 0 10px;">Simple annual pricing, free to start</h2>
+            <p style="margin:0;">Start with a 14-day free trial covering three rooms — no credit card required. Paid plans bill annually: Basic at $40/year (about 150 SAR) for up to 10 rooms, Pro at $90/year (about 338 SAR) for up to 30 rooms with full channel sync, and Enterprise at $140/year (about 525 SAR) for unlimited rooms. Every paid tier includes unlimited bookings, the five-year calendar, automated invoicing, full financial reports, a complete Arabic and English interface, and the installable mobile web app. <a href="/user?tab=register" style="color:#047857;text-decoration:none;font-weight:600;">Start your free trial</a> or read the <a href="/ar/best-vacation-rental-pms-saudi-arabia/" style="color:#047857;text-decoration:none;font-weight:600;">guide to choosing a PMS in Saudi Arabia</a>.</p>
+          </section>
         </div>
       </div>
     </div>
