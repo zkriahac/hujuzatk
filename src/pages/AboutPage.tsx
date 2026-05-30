@@ -68,6 +68,15 @@ export default function AboutPage() {
     document.documentElement.dir = c.dir;
   }, [lang, c.dir]);
 
+  // Point at the authoritative static /about/ page (this SPA route normally
+  // hard-redirects there) so the canonical never lingers as the homepage.
+  useEffect(() => {
+    const link = document.querySelector<HTMLLinkElement>('link[rel="canonical"]');
+    const prevHref = link?.getAttribute('href') ?? null;
+    if (link) link.setAttribute('href', 'https://hujuzatk.com/about/');
+    return () => { if (link && prevHref !== null) link.setAttribute('href', prevHref); };
+  }, []);
+
   const cycleLang = () => {
     const order: Lang[] = ['en', 'ar', 'tr'];
     const next = order[(order.indexOf(lang) + 1) % order.length];

@@ -8,9 +8,10 @@
     <meta name="description" content="حجوزاتك هو نظام إدارة الحجوزات (PMS) للفنادق والشقق المخدومة والإيجارات السياحية والشاليهات في السعودية والخليج وتركيا. نبني أداة تناسب طريقة العمل الفعلية للمضيف المستقل — وليس نسخة معربة من حلول غربية ضخمة." />
     <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
     <link rel="canonical" href="https://hujuzatk.com/about/" />
+    <!-- Single URL serves all three languages via a client-side toggle. Pointing
+         distinct ar/en/tr hreflang at the same href is invalid (Google drops the
+         whole cluster), so we declare only the page language + x-default. -->
     <link rel="alternate" hreflang="ar" href="https://hujuzatk.com/about/" />
-    <link rel="alternate" hreflang="en" href="https://hujuzatk.com/about/" />
-    <link rel="alternate" hreflang="tr" href="https://hujuzatk.com/about/" />
     <link rel="alternate" hreflang="x-default" href="https://hujuzatk.com/about/" />
 
     <meta property="og:type" content="website" />
@@ -154,6 +155,10 @@
       nav.breadcrumb a { color: var(--brand-green-deep); text-decoration: none; }
       h1 { font-size: 34px; line-height: 1.2; margin: 0 0 16px; color: var(--ink-900); }
       h2 { font-size: 24px; line-height: 1.3; margin: 48px 0 16px; color: var(--ink-900); padding-bottom: 8px; border-bottom: 2px solid var(--brand-green); display: inline-block; }
+      /* The en/tr language blocks share this page (lang=ar) — only the Arabic
+         block keeps a real <h1>. Their titles use this h1-looking class so the
+         page has exactly one <h1> without changing the visual. */
+      .alt-title { font-size: 34px; line-height: 1.2; margin: 0 0 16px; color: var(--ink-900); border: none; padding: 0; display: block; }
       h3 { font-size: 19px; line-height: 1.4; margin: 28px 0 10px; color: var(--ink-900); }
       p { margin: 0 0 16px; color: var(--ink-500); }
       p strong { color: var(--ink-900); }
@@ -302,7 +307,7 @@
 
       <!-- ========== ENGLISH ========== -->
       <article id="en" lang="en" dir="ltr">
-        <h1>About Hujuzatk</h1>
+        <h2 class="alt-title">About Hujuzatk</h2>
         <p class="meta">Last updated: May 28, 2026 · Hujuzatk team</p>
 
         <p class="lead">
@@ -367,7 +372,7 @@
 
       <!-- ========== TURKISH ========== -->
       <article id="tr" lang="tr" dir="ltr">
-        <h1>Hujuzatk Hakkında</h1>
+        <h2 class="alt-title">Hujuzatk Hakkında</h2>
         <p class="meta">Son güncelleme: 28 Mayıs 2026 · Hujuzatk ekibi</p>
 
         <p class="lead">

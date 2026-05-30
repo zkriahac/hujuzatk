@@ -27,6 +27,24 @@ export function StoryPage() {
   const { scrollYProgress } = useScroll({ container: scrollerRef });
   const progress = useSpring(scrollYProgress, { stiffness: 90, damping: 24, mass: 0.4 });
 
+  // Per-route SEO. Without this the page inherits index.html's homepage title +
+  // canonical, so /story would be folded into the homepage in search.
+  useEffect(() => {
+    const prevTitle = document.title;
+    document.title = 'قصة حجوزاتك — Our Story | Hujuzatk PMS';
+    const link = document.querySelector<HTMLLinkElement>('link[rel="canonical"]');
+    const prevHref = link?.getAttribute('href') ?? null;
+    if (link) link.setAttribute('href', 'https://hujuzatk.com/story');
+    const meta = document.querySelector<HTMLMetaElement>('meta[name="description"]');
+    const prevDesc = meta?.getAttribute('content') ?? null;
+    if (meta) meta.setAttribute('content', 'قصة حجوزاتك: لماذا بنينا نظام إدارة حجوزات عربياً أولاً للمضيفين في السعودية والخليج. The story behind Hujuzatk — an Arabic-first PMS built for hosts in Saudi Arabia and the GCC.');
+    return () => {
+      document.title = prevTitle;
+      if (link && prevHref !== null) link.setAttribute('href', prevHref);
+      if (meta && prevDesc !== null) meta.setAttribute('content', prevDesc);
+    };
+  }, []);
+
   useEffect(() => {
     const el = scrollerRef.current;
     if (!el) return;

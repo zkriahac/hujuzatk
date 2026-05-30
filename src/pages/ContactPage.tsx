@@ -69,6 +69,15 @@ export default function ContactPage() {
     document.documentElement.dir = c.dir;
   }, [lang, c.dir]);
 
+  // Self-referencing canonical so /contact isn't folded into the homepage
+  // (it otherwise inherits index.html's homepage canonical).
+  useEffect(() => {
+    const link = document.querySelector<HTMLLinkElement>('link[rel="canonical"]');
+    const prevHref = link?.getAttribute('href') ?? null;
+    if (link) link.setAttribute('href', 'https://hujuzatk.com/contact');
+    return () => { if (link && prevHref !== null) link.setAttribute('href', prevHref); };
+  }, []);
+
   const cycleLang = () => {
     const order: Lang[] = ['en', 'ar', 'tr'];
     const next = order[(order.indexOf(lang) + 1) % order.length];

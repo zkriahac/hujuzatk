@@ -1087,13 +1087,13 @@ function applySEO(lang: Lang) {
   setMetaProp('og:description', description);
   setMetaProp('og:locale', isAr ? 'ar_AR' : 'en_US');
   setMetaProp('og:type', 'website');
-  setMetaProp('og:url', 'https://hujuzatk.com');
+  setMetaProp('og:url', 'https://hujuzatk.com/');
   setMetaProp('og:image', 'https://hujuzatk.com/og-image.png');
   setMetaName('twitter:card', 'summary_large_image');
   setMetaName('twitter:title', title);
   setMetaName('twitter:description', description);
   setMetaName('twitter:image', 'https://hujuzatk.com/og-image.png');
-  setLinkRel('canonical', 'https://hujuzatk.com');
+  setLinkRel('canonical', 'https://hujuzatk.com/');
   setJsonLD('software', {
     '@context': 'https://schema.org',
     '@type': 'SoftwareApplication',
@@ -2083,29 +2083,46 @@ export function LandingPage() {
 // =====================================================================
 
 // Per-route SEO. SPA shares <head> with index.html, so we patch document.title +
-// meta[name=description] on mount for Legal pages. Without this, Google sees the
-// landing-page title on /terms and /privacy and may classify them as duplicates
-// or thin content.
-function useRouteHead(title: string, description: string) {
+// meta[name=description] + canonical on mount for Legal pages. Without the
+// canonical override these routes keep index.html's homepage canonical, which
+// conflicts with their sitemap entries — Google then folds them into the
+// homepage and they never index independently.
+function useRouteHead(title: string, description: string, canonical?: string) {
   useEffect(() => {
     const prevTitle = document.title;
     document.title = title;
     let meta = document.querySelector<HTMLMetaElement>('meta[name="description"]');
-    let created = false;
+    let createdMeta = false;
     if (!meta) {
       meta = document.createElement('meta');
       meta.name = 'description';
       document.head.appendChild(meta);
-      created = true;
+      createdMeta = true;
     }
     const prevDesc = meta.content;
     meta.content = description;
+
+    // Self-referencing canonical, restored to the prior value on unmount.
+    let link: HTMLLinkElement | null = null;
+    let prevHref: string | null = null;
+    if (canonical) {
+      link = document.querySelector<HTMLLinkElement>('link[rel="canonical"]');
+      if (!link) {
+        link = document.createElement('link');
+        link.rel = 'canonical';
+        document.head.appendChild(link);
+      }
+      prevHref = link.getAttribute('href');
+      link.setAttribute('href', canonical);
+    }
+
     return () => {
       document.title = prevTitle;
-      if (created && meta) meta.remove();
+      if (createdMeta && meta) meta.remove();
       else if (meta) meta.content = prevDesc;
+      if (link && prevHref !== null) link.setAttribute('href', prevHref);
     };
-  }, [title, description]);
+  }, [title, description, canonical]);
 }
 
 export function PrivacyPolicy() {
@@ -2115,7 +2132,8 @@ export function PrivacyPolicy() {
     isAr ? 'سياسة الخصوصية | حجوزاتك' : 'Privacy Policy | Hujuzatk PMS',
     isAr
       ? 'سياسة خصوصية حجوزاتك: ما البيانات التي نجمعها، كيف نستخدمها، حقوقك، وكيفية حذف حسابك أو طلب بياناتك.'
-      : 'Hujuzatk Privacy Policy — what data we collect, how we use it, your rights under GDPR, data retention, security practices, and how to delete your account or export data.'
+      : 'Hujuzatk Privacy Policy — what data we collect, how we use it, your rights under GDPR, data retention, security practices, and how to delete your account or export data.',
+    'https://hujuzatk.com/privacy'
   );
   const cycleLang = () => {
     const order: Lang[] = ['en', 'ar', 'tr'];
@@ -2198,7 +2216,8 @@ export function TermsOfService() {
     isAr ? 'شروط الخدمة | حجوزاتك' : 'Terms of Service | Hujuzatk PMS',
     isAr
       ? 'شروط استخدام منصة حجوزاتك لإدارة الحجوزات الفندقية: الاشتراك، التجربة المجانية، حدود المسؤولية، إنهاء الحساب، والقانون المعمول به.'
-      : 'Hujuzatk Terms of Service — subscription terms, free trial conditions, acceptable use, account termination, liability limits, and the governing law for our property management platform.'
+      : 'Hujuzatk Terms of Service — subscription terms, free trial conditions, acceptable use, account termination, liability limits, and the governing law for our property management platform.',
+    'https://hujuzatk.com/terms'
   );
   const cycleLang = () => {
     const order: Lang[] = ['en', 'ar', 'tr'];
