@@ -145,6 +145,15 @@ export async function performSync(integration: any, tenantId: string, mode?: Syn
   let imported = 0, updated = 0, canceled = 0, skipped = 0;
   const errors: string[] = [];
 
+  // Tenant pricing defaults — iCal feeds carry no pricing data, so we seed
+  // newly-created synced bookings with the tenant's configured defaultNightPrice
+  // (and defaultTax) instead of hardcoded zeros. Existing bookings' prices are
+  // never touched by sync — see the UPDATE block below. If settings are missing
+  // we fall back to 0, matching pre-existing behaviour.
+  const tenantSettings = await prisma.tenantSettings.findUnique({ where: { tenantId } });
+  const defaultNightPrice: number = tenantSettings?.defaultNightPrice ?? 0;
+  const defaultTaxPct: number = tenantSettings?.defaultTax ?? 0;
+
   let events;
   try {
     events = await fetchAndParseICal(integration.icalUrl);
@@ -293,6 +302,15 @@ export async function performSync(integration: any, tenantId: string, mode?: Syn
       const guestName = parseGuestName(event.summary, event.description, integration.channelName);
       const { externalUrl, externalReservationId, phoneStub } = extractFromDescription(event.description);
 
+      // Pricing seed for a brand-new synced booking. iCal feeds carry no money
+      // fields, so we use the tenant's configured defaults. The host can edit
+      // these from the booking modal and their edits are preserved on every
+      // subsequent sync (the UPDATE block below never writes price fields).
+      const seedNightPrice = defaultNightPrice;
+      const seedTotalPrice = nights * seedNightPrice;
+      const seedTax = seedTotalPrice * (defaultTaxPct / 100);
+      const seedRemaining = seedTotalPrice + seedTax;
+
       const bookingData = {
         tenantId,
         guestName,
@@ -301,11 +319,11 @@ export async function performSync(integration: any, tenantId: string, mode?: Syn
         checkIn: event.start,
         checkOut: event.end,
         nights,
-        nightPrice: 0,
-        totalPrice: 0,
-        tax: 0,
+        nightPrice: seedNightPrice,
+        totalPrice: seedTotalPrice,
+        tax: seedTax,
         deposit: 0,
-        remaining: 0,
+        remaining: seedRemaining,
         status,
         source: integration.channelName,
         notes: null,                                 // notes stay clean for synced bookings
