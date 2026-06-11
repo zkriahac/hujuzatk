@@ -41,7 +41,7 @@ All three platforms issue a private iCal export URL per listing. Users paste tha
 |----------|------|
 | Airbnb | Manage listings → Calendar → Export calendar → Copy URL |
 | Booking.com | Extranet → Calendar → Sync calendars → Export calendar → Copy iCal URL |
-| Gathern (جاذبين) | الإعدادات ← مزامنة التقويم ← نسخ الرابط |
+| Gathern (جاثرين) | الإعدادات ← مزامنة التقويم ← نسخ الرابط |
 
 ---
 
