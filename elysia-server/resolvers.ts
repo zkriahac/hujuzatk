@@ -107,6 +107,8 @@ export const resolvers = {
 			if (filter?.status) where.status = filter.status.toLowerCase();
 			if (filter?.room) where.room = filter.room;
 			if (filter?.guestName) where.guestName = { contains: filter.guestName, mode: 'insensitive' };
+			if (filter?.externalChannel) where.externalChannel = filter.externalChannel;
+			if (filter?.source) where.source = filter.source;
 			if (filter?.startDate || filter?.endDate) {
 				where.checkIn = {};
 				if (filter.startDate) where.checkIn.gte = new Date(filter.startDate);

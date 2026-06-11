@@ -360,6 +360,11 @@ export const typeDefs = `
     startDate: DateTime
     endDate: DateTime
     guestName: String
+    # Channel-sync filters. externalChannel is the canonical value set by
+    # performSync ("airbnb" | "gathern" | "booking.com", lowercased). source
+    # is user-editable and also covers manually-typed values like "WhatsApp".
+    externalChannel: String
+    source: String
   }
 
   type Subscription {
