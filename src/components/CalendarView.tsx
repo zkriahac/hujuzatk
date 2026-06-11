@@ -343,13 +343,21 @@ export default function CalendarView({
                       <td
                         onClick={() => setSelectedDateStr(dStr)}
                         className={cn(
-                          'w-12 sm:w-24 border-slate-200 text-center text-[10px] sm:text-[12px] font-black cursor-pointer sticky z-30 transition-colors p-0 sm:p-2 whitespace-nowrap',
-                          isRtl ? 'right-0 border-l' : 'left-0 border-r',
+                          // border-y matches the horizontal lines of the room cells (which use
+                          // `border border-slate-100`). We deliberately drop the directional
+                          // border-r/-l here so the adjacent room cell's left border is the
+                          // single separator between date and rooms (no double border).
+                          'w-12 sm:w-24 border-y border-slate-100 text-center text-[10px] sm:text-[12px] font-black cursor-pointer sticky z-30 transition-colors p-0 sm:p-2 whitespace-nowrap',
+                          isRtl ? 'right-0' : 'left-0',
                           isToday
                             ? 'bg-emerald-600 text-white shadow-xl scale-105 z-40'
                             : isPast
                             ? 'bg-red-50 text-red-400'
-                            : 'bg-white text-slate-500 hover:bg-slate-100/30',
+                            : 'bg-white text-slate-500',
+                          // Row-hover highlight: hovering ANY cell in the row lights the date.
+                          // Skipped when the cell has its own strong background (today / past
+                          // / selected) so we don't fight those states.
+                          !isToday && !isPast && selectedDateStr !== dStr && 'group-hover:bg-emerald-50 group-hover:text-emerald-700',
                           selectedDateStr === dStr && !isToday && 'bg-emerald-50 text-emerald-600 border-l-4 border-l-emerald-600',
                         )}
                       >
