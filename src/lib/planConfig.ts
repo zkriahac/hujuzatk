@@ -13,9 +13,9 @@ export interface PlanConfig {
 
 export const PLANS: Record<PlanKey, PlanConfig> = {
   trial:      { maxRooms: 3,  integrationsEnabled: false, priceUsd: 0,   trialDays: 14 },
-  basic:      { maxRooms: 10, integrationsEnabled: false, priceUsd: 35 },
-  pro:        { maxRooms: 30, integrationsEnabled: true,  priceUsd: 58 },
-  enterprise: { maxRooms: Number.MAX_SAFE_INTEGER, integrationsEnabled: true, priceUsd: 120 },
+  basic:      { maxRooms: 10, integrationsEnabled: false, priceUsd: 40 },
+  pro:        { maxRooms: 30, integrationsEnabled: true,  priceUsd: 90 },
+  enterprise: { maxRooms: Number.MAX_SAFE_INTEGER, integrationsEnabled: true, priceUsd: 140 },
 };
 
 export const PLAN_ORDER: PlanKey[] = ['trial', 'basic', 'pro', 'enterprise'];

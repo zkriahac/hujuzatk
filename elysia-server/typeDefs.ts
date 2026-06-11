@@ -231,6 +231,11 @@ export const typeDefs = `
     getTenant(id: ID!): Tenant
     getAllTenants: [Tenant!]!
     getChannelIntegrations: [ChannelIntegration!]!
+    # Returns the full (unmasked) iCal URL for an integration owned by the
+    # authenticated tenant. The list query masks it for safety; this single
+    # accessor exists so the edit modal can prefill the input instead of
+    # forcing users to paste the URL from scratch.
+    getChannelIntegrationUrl(id: ID!): String!
     getBookings(filter: BookingFilter, limit: Int, offset: Int, sortBy: String, sortOrder: String): [Booking!]!
     getBooking(id: ID!): Booking
     getBookingsByDateRange(startDate: DateTime!, endDate: DateTime!, mode: String): [Booking!]!
@@ -258,7 +263,10 @@ export const typeDefs = `
     deleteBooking(id: ID!): Boolean!
     bulkImportBookings(bookings: [BookingInput!]!): [Booking!]!
     bulkDeleteBookings(ids: [ID!]!): Int!
-    createAdminSubscription(tenantId: ID!, days: Int!): Tenant!
+    # Optional `plan` lets a super-admin grant time AND set the tier in one
+    # atomic call. Without it, plan/maxRooms/integrationsEnabled are left
+    # untouched (legacy behaviour — caller is responsible for adminSetPlan).
+    createAdminSubscription(tenantId: ID!, days: Int!, plan: String): Tenant!
     cancelSubscription(tenantId: ID!): Boolean!
     adminUpdateTenant(tenantId: ID!, input: UpdateTenantInput!): Tenant!
     adminLoginAs(tenantId: ID!): AuthPayload!

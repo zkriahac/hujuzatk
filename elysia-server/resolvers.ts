@@ -204,6 +204,19 @@ export const resolvers = {
 			});
 			return integrations.map(normalizeChannelIntegration);
 		},
+		// Returns the full iCal URL for an integration the tenant owns. We do this
+		// behind an explicit query (not as a default field on ChannelIntegration)
+		// so the masked URL is the default in lists; only the edit modal asks for
+		// the real one when the user clicks Edit.
+		async getChannelIntegrationUrl(_: any, { id }: { id: string }, context: any) {
+			requireAuth(context);
+			const integration = await prisma.channelIntegration.findFirst({
+				where: { id, tenantId: context.user.tenantId },
+				select: { icalUrl: true },
+			});
+			if (!integration) throw new GraphQLError('Integration not found', { extensions: { code: 'NOT_FOUND', http: { status: 404 } } });
+			return integration.icalUrl;
+		},
 	},
 	Mutation: {
 		// Auth
@@ -520,15 +533,29 @@ export const resolvers = {
 			const updated = await prisma.tenant.update({ where: { id: context.user.tenantId }, data: { rooms: updatedRooms }, include: { settings: true, _count: { select: { bookings: true } } } });
 			return { ...normalizeTenant(updated), bookingsCount: updated._count?.bookings || 0 };
 		},
-		async createAdminSubscription(_: any, { tenantId, days }: any, context: any) {
+		async createAdminSubscription(_: any, { tenantId, days, plan }: { tenantId: string; days: number; plan?: string }, context: any) {
 			await requireSuperAdmin(context);
 			if (days <= 0) throw new GraphQLError('Days must be positive', { extensions: { code: 'BAD_USER_INPUT', http: { status: 400 } } });
 			const tenant = await prisma.tenant.findUnique({ where: { id: tenantId } });
 			if (!tenant) throw new GraphQLError('Tenant not found', { extensions: { code: 'NOT_FOUND', http: { status: 404 } } });
+			if (plan !== undefined && plan !== null && !isValidPlan(plan)) {
+				throw new GraphQLError(`Invalid plan: ${plan}. Must be one of trial | basic | pro | enterprise.`, { extensions: { code: 'BAD_USER_INPUT', http: { status: 400 } } });
+			}
 			const validUntil = new Date();
 			validUntil.setDate(validUntil.getDate() + days);
-			const updated = await prisma.tenant.update({ where: { id: tenantId }, data: { subscriptionStatus: 'active', validUntil }, include: { settings: true, _count: { select: { bookings: true } } } });
-			await prisma.payment.create({ data: { tenantId, amount: 0, currency: 'OMR', status: 'completed', planType: 'admin-grant', planDays: days, description: `Admin granted ${days} days subscription` } });
+			// Always update status + validity. When the caller passed a plan, also
+			// bump tier-tied fields atomically so we never end up with a row that
+			// has subscriptionStatus='active' but plan='trial' (the historical bug
+			// where this mutation and adminSetPlan had to be chained by hand).
+			const data: any = { subscriptionStatus: 'active', validUntil };
+			if (plan) {
+				const cfg = PLANS[plan as keyof typeof PLANS];
+				data.plan = plan;
+				data.maxRooms = cfg.maxRooms === Number.MAX_SAFE_INTEGER ? 999 : cfg.maxRooms;
+				data.integrationsEnabled = cfg.integrationsEnabled;
+			}
+			const updated = await prisma.tenant.update({ where: { id: tenantId }, data, include: { settings: true, _count: { select: { bookings: true } } } });
+			await prisma.payment.create({ data: { tenantId, amount: 0, currency: 'OMR', status: 'completed', planType: plan ? `admin-grant-${plan}` : 'admin-grant', planDays: days, description: `Admin granted ${days} days${plan ? ` on ${plan} plan` : ''}` } });
 			void sendPlanActivatedEmail({ name: tenant.name, email: tenant.email }, days, validUntil);
 			return { ...normalizeTenant(updated), bookingsCount: updated._count?.bookings || 0 };
 		},
