@@ -151,10 +151,8 @@ export default function IntegrationsView({ session, lang, onNavigateToSettings }
     }
   };
 
-  const [syncingAllMode, setSyncingAllMode] = useState<'future' | 'all' | null>(null);
-  const handleSyncAll = async (mode: 'future' | 'all' = 'future') => {
+  const handleSyncAll = async (mode: 'all' = 'all') => {
     setSyncingAll(true);
-    setSyncingAllMode(mode);
     try {
       const { data } = await apolloClient.mutate({ mutation: SYNC_ALL_CHANNELS_MUTATION, variables: { mode } });
       const results = (data as any)?.syncAllChannels as SyncResultRow[] | undefined;
@@ -164,7 +162,6 @@ export default function IntegrationsView({ session, lang, onNavigateToSettings }
       alert(err.graphQLErrors?.[0]?.message || err.message || 'Sync failed');
     } finally {
       setSyncingAll(false);
-      setSyncingAllMode(null);
     }
   };
 
@@ -228,25 +225,19 @@ export default function IntegrationsView({ session, lang, onNavigateToSettings }
         </div>
         {integrations.length > 0 && (
           <div className="flex flex-wrap items-center gap-2">
-            {/* Default: future-only sync. Fast. Used by the nightly cron too. */}
-            <button
-              onClick={() => handleSyncAll('future')}
-              disabled={syncingAll}
-              title={t(lang, 'integrations.syncFutureTip')}
-              className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-emerald-600 text-white text-sm font-black hover:bg-emerald-700 disabled:opacity-50 transition-all"
-            >
-              <CloudArrowDown size={16} weight="bold" className={syncingAll && syncingAllMode === 'future' ? 'animate-spin' : ''} />
-              {syncingAll && syncingAllMode === 'future' ? t(lang, 'integrations.syncing') : t(lang, 'integrations.syncFuture')}
-            </button>
-            {/* Full re-sync: includes past bookings. Heavier — used to back-fill or audit. */}
+            {/* One bulk-sync button. The iCal feed comes back whole regardless of
+                lookback (the lookback is just a client-side filter applied after
+                fetch), so a separate "Future-only" override added no value beyond
+                what each integration's stored syncLookbackDays already provides
+                via the Calendar "Sync" button and the nightly cron. */}
             <button
               onClick={() => handleSyncAll('all')}
               disabled={syncingAll}
               title={t(lang, 'integrations.syncAllTip')}
-              className="flex items-center gap-2 px-4 py-2 rounded-2xl border border-slate-200 bg-white text-slate-700 text-sm font-black hover:bg-slate-50 disabled:opacity-50 transition-all"
+              className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-emerald-600 text-white text-sm font-black hover:bg-emerald-700 disabled:opacity-50 transition-all"
             >
-              <CloudArrowDown size={16} weight="bold" className={syncingAll && syncingAllMode === 'all' ? 'animate-spin' : ''} />
-              {syncingAll && syncingAllMode === 'all' ? t(lang, 'integrations.syncing') : t(lang, 'integrations.syncAll')}
+              <CloudArrowDown size={16} weight="bold" className={syncingAll ? 'animate-spin' : ''} />
+              {syncingAll ? t(lang, 'integrations.syncing') : t(lang, 'integrations.syncAll')}
             </button>
           </div>
         )}
