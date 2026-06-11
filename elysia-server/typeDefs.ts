@@ -263,9 +263,9 @@ export const typeDefs = `
     deleteBooking(id: ID!): Boolean!
     bulkImportBookings(bookings: [BookingInput!]!): [Booking!]!
     bulkDeleteBookings(ids: [ID!]!): Int!
-    # Optional `plan` lets a super-admin grant time AND set the tier in one
+    # Optional plan lets a super-admin grant time AND set the tier in one
     # atomic call. Without it, plan/maxRooms/integrationsEnabled are left
-    # untouched (legacy behaviour — caller is responsible for adminSetPlan).
+    # untouched (legacy behaviour - caller is responsible for adminSetPlan).
     createAdminSubscription(tenantId: ID!, days: Int!, plan: String): Tenant!
     cancelSubscription(tenantId: ID!): Boolean!
     adminUpdateTenant(tenantId: ID!, input: UpdateTenantInput!): Tenant!
