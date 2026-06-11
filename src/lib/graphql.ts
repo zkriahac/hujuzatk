@@ -404,6 +404,15 @@ export const BOOKING_DELETED_SUBSCRIPTION = gql`
 
 // ============= CHANNEL INTEGRATIONS =============
 
+// Reveal the unmasked iCal URL for a single integration the tenant owns. Used
+// only by the edit modal so the user can see + edit the current URL instead of
+// pasting from scratch.
+export const GET_CHANNEL_INTEGRATION_URL_QUERY = gql`
+  query GetChannelIntegrationUrl($id: ID!) {
+    getChannelIntegrationUrl(id: $id)
+  }
+`;
+
 export const GET_CHANNEL_INTEGRATIONS_QUERY = gql`
   query GetChannelIntegrations {
     getChannelIntegrations {

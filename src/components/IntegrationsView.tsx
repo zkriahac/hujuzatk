@@ -8,6 +8,7 @@ import { t, type Language } from '../lib/i18n';
 import type { SessionUser } from '../lib/authService';
 import {
   GET_CHANNEL_INTEGRATIONS_QUERY,
+  GET_CHANNEL_INTEGRATION_URL_QUERY,
   SAVE_CHANNEL_INTEGRATION_MUTATION,
   DELETE_CHANNEL_INTEGRATION_MUTATION,
   SYNC_CHANNEL_MUTATION,
@@ -408,7 +409,7 @@ function IntegrationModal(props: {
   const channelLabelText = channelLabel(lang, state.channel);
   const channelHintText = channelHint(lang, state.channel);
 
-  const [icalUrl, setIcalUrl] = useState(state.existing ? '' : '');
+  const [icalUrl, setIcalUrl] = useState('');
   const [label, setLabel] = useState(state.existing?.label || '');
   const [syncBlocks, setSyncBlocks] = useState(state.existing?.syncBlocks ?? false);
   // New integrations default to 30-day lookback so freshly-ended bookings show up.
@@ -418,6 +419,25 @@ function IntegrationModal(props: {
   );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  // When editing, the URL list query only ships the masked URL for safety. We
+  // fetch the full URL on demand via getChannelIntegrationUrl and prefill the
+  // input so the user can see and edit it, instead of pasting from scratch.
+  const [loadingUrl, setLoadingUrl] = useState<boolean>(!!state.existing);
+  useEffect(() => {
+    if (!state.existing) { setLoadingUrl(false); return; }
+    let cancelled = false;
+    apolloClient.query({
+      query: GET_CHANNEL_INTEGRATION_URL_QUERY,
+      variables: { id: state.existing.id },
+      fetchPolicy: 'network-only',
+    }).then(({ data }) => {
+      if (cancelled) return;
+      const url = (data as any)?.getChannelIntegrationUrl;
+      if (typeof url === 'string') setIcalUrl(url);
+    }).catch(() => { /* fall back to placeholder; user can replace */ })
+      .finally(() => { if (!cancelled) setLoadingUrl(false); });
+    return () => { cancelled = true; };
+  }, [state.existing?.id]);
 
   const editing = !!state.existing;
 
@@ -493,12 +513,19 @@ function IntegrationModal(props: {
             <label className={labelClass}>{t(lang, 'integrations.icalUrl')}</label>
             <input
               type="url"
-              value={icalUrl}
+              value={loadingUrl ? '' : icalUrl}
               onChange={(e) => setIcalUrl(e.target.value)}
-              placeholder={editing ? state.existing!.icalUrlMasked : 'https://www.airbnb.com/calendar/ical/...'}
+              placeholder={
+                loadingUrl
+                  ? '…'
+                  : editing
+                    ? state.existing!.icalUrlMasked
+                    : 'https://www.airbnb.com/calendar/ical/...'
+              }
               className={inputClass}
+              disabled={loadingUrl}
               dir="ltr"
-              autoFocus
+              autoFocus={!editing}
             />
             <p className="text-[11px] text-slate-400 mt-1.5 leading-relaxed">{channelHintText}</p>
           </div>
