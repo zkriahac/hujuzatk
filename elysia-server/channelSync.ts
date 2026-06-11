@@ -218,52 +218,81 @@ export async function performSync(integration: any, tenantId: string, mode?: Syn
     blocksRemoved = sweep.count;
   }
 
-  // ── Batch lookup (C1) ──
-  // One findMany instead of N findFirst calls — was the largest performance hot
-  // spot. With a 100-event feed this drops 100 sequential round trips to one.
-  const existingBookings = events.length > 0
+  // ── Candidate index (one query, C1) ──
+  // Every event in this feed belongs to this integration's (room + channel), so a
+  // single scoped fetch covers all the lookups below. We index already-synced
+  // bookings three ways and match each incoming event by the MOST STABLE key
+  // available, in priority order:
+  //   1. externalReservationId — the platform's own booking id (Gathern "Booking
+  //      ID", Airbnb HM-code). Stable across re-exports.
+  //   2. externalId — the raw iCal UID. Exact, but some platforms (notably
+  //      Gathern) emit a *different* UID on every export for an unchanged
+  //      reservation ("UID churn").
+  //   3. date fingerprint (check-in|check-out) — last resort for feeds that carry
+  //      no reservation id at all.
+  // Matching on the UID alone is what caused churn: a rotated UID missed the
+  // lookup → CREATE a duplicate → the prior row's UID was "missing from feed" →
+  // orphan-cancel. Every sync ran that loop, flooding the calendar with canceled
+  // duplicates and occasionally leaving a real stay stuck canceled.
+  const candidates = events.length > 0
     ? await prisma.booking.findMany({
-        where: { tenantId, externalId: { in: events.map((e) => e.uid) } },
+        where: {
+          tenantId,
+          room: integration.roomId,
+          externalChannel: integration.channelName,
+          externalId: { not: null },
+        },
+        select: {
+          id: true, externalId: true, externalReservationId: true,
+          checkIn: true, checkOut: true, status: true,
+          guestName: true, notes: true, guestPhone: true,
+        },
       })
     : [];
-  const existingByUid = new Map<string, (typeof existingBookings)[number]>();
-  for (const b of existingBookings) {
-    if (b.externalId) existingByUid.set(b.externalId, b);
-  }
+  type Candidate = (typeof candidates)[number];
 
-  // ── UID-drift fingerprint index ──
-  // Airbnb/Gathern occasionally change the iCal UID for an unchanged reservation
-  // (re-export, host reconnect, query-param shifts). Without this rescue, the
-  // event misses the UID lookup → CREATE runs → fresh row with nightPrice=0 →
-  // the user's manually-entered price appears wiped, and their original row
-  // gets orphan-canceled below. We fingerprint already-synced bookings on this
-  // (room + channel) by their check-in/out dates so we can re-link them to the
-  // new UID and preserve all price fields.
-  const driftCandidates = await prisma.booking.findMany({
-    where: {
-      tenantId,
-      room: integration.roomId,
-      externalChannel: integration.channelName,
-      externalId: { not: null },
-    },
-    select: {
-      id: true,
-      externalId: true,
-      checkIn: true,
-      checkOut: true,
-      status: true,
-    },
-  });
   const fingerprint = (start: Date, end: Date) =>
     `${start.toISOString().slice(0, 10)}|${end.toISOString().slice(0, 10)}`;
-  const driftByDates = new Map<string, typeof driftCandidates[number]>();
-  for (const b of driftCandidates) {
-    const key = fingerprint(b.checkIn, b.checkOut);
-    // Prefer non-canceled candidates; only use a canceled one if nothing better matched.
-    const prior = driftByDates.get(key);
-    if (!prior || (prior.status === 'canceled' && b.status !== 'canceled')) {
-      driftByDates.set(key, b);
-    }
+  // Prefer a non-canceled row when several share a key, so we re-link the live one.
+  const better = (prior: Candidate | undefined, b: Candidate) =>
+    !prior || (prior.status === 'canceled' && b.status !== 'canceled');
+
+  const byResId = new Map<string, Candidate>();
+  const byUid = new Map<string, Candidate>();
+  const byDates = new Map<string, Candidate>();
+  for (const b of candidates) {
+    if (b.externalReservationId && better(byResId.get(b.externalReservationId), b)) byResId.set(b.externalReservationId, b);
+    if (b.externalId && better(byUid.get(b.externalId), b)) byUid.set(b.externalId, b);
+    const fp = fingerprint(b.checkIn, b.checkOut);
+    if (better(byDates.get(fp), b)) byDates.set(fp, b);
+  }
+  // Remove a chosen row from every index so a later event in the same run can't
+  // re-link the same booking twice.
+  const consume = (b: Candidate) => {
+    if (b.externalReservationId) byResId.delete(b.externalReservationId);
+    if (b.externalId) byUid.delete(b.externalId);
+    byDates.delete(fingerprint(b.checkIn, b.checkOut));
+  };
+
+  // ── Resolution pass ──
+  // Decide each event's target (an existing row to update, or null = create) up
+  // front so we can pre-claim the exact booking-number range in one increment.
+  // feedResIds also feeds the orphan-cancel below so a reservation still present
+  // under a rotated UID is never wrongly canceled.
+  const feedResIds = new Set<string>();
+  const plan: { event: typeof events[number]; target: Candidate | null }[] = [];
+  for (const event of events) {
+    const resid = extractFromDescription(event.description).externalReservationId;
+    if (resid) feedResIds.add(resid);
+    const nights = differenceInCalendarDays(event.end, event.start);
+    if (nights <= 0) { skipped++; continue; }
+    const target =
+      (resid ? byResId.get(resid) : undefined)
+      ?? byUid.get(event.uid)
+      ?? byDates.get(fingerprint(event.start, event.end))
+      ?? null;
+    if (target) consume(target);
+    plan.push({ event, target });
   }
 
   // ── Pre-claim booking-number range (C2) ──
@@ -271,7 +300,7 @@ export async function performSync(integration: any, tenantId: string, mode?: Syn
   // the entire range in a single atomic increment (+N), then assign sequentially.
   // If a create fails mid-loop, we may leave a gap in the user's invoice numbers —
   // acceptable trade-off for the perf win. Booking numbers are not contractual.
-  const newCount = events.filter((e) => e.uid && !existingByUid.has(e.uid)).length;
+  const newCount = plan.filter((p) => !p.target).length;
   let nextBookingNumberCursor = 0;
   if (newCount > 0) {
     const claimed = await prisma.tenant.update({
@@ -282,10 +311,10 @@ export async function performSync(integration: any, tenantId: string, mode?: Syn
     nextBookingNumberCursor = claimed.nextBookingNumber - newCount;
   }
 
-  for (const event of events) {
+  // ── Execute pass ──
+  for (const { event, target } of plan) {
     try {
       const nights = differenceInCalendarDays(event.end, event.start);
-      if (nights <= 0) { skipped++; continue; }
 
       const now = new Date();
       let status: string;
@@ -302,60 +331,13 @@ export async function performSync(integration: any, tenantId: string, mode?: Syn
       const guestName = parseGuestName(event.summary, event.description, integration.channelName);
       const { externalUrl, externalReservationId, phoneStub } = extractFromDescription(event.description);
 
-      // Pricing seed for a brand-new synced booking. iCal feeds carry no money
-      // fields, so we use the tenant's configured defaults. The host can edit
-      // these from the booking modal and their edits are preserved on every
-      // subsequent sync (the UPDATE block below never writes price fields).
-      const seedNightPrice = defaultNightPrice;
-      const seedTotalPrice = nights * seedNightPrice;
-      const seedTax = seedTotalPrice * (defaultTaxPct / 100);
-      const seedRemaining = seedTotalPrice + seedTax;
-
-      const bookingData = {
-        tenantId,
-        guestName,
-        guestPhone: phoneStub || '',
-        room: integration.roomId,
-        checkIn: event.start,
-        checkOut: event.end,
-        nights,
-        nightPrice: seedNightPrice,
-        totalPrice: seedTotalPrice,
-        tax: seedTax,
-        deposit: 0,
-        remaining: seedRemaining,
-        status,
-        source: integration.channelName,
-        notes: null,                                 // notes stay clean for synced bookings
-        externalId: event.uid,
-        externalChannel: integration.channelName,
-        externalUrl,
-        externalReservationId,
-        createdBy: 'channel_sync',
-      };
-
-      const existing = existingByUid.get(event.uid);
-      // UID-drift rescue: when the UID lookup misses, try matching by the
-      // (channel + room + check-in + check-out) fingerprint. If we find a
-      // previously-synced booking for the exact same slot, this is the same
-      // reservation with a drifted UID — re-link it instead of creating a new
-      // zero-priced row that would shadow the user's manual price entries.
-      const driftMatch = !existing
-        ? driftByDates.get(fingerprint(event.start, event.end))
-        : null;
-      const target = existing ?? driftMatch;
-
       if (target) {
-        // Re-fetch full row when we landed on a drift match (the index only
-        // selected a subset of columns).
-        const targetFull = existing
-          ?? (await prisma.booking.findUnique({ where: { id: target.id } }))!;
-        const wasCanceled = targetFull.status !== 'canceled' && status === 'canceled';
+        const wasCanceled = target.status !== 'canceled' && status === 'canceled';
         // Preserve a manually-edited guest name; only overwrite if the stored name still
         // looks auto-generated (placeholder, bracketed, "Reserved", etc.)
-        const safeGuestName = looksAutoGenerated(targetFull.guestName) ? guestName : targetFull.guestName;
-        const safeNotes = looksAutoNotes(targetFull.notes) ? null : targetFull.notes;
-        const safePhone = looksAutoPhone(targetFull.guestPhone) ? (phoneStub || '') : targetFull.guestPhone;
+        const safeGuestName = looksAutoGenerated(target.guestName) ? guestName : target.guestName;
+        const safeNotes = looksAutoNotes(target.notes) ? null : target.notes;
+        const safePhone = looksAutoPhone(target.guestPhone) ? (phoneStub || '') : target.guestPhone;
         await prisma.booking.update({
           where: { id: target.id },
           data: {
@@ -368,23 +350,51 @@ export async function performSync(integration: any, tenantId: string, mode?: Syn
             notes: safeNotes,
             externalUrl,                              // always refresh from latest description
             externalReservationId,                    // ditto — code may have been corrected on the platform
-            // On a drift rescue we adopt the new UID; on a normal UID match this
-            // is a no-op write of the same value. Either way, price fields
-            // (nightPrice, totalPrice, tax, deposit, remaining) are deliberately
-            // NOT in this payload — Prisma leaves them untouched, so anything
-            // the host typed is preserved.
+            // Adopt the latest (possibly rotated) UID. Price fields (nightPrice,
+            // totalPrice, tax, deposit, remaining) are deliberately NOT in this
+            // payload — Prisma leaves them untouched, so anything the host typed
+            // is preserved.
             externalId: event.uid,
           },
         });
-        // Keep the drift index consistent for the rest of this batch so a
-        // subsequent event with the same fingerprint doesn't re-link the same row.
-        if (driftMatch) driftByDates.delete(fingerprint(event.start, event.end));
         wasCanceled ? canceled++ : updated++;
       } else {
+        // Pricing seed for a brand-new synced booking. iCal feeds carry no money
+        // fields, so we use the tenant's configured defaults. The host can edit
+        // these from the booking modal and their edits are preserved on every
+        // subsequent sync (the update branch above never writes price fields).
+        const seedNightPrice = defaultNightPrice;
+        const seedTotalPrice = nights * seedNightPrice;
+        const seedTax = seedTotalPrice * (defaultTaxPct / 100);
+        const seedRemaining = seedTotalPrice + seedTax;
         // Take the next claimed booking number — pre-allocated above so we don't
         // round-trip to Tenant once per event.
         const bookingNumber = nextBookingNumberCursor++;
-        await prisma.booking.create({ data: { ...bookingData, bookingNumber } });
+        await prisma.booking.create({
+          data: {
+            tenantId,
+            guestName,
+            guestPhone: phoneStub || '',
+            room: integration.roomId,
+            checkIn: event.start,
+            checkOut: event.end,
+            nights,
+            nightPrice: seedNightPrice,
+            totalPrice: seedTotalPrice,
+            tax: seedTax,
+            deposit: 0,
+            remaining: seedRemaining,
+            status,
+            source: integration.channelName,
+            notes: null,                                 // notes stay clean for synced bookings
+            externalId: event.uid,
+            externalChannel: integration.channelName,
+            externalUrl,
+            externalReservationId,
+            createdBy: 'channel_sync',
+            bookingNumber,
+          },
+        });
         imported++;
       }
     } catch (err: any) {
@@ -393,10 +403,13 @@ export async function performSync(integration: any, tenantId: string, mode?: Syn
   }
 
   // ── Orphan cancel ──
-  // The channel side is the source of truth. If a booking's UID is no longer in
-  // the feed (host deleted it on Airbnb / Gathern), mark our copy as canceled.
+  // The channel side is the source of truth. If a booking is no longer in the
+  // feed (host deleted it on Airbnb / Gathern), mark our copy as canceled.
   // Scoped to future bookings only — old completed bookings naturally age out of
   // iCal feeds, so missing-from-feed != deleted for those.
+  // A booking counts as "still in the feed" when EITHER its UID or its (stable)
+  // reservation id appears in the feed — so a reservation whose UID rotated but
+  // whose reservation id is unchanged is never wrongly canceled.
   try {
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
@@ -410,10 +423,14 @@ export async function performSync(integration: any, tenantId: string, mode?: Syn
         status: { not: 'canceled' },
         checkOut: { gte: todayStart },
       },
-      select: { id: true, externalId: true },
+      select: { id: true, externalId: true, externalReservationId: true },
     });
     const toCancel = liveOrphans
-      .filter((b) => b.externalId && !feedUids.has(b.externalId))
+      .filter((b) => {
+        const uidInFeed = !!b.externalId && feedUids.has(b.externalId);
+        const residInFeed = !!b.externalReservationId && feedResIds.has(b.externalReservationId);
+        return !uidInFeed && !residInFeed;
+      })
       .map((b) => b.id);
     if (toCancel.length > 0) {
       await prisma.booking.updateMany({
