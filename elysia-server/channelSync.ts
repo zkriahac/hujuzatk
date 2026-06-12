@@ -283,13 +283,33 @@ export async function performSync(integration: any, tenantId: string, mode?: Syn
   const plan: { event: typeof events[number]; target: Candidate | null }[] = [];
   for (const event of events) {
     const resid = extractFromDescription(event.description).externalReservationId;
-    if (resid) feedResIds.add(resid);
+    if (resid) {
+      // Feed-internal dedup: if a (buggy) feed ever carries two events with the
+      // same reservation id, only the first is processed. Without this, the
+      // second event creates a fresh row on EVERY sync (it can never match —
+      // the first event consumed the candidate) while orphan-cancel spares the
+      // extras (their resid is in the feed), so duplicates would grow unboundedly.
+      if (feedResIds.has(resid)) { skipped++; continue; }
+      feedResIds.add(resid);
+    }
     const nights = differenceInCalendarDays(event.end, event.start);
     if (nights <= 0) { skipped++; continue; }
+    // Date-fingerprint fallback is only trusted when reservation ids don't
+    // contradict it. Without this guard, a cancel-and-rebook of the same room
+    // and dates by a DIFFERENT guest (new resid) would date-match the old
+    // guest's row and recycle it in place — keeping the old guest's name and
+    // prices and erasing the cancellation. A mismatch in ids means a different
+    // reservation, so we create a new row instead.
+    const dateCandidate = byDates.get(fingerprint(event.start, event.end));
+    const dateMatch =
+      dateCandidate &&
+      !(resid && dateCandidate.externalReservationId && dateCandidate.externalReservationId !== resid)
+        ? dateCandidate
+        : undefined;
     const target =
       (resid ? byResId.get(resid) : undefined)
       ?? byUid.get(event.uid)
-      ?? byDates.get(fingerprint(event.start, event.end))
+      ?? dateMatch
       ?? null;
     if (target) consume(target);
     plan.push({ event, target });
