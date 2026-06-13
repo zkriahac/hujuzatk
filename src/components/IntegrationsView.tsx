@@ -78,12 +78,12 @@ const timeAgo = (iso: string | null, lang: Language): string => {
   const ms = Date.now() - new Date(iso).getTime();
   if (!Number.isFinite(ms) || ms < 0) return new Date(iso).toLocaleString();
   const m = Math.floor(ms / 60000);
-  if (m < 1) return 'just now';
-  if (m < 60) return `${m}m ago`;
+  if (m < 1) return t(lang, 'time.justNow');
+  if (m < 60) return `${m} ${t(lang, 'time.minAgo')}`;
   const h = Math.floor(m / 60);
-  if (h < 24) return `${h}h ago`;
+  if (h < 24) return `${h} ${t(lang, 'time.hourAgo')}`;
   const d = Math.floor(h / 24);
-  return `${d}d ago`;
+  return `${d} ${t(lang, 'time.dayAgo')}`;
 };
 
 interface ModalState {
@@ -93,21 +93,12 @@ interface ModalState {
 }
 
 export default function IntegrationsView({ session, lang, onNavigateToSettings }: IntegrationsViewProps) {
-  // Feature gate — admin can disable integrations per tenant
-  if (session.tenant.integrationsEnabled === false) {
-    return (
-      <div className="max-w-2xl mx-auto py-16 text-center" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-xl p-5 space-y-4">
-          <WarningCircle size={40} weight="duotone" className="text-amber-500 mx-auto" />
-          <h2 className="text-xl font-black text-slate-800">{t(lang, 'integrations.disabledTitle')}</h2>
-          <p className="text-sm text-slate-500 leading-relaxed">{t(lang, 'integrations.disabledBody')}</p>
-        </div>
-      </div>
-    );
-  }
-
   const rooms: { id: string; name: string }[] = session.tenant.rooms || [];
   const isRtl = lang === 'ar';
+  // Feature gate — admin can disable integrations per tenant. Computed here, but
+  // the disabled view is returned AFTER all hooks below so hook order stays
+  // unconditional (React rules-of-hooks).
+  const integrationsEnabled = session.tenant.integrationsEnabled !== false;
 
   const [integrations, setIntegrations] = useState<ChannelIntegration[]>([]);
   const [loading, setLoading] = useState(true);
@@ -129,7 +120,11 @@ export default function IntegrationsView({ session, lang, onNavigateToSettings }
     }
   };
 
-  useEffect(() => { loadIntegrations(); }, []);
+  // Don't query for a tenant whose integrations are disabled.
+  useEffect(() => {
+    if (integrationsEnabled) loadIntegrations();
+    else setLoading(false);
+  }, [integrationsEnabled]);
 
   const findIntegration = (roomId: string, channel: ChannelKey): ChannelIntegration | null =>
     integrations.find(i => i.roomId === roomId && i.channelName === channel) ?? null;
@@ -194,6 +189,19 @@ export default function IntegrationsView({ session, lang, onNavigateToSettings }
     await loadIntegrations();
   };
 
+  // ---- Disabled feature gate ----------------------------------------------
+  if (!integrationsEnabled) {
+    return (
+      <div className="max-w-2xl mx-auto py-16 text-center" dir={isRtl ? 'rtl' : 'ltr'}>
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-xl p-5 space-y-4">
+          <WarningCircle size={40} weight="duotone" className="text-amber-500 mx-auto" />
+          <h2 className="text-xl font-black text-slate-800">{t(lang, 'integrations.disabledTitle')}</h2>
+          <p className="text-sm text-slate-500 leading-relaxed">{t(lang, 'integrations.disabledBody')}</p>
+        </div>
+      </div>
+    );
+  }
+
   // ---- Empty room state ---------------------------------------------------
   if (rooms.length === 0) {
     return (
@@ -251,7 +259,7 @@ export default function IntegrationsView({ session, lang, onNavigateToSettings }
       </div>
 
       {loading && (
-        <div className="text-center py-12 text-slate-400 text-sm font-semibold">Loading…</div>
+        <div className="text-center py-12 text-slate-400 text-sm font-semibold">{t(lang, 'integrations.loading')}</div>
       )}
 
       {/* Matrix */}
@@ -367,6 +375,15 @@ function ConnectedCell(props: {
         {t(lang, 'integrations.lastSynced')}: {timeAgo(i.lastSyncedAt, lang)}
         {i.lastSyncCount != null && i.lastSyncedAt ? ` · ${i.lastSyncCount}` : ''}
       </div>
+      {/* Surface the failure text inline — the tooltip above is hover-only, which
+          doesn't exist on touch devices (the primary market is mobile PWA). */}
+      {i.lastSyncStatus && i.lastSyncStatus !== 'success' && i.lastSyncMessage && (
+        <div className={`text-[10px] font-bold leading-snug line-clamp-2 ${
+          i.lastSyncStatus === 'error' ? 'text-red-600' : 'text-amber-600'
+        }`}>
+          {i.lastSyncMessage}
+        </div>
+      )}
       <div className="flex items-center gap-1.5 pt-1">
         <button
           onClick={onSync}
@@ -443,10 +460,13 @@ function IntegrationModal(props: {
 
   const handleSave = async () => {
     setError('');
-    // When editing, allow blank URL to mean "keep current URL" — resolver accepts empty by checking .startsWith
+    // The resolver always requires a full http(s) URL — even on edit (the edit
+    // modal prefetches the stored URL, so this is normally already filled). If
+    // that prefetch failed, validating here gives a clear field-level message
+    // instead of an opaque server error.
     const url = icalUrl.trim();
-    if (!editing && !url.startsWith('http')) {
-      setError('Please enter a valid iCal URL starting with http');
+    if (!url.startsWith('http')) {
+      setError(t(lang, 'integrations.urlInvalid'));
       return;
     }
     setSaving(true);
@@ -455,8 +475,6 @@ function IntegrationModal(props: {
         ...(state.existing && { id: state.existing.id }),
         channel: state.channel,
         roomId: state.roomId,
-        // If editing without changing URL, send the existing masked URL? No — backend validates starts with http.
-        // Simplest: require URL re-entry on edit (masked URL never leaves the DB).
         icalUrl: url,
         label,
         syncBlocks,

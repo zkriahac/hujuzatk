@@ -3,6 +3,7 @@ import { cn } from '../utils/cn';
 import { t, type Language } from '../lib/i18n';
 
 export interface SyncResultRow {
+  integrationId?: string;
   channelName: string;
   roomId: string;
   imported: number;
