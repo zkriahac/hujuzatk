@@ -1,5 +1,6 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { format, addDays, parseISO } from 'date-fns';
+import { ar, enUS } from 'date-fns/locale';
 import {
   X, Sparkle, Users, Minus, Plus, CreditCard, FileText, Printer,
   PencilSimple, Prohibit, Trash, Check, WarningCircle, CaretDown, CaretUp, Upload, DownloadSimple,
@@ -10,6 +11,13 @@ import { cn } from '../utils/cn';
 import { t, type Language } from '../lib/i18n';
 import { formatTz } from '../utils/formatTz';
 import { sanitizeNumeric } from '../utils/digits';
+
+// Format a date without timezone conversion (for date-only fields like check-in/check-out)
+// to avoid off-by-one day issues from timezone shifts
+const formatDateOnly = (date: string | Date, fmt: string, lang: Language): string => {
+  const d = typeof date === 'string' ? parseISO(date) : date;
+  return format(d, fmt, { locale: lang === 'ar' ? ar : enUS });
+};
 
 // Parse a money input to a number rounded to 2 decimal places (cents).
 // Empty / NaN → 0. Accepts Arabic-Indic / Persian digits via sanitizeNumeric so an
@@ -775,11 +783,11 @@ export function BookingDetailsModal({
           <div className="grid grid-cols-2 gap-8 py-6 border-y border-slate-50">
             <div>
               <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-300 mb-2">{t(lang, 'booking.checkIn')}</p>
-              <p className="font-black text-slate-700 uppercase tracking-tighter">{formatTz(booking.checkIn, 'dd MMM yyyy', tz, lang)}</p>
+              <p className="font-black text-slate-700 uppercase tracking-tighter">{formatDateOnly(booking.checkIn, 'dd MMM yyyy', lang)}</p>
             </div>
             <div>
               <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-300 mb-2">{t(lang, 'booking.checkOut').replace(' (auto)', '')}</p>
-              <p className="font-black text-slate-700 uppercase tracking-tighter">{formatTz(booking.checkOut, 'dd MMM yyyy', tz, lang)}</p>
+              <p className="font-black text-slate-700 uppercase tracking-tighter">{formatDateOnly(booking.checkOut, 'dd MMM yyyy', lang)}</p>
             </div>
           </div>
 
@@ -961,8 +969,8 @@ export function InvoiceModal({ booking, tenantName, currency, lang, tz, dir, onC
               <div className="font-black text-2xl text-slate-900 leading-tight mb-1">{t(lang, 'list.room')} {roomLabel}</div>
               <div className="text-sm font-bold text-emerald-600 uppercase tracking-widest mb-1">{booking.nights} {t(lang, 'invoice.night')}</div>
               <div className="text-sm font-semibold text-slate-500">
-                {formatTz(booking.checkIn, 'dd MMM', tz, lang)} {' - '}
-                {formatTz(booking.checkOut, 'dd MMM yyyy', tz, lang)}
+                {formatDateOnly(booking.checkIn, 'dd MMM', lang)} {' - '}
+                {formatDateOnly(booking.checkOut, 'dd MMM yyyy', lang)}
               </div>
             </div>
           </div>
