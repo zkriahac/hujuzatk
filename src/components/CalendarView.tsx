@@ -373,8 +373,8 @@ export default function CalendarView({
                             // 'CANCELED' (server stores lowercase, resolver uppercases on read).
                             if ((b.status || '').toUpperCase() === 'CANCELED') return false;
                             const inRoom = b.room === r.id;
-                            const checkInStr = b.checkIn.split('T')[0];
-                            const checkOutStr = b.checkOut.split('T')[0];
+                            const checkInStr = b.checkIn.slice(0, 10);
+                            const checkOutStr = b.checkOut.slice(0, 10);
                             return inRoom && dStr >= checkInStr && dStr < checkOutStr;
                           })
                           // Render active first, then completed/no-show, then CANCELED last so a
@@ -429,8 +429,8 @@ export default function CalendarView({
                                 : isNoShow
                                   ? NO_SHOW_STYLE
                                   : channelStyle(channel);
-                              const checkInStr = b.checkIn.split('T')[0];
-                              const checkOutStr = b.checkOut.split('T')[0];
+                              const checkInStr = b.checkIn.slice(0, 10);
+                              const checkOutStr = b.checkOut.slice(0, 10);
                               // Imminent = currently active OR checkIn is tomorrow.
                               // We compare strings so timezone shifts don't sneak in.
                               const isActiveNow = todayStr >= checkInStr && todayStr < checkOutStr;

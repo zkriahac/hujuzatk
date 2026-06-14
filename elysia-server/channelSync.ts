@@ -5,6 +5,17 @@ import { fetchAndParseICal } from './icalParser';
 export const VALID_CHANNELS = ['airbnb', 'gathern', 'booking.com'] as const;
 export type Channel = typeof VALID_CHANNELS[number];
 
+/**
+ * Convert any date to UTC midnight (00:00:00).
+ * This removes all timezone complexity — we store only the calendar date.
+ * 
+ * iCal Event on June 13 (any timezone) → stored as 2026-06-13 00:00:00 UTC
+ * Frontend reads it, displays June 13 — no timezone conversion needed.
+ */
+function toUTCMidnight(d: Date): Date {
+  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 0, 0, 0));
+}
+
 export interface SyncResult {
   integrationId: string;
   tenantId: string;
@@ -292,7 +303,10 @@ export async function performSync(integration: any, tenantId: string, mode?: Syn
       if (feedResIds.has(resid)) { skipped++; continue; }
       feedResIds.add(resid);
     }
-    const nights = differenceInCalendarDays(event.end, event.start);
+    // Normalize dates to UTC midnight for consistent storage and matching
+    const normalizedStart = toUTCMidnight(event.start);
+    const normalizedEnd = toUTCMidnight(event.end);
+    const nights = differenceInCalendarDays(normalizedEnd, normalizedStart);
     if (nights <= 0) { skipped++; continue; }
     // Date-fingerprint fallback is only trusted when reservation ids don't
     // contradict it. Without this guard, a cancel-and-rebook of the same room
@@ -300,7 +314,7 @@ export async function performSync(integration: any, tenantId: string, mode?: Syn
     // guest's row and recycle it in place — keeping the old guest's name and
     // prices and erasing the cancellation. A mismatch in ids means a different
     // reservation, so we create a new row instead.
-    const dateCandidate = byDates.get(fingerprint(event.start, event.end));
+    const dateCandidate = byDates.get(fingerprint(normalizedStart, normalizedEnd));
     const dateMatch =
       dateCandidate &&
       !(resid && dateCandidate.externalReservationId && dateCandidate.externalReservationId !== resid)
@@ -312,7 +326,7 @@ export async function performSync(integration: any, tenantId: string, mode?: Syn
       ?? dateMatch
       ?? null;
     if (target) consume(target);
-    plan.push({ event, target });
+    plan.push({ event: { ...event, start: normalizedStart, end: normalizedEnd }, target });
   }
 
   // ── Pre-claim booking-number range (C2) ──

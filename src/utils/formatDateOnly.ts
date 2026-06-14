@@ -1,8 +1,26 @@
-import { format, parseISO } from 'date-fns';
+import { format } from 'date-fns';
 import { ar, enUS } from 'date-fns/locale';
 import type { Language } from '../lib/i18n';
 
+/**
+ * Format a date string, extracting only the date part (YYYY-MM-DD).
+ * No timezone conversion — just the date as stored.
+ * 
+ * Since backend stores all dates as UTC midnight (00:00:00),
+ * we can safely extract the first 10 characters for the date.
+ */
 export function formatDateOnly(date: string | Date, fmt: string, lang: Language): string {
-  const d = typeof date === 'string' ? parseISO(date) : date;
+  let dateStr: string;
+  
+  if (typeof date === 'string') {
+    // Take first 10 characters: "YYYY-MM-DD"
+    dateStr = date.slice(0, 10);
+  } else {
+    // For Date objects, convert to ISO and take first 10 chars
+    dateStr = date.toISOString().slice(0, 10);
+  }
+  
+  // Create a date at UTC midnight to format (no timezone issues)
+  const d = new Date(dateStr + 'T00:00:00Z');
   return format(d, fmt, { locale: lang === 'ar' ? ar : enUS });
 }

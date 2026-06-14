@@ -407,7 +407,7 @@ export function BookingDetailsModal({
       return s; // already in correct casing (Direct, WhatsApp, Phone, etc.)
     })((booking as any).source || ''),
     room: booking.room || '',
-    checkIn: booking.checkIn ? booking.checkIn.split('T')[0] : '',
+    checkIn: booking.checkIn ? booking.checkIn.slice(0, 10) : '',
     nights: nightsFromBooking,
   });
   // String mirrors so mid-typed "12." doesn't collapse to "12" between keystrokes,

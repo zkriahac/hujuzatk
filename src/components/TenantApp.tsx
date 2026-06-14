@@ -472,8 +472,8 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
         const effective = getEffectiveStatus(b);
         if (listFilter === 'canceled') return effective === 'CANCELED';
         if (effective === 'CANCELED') return false;
-        if (listFilter === 'today_checkin')  return b.checkIn.split('T')[0]  === todayStr;
-        if (listFilter === 'today_checkout') return b.checkOut.split('T')[0] === todayStr;
+        if (listFilter === 'today_checkin')  return b.checkIn.slice(0, 10)  === todayStr;
+        if (listFilter === 'today_checkout') return b.checkOut.slice(0, 10) === todayStr;
         if (listFilter === 'active') return effective === 'ACTIVE';
         if (listFilter === 'past') return effective === 'COMPLETED' || effective === 'NO_SHOW';
         return true;
@@ -570,7 +570,7 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
   const reportData = useMemo(() => {
     const filtered = reportBookings.filter((b: Booking) => {
       if (b.status === 'CANCELED') return false;
-      const dateToCompare = reportType === 'stay' ? b.checkIn : b.createdAt.split('T')[0];
+      const dateToCompare = reportType === 'stay' ? b.checkIn : b.createdAt.slice(0, 10);
       const inRange = dateToCompare >= reportStartDate && dateToCompare <= reportEndDate;
       const roomMatch = reportRoomFilter === 'ALL' || b.room === reportRoomFilter;
       return inRange && roomMatch;
