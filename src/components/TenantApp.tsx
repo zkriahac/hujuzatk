@@ -141,6 +141,7 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
   const [listSearchTerm, setListSearchTerm] = useState('');
   const [listFilter, setListFilter] = useState<ListFilter>('today_checkin');
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>('all');
+  const [listCheckInDateFilter, setListCheckInDateFilter] = useState<string | null>(null);
   const [bulkDeleting, setBulkDeleting] = useState(false);
   const [visibleListCount, setVisibleListCount] = useState(30);
 
@@ -485,8 +486,12 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
         sourceFilter === 'synced' ? !!b.externalChannel : !b.externalChannel,
       );
     }
+    // Check-in date filter: if set, only show bookings matching that date
+    if (listCheckInDateFilter) {
+      filtered = filtered.filter((b: Booking) => b.checkIn.slice(0, 10) === listCheckInDateFilter);
+    }
     return filtered.sort((a: Booking, b: Booking) => b.checkIn.localeCompare(a.checkIn));
-  }, [bookings, listSearchTerm, listFilter, sourceFilter]);
+  }, [bookings, listSearchTerm, listFilter, sourceFilter, listCheckInDateFilter]);
 
   const visibleBookings = filteredBookings.slice(0, visibleListCount);
   const listContainerRef = useRef<HTMLDivElement | null>(null);
@@ -552,7 +557,7 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
     return () => el.removeEventListener('scroll', onScroll);
   }, [filteredBookings.length]);
 
-  useEffect(() => { setVisibleListCount(30); }, [listFilter, listSearchTerm]);
+  useEffect(() => { setVisibleListCount(30); }, [listFilter, listSearchTerm, listCheckInDateFilter]);
 
   useEffect(() => {
     if (currentView !== 'reports') return;
@@ -786,6 +791,8 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
             setListFilter={setListFilter}
             sourceFilter={sourceFilter}
             setSourceFilter={setSourceFilter}
+            listCheckInDateFilter={listCheckInDateFilter}
+            setListCheckInDateFilter={setListCheckInDateFilter}
             onBulkDelete={handleBulkDelete}
             bulkDeleting={bulkDeleting}
             listSearchTerm={listSearchTerm}
