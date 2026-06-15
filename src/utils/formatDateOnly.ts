@@ -20,7 +20,9 @@ export function formatDateOnly(date: string | Date, fmt: string, lang: Language)
     dateStr = date.toISOString().slice(0, 10);
   }
   
-  // Create a date at UTC midnight to format (no timezone issues)
-  const d = new Date(dateStr + 'T00:00:00Z');
+  // Parse as LOCAL midnight (no trailing 'Z') so date-fns `format` — which renders
+  // in the host timezone — always prints the same calendar date we stored. Parsing
+  // as UTC midnight would shift the date back a day for negative-UTC viewers.
+  const d = new Date(dateStr + 'T00:00:00');
   return format(d, fmt, { locale: lang === 'ar' ? ar : enUS });
 }

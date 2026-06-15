@@ -142,6 +142,7 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
   const [listFilter, setListFilter] = useState<ListFilter>('today_checkin');
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>('all');
   const [listCheckInDateFilter, setListCheckInDateFilter] = useState<string | null>(null);
+  const [listRoomFilter, setListRoomFilter] = useState<string>('all');
   const [bulkDeleting, setBulkDeleting] = useState(false);
   const [visibleListCount, setVisibleListCount] = useState(30);
 
@@ -151,7 +152,10 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
   const [serverHasMore, setServerHasMore] = useState(false);
   const [serverOffset, setServerOffset] = useState(0);
   const [serverLoading, setServerLoading] = useState(false);
-  const useServerMode = listFilter === 'all' || listFilter === 'past';
+  // A selected check-in date queries the server directly so it works regardless of
+  // the active status tab AND finds matches outside the locally-loaded date window
+  // (the client `bookings` array only holds the calendar's visible range).
+  const useServerMode = listFilter === 'all' || listFilter === 'past' || !!listCheckInDateFilter;
 
   const generateMonthDays = (year: number, month: number): Date[] => {
     const days: Date[] = [];
@@ -486,17 +490,39 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
         sourceFilter === 'synced' ? !!b.externalChannel : !b.externalChannel,
       );
     }
-    // Check-in date filter: if set, only show bookings matching that date
+    // Check-in date filter: if set, only show bookings matching that date.
+    // (When set, useServerMode is forced on, so this branch only guards the rare
+    // client-mode render; the authoritative date filtering happens server-side.)
     if (listCheckInDateFilter) {
       filtered = filtered.filter((b: Booking) => b.checkIn.slice(0, 10) === listCheckInDateFilter);
     }
+    // Room filter: applies on every status tab.
+    if (listRoomFilter !== 'all') {
+      filtered = filtered.filter((b: Booking) => b.room === listRoomFilter);
+    }
     return filtered.sort((a: Booking, b: Booking) => b.checkIn.localeCompare(a.checkIn));
-  }, [bookings, listSearchTerm, listFilter, sourceFilter, listCheckInDateFilter]);
+  }, [bookings, listSearchTerm, listFilter, sourceFilter, listCheckInDateFilter, listRoomFilter]);
 
   const visibleBookings = filteredBookings.slice(0, visibleListCount);
   const listContainerRef = useRef<HTMLDivElement | null>(null);
 
-  // Fire server query when 'all' or 'past' tab is active
+  // Build the getBookings filter for server-mode tabs. A selected check-in date is
+  // status-independent (it queries that exact day across every status) and takes
+  // precedence over the 'past' tab's implicit endDate. Room narrows the result set.
+  const buildServerFilter = (): Record<string, any> => {
+    const filter: Record<string, any> = {};
+    if (listSearchTerm) filter.guestName = listSearchTerm;
+    if (listCheckInDateFilter) {
+      filter.startDate = listCheckInDateFilter;
+      filter.endDate = listCheckInDateFilter;
+    } else if (listFilter === 'past') {
+      filter.endDate = format(new Date(), 'yyyy-MM-dd');
+    }
+    if (listRoomFilter !== 'all') filter.room = listRoomFilter;
+    return filter;
+  };
+
+  // Fire server query when 'all' or 'past' tab is active, or a check-in date is set
   useEffect(() => {
     if (!useServerMode) return;
     setServerOffset(0);
@@ -505,9 +531,7 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
     const timer = setTimeout(async () => {
       setServerLoading(true);
       try {
-        const filter: Record<string, any> = {};
-        if (listSearchTerm) filter.guestName = listSearchTerm;
-        if (listFilter === 'past') filter.endDate = format(new Date(), 'yyyy-MM-dd');
+        const filter = buildServerFilter();
         const result = await apolloClient.query({
           query: GET_BOOKINGS_QUERY,
           variables: { filter, limit: SERVER_PAGE_SIZE, offset: 0, sortBy: 'checkIn', sortOrder: 'desc' },
@@ -520,15 +544,13 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
       finally { setServerLoading(false); }
     }, 400);
     return () => clearTimeout(timer);
-  }, [useServerMode, listFilter, listSearchTerm]);
+  }, [useServerMode, listFilter, listSearchTerm, listCheckInDateFilter, listRoomFilter]);
 
   const handleServerLoadMore = async () => {
     const newOffset = serverOffset + SERVER_PAGE_SIZE;
     setServerLoading(true);
     try {
-      const filter: Record<string, any> = {};
-      if (listSearchTerm) filter.guestName = listSearchTerm;
-      if (listFilter === 'past') filter.endDate = format(new Date(), 'yyyy-MM-dd');
+      const filter = buildServerFilter();
       const result = await apolloClient.query({
         query: GET_BOOKINGS_QUERY,
         variables: { filter, limit: SERVER_PAGE_SIZE, offset: newOffset, sortBy: 'checkIn', sortOrder: 'desc' },
@@ -557,7 +579,7 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
     return () => el.removeEventListener('scroll', onScroll);
   }, [filteredBookings.length]);
 
-  useEffect(() => { setVisibleListCount(30); }, [listFilter, listSearchTerm, listCheckInDateFilter]);
+  useEffect(() => { setVisibleListCount(30); }, [listFilter, listSearchTerm, listCheckInDateFilter, listRoomFilter]);
 
   useEffect(() => {
     if (currentView !== 'reports') return;
@@ -700,10 +722,9 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
                 <>
                   <div className="fixed inset-0 z-99" onClick={() => setShowViewMenu(false)} />
                   <div className="absolute top-full mt-1 z-100 bg-white rounded-2xl border border-slate-200 shadow-2xl py-1 min-w-[130px] end-0">
-                    {(session.isAdmin
-                      ? ['admin'] as View[]
-                      : (['calendar', 'list', 'expenses', 'reports'] as View[])
-                    ).map((v) => {
+                    {/* Same set as the desktop sidebar — so integrations (when enabled)
+                        and settings are reachable from the mobile view switcher too. */}
+                    {sidebarItems.map((v) => {
                       const Icon = { calendar: CalendarBlank, list: ListBullets, reports: ChartPie, integrations: CloudArrowDown, expenses: CurrencyCircleDollar, settings: GearSix, admin: ShieldCheck }[v];
                       return (
                         <button
@@ -793,6 +814,8 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
             setSourceFilter={setSourceFilter}
             listCheckInDateFilter={listCheckInDateFilter}
             setListCheckInDateFilter={setListCheckInDateFilter}
+            listRoomFilter={listRoomFilter}
+            setListRoomFilter={setListRoomFilter}
             onBulkDelete={handleBulkDelete}
             bulkDeleting={bulkDeleting}
             listSearchTerm={listSearchTerm}

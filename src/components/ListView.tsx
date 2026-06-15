@@ -20,6 +20,8 @@ interface ListViewProps {
   setSourceFilter: (f: SourceFilter) => void;
   listCheckInDateFilter: string | null;
   setListCheckInDateFilter: (d: string | null) => void;
+  listRoomFilter: string;
+  setListRoomFilter: (r: string) => void;
   onBulkDelete: (ids: string[]) => Promise<void>;
   bulkDeleting?: boolean;
   listSearchTerm: string;
@@ -48,6 +50,8 @@ export default function ListView({
   setSourceFilter,
   listCheckInDateFilter,
   setListCheckInDateFilter,
+  listRoomFilter,
+  setListRoomFilter,
   onBulkDelete,
   bulkDeleting = false,
   listSearchTerm,
@@ -196,8 +200,8 @@ export default function ListView({
         </div>
       )}
 
-      {/* Check-in date filter */}
-      <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-3">
+      {/* Check-in date + room filters — apply across every status tab */}
+      <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-wrap items-center gap-3">
         <label className="text-[11px] font-black uppercase tracking-widest text-slate-500 whitespace-nowrap">
           {t(lang, 'list.filterByCheckIn')}
         </label>
@@ -207,9 +211,22 @@ export default function ListView({
           onChange={(e) => setListCheckInDateFilter(e.target.value || null)}
           className="px-3 py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 transition-all"
         />
-        {listCheckInDateFilter && (
+        <label className="text-[11px] font-black uppercase tracking-widest text-slate-500 whitespace-nowrap">
+          {t(lang, 'list.filterByRoom')}
+        </label>
+        <select
+          value={listRoomFilter}
+          onChange={(e) => setListRoomFilter(e.target.value)}
+          className="px-3 py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 transition-all bg-white"
+        >
+          <option value="all">{t(lang, 'list.allRooms')}</option>
+          {rooms.map((r: any) => (
+            <option key={r.id} value={r.id}>{r.name}</option>
+          ))}
+        </select>
+        {(listCheckInDateFilter || listRoomFilter !== 'all') && (
           <button
-            onClick={() => setListCheckInDateFilter(null)}
+            onClick={() => { setListCheckInDateFilter(null); setListRoomFilter('all'); }}
             className="ml-auto inline-flex items-center gap-1.5 px-3 py-2 text-[10px] font-black uppercase tracking-widest bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 transition-all"
           >
             <XIcon size={12} weight="bold" />
