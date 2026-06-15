@@ -6,14 +6,18 @@ export const VALID_CHANNELS = ['airbnb', 'gathern', 'booking.com'] as const;
 export type Channel = typeof VALID_CHANNELS[number];
 
 /**
- * Convert any date to UTC midnight (00:00:00).
- * This removes all timezone complexity — we store only the calendar date.
- * 
- * iCal Event on June 13 (any timezone) → stored as 2026-06-13 00:00:00 UTC
- * Frontend reads it, displays June 13 — no timezone conversion needed.
+ * Convert an iCal date-only event date to UTC midnight (00:00:00) of the SAME
+ * calendar day the feed labeled — so a "June 14" check-in is stored as
+ * 2026-06-14T00:00:00Z and the frontend shows June 14 everywhere.
+ *
+ * node-ical parses an all-day event (VALUE=DATE) as *server-local* midnight of
+ * the labeled date. So we must read the LOCAL components (getFullYear/Month/Date),
+ * not the UTC ones. Using getUTC* only happens to work when the server runs in
+ * UTC; on any positive-offset host (Vercel's sin1 region, a Riyadh dev machine)
+ * the UTC date rolls back to the previous day → the classic "one day before" bug.
  */
 function toUTCMidnight(d: Date): Date {
-  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 0, 0, 0));
+  return new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0));
 }
 
 export interface SyncResult {
