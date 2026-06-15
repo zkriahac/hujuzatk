@@ -738,14 +738,29 @@ export const resolvers = {
 			if (!isValidPlan(plan)) {
 				throw new GraphQLError(`Invalid plan: ${plan}. Must be one of trial | basic | pro | enterprise.`, { extensions: { code: 'BAD_USER_INPUT', http: { status: 400 } } });
 			}
+			const existing = await prisma.tenant.findUnique({ where: { id: tenantId }, select: { subscriptionStatus: true } });
+			if (!existing) throw new GraphQLError('Tenant not found', { extensions: { code: 'NOT_FOUND', http: { status: 404 } } });
 			const cfg = PLANS[plan];
+			const data: any = {
+				plan,
+				maxRooms: cfg.maxRooms === Number.MAX_SAFE_INTEGER ? 999 : cfg.maxRooms, // store a sentinel int for "unlimited"
+				integrationsEnabled: cfg.integrationsEnabled,
+			};
+			// Moving to a PAID plan from a non-active subscription (trial / expired /
+			// canceled) must also ACTIVATE it. Otherwise the tenant ends up showing the
+			// new tier (e.g. "PRO") next to a stale, possibly-expired "trial" badge —
+			// the mismatch this whole mutation used to require chaining createAdminSubscription
+			// to avoid. Plans are annual, so grant a 1-year validity. An already-active
+			// subscription just changes tier; its validUntil is preserved untouched.
+			if (plan !== 'trial' && (existing.subscriptionStatus || '').toLowerCase() !== 'active') {
+				const validUntil = new Date();
+				validUntil.setDate(validUntil.getDate() + 365);
+				data.subscriptionStatus = 'active';
+				data.validUntil = validUntil;
+			}
 			const updated = await prisma.tenant.update({
 				where: { id: tenantId },
-				data: {
-					plan,
-					maxRooms: cfg.maxRooms === Number.MAX_SAFE_INTEGER ? 999 : cfg.maxRooms, // store a sentinel int for "unlimited"
-					integrationsEnabled: cfg.integrationsEnabled,
-				},
+				data,
 				include: { settings: true, _count: { select: { bookings: true } } },
 			});
 			await prisma.auditLog.create({
