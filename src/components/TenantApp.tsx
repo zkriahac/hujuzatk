@@ -484,8 +484,8 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
         return true;
       });
     }
-    // Source filter: only meaningful on the "all" tab; for other tabs we leave the set alone.
-    if (listFilter === 'all' && sourceFilter !== 'all') {
+    // Source filter (synced vs manual) — applies on every status tab.
+    if (sourceFilter !== 'all') {
       filtered = filtered.filter((b: any) =>
         sourceFilter === 'synced' ? !!b.externalChannel : !b.externalChannel,
       );
@@ -792,9 +792,8 @@ export default function TenantApp({ session, onSessionChange }: TenantAppProps) 
       )}
       <main className={cn('container mx-auto p-2 pt-2', currentView === 'calendar' && 'hidden')}>
         {currentView === 'list' && (() => {
-          // Apply the source filter to server-mode bookings too (only relevant on the "all" tab,
-          // which is one of the two server-mode tabs)
-          const filteredServer = (useServerMode && listFilter === 'all' && sourceFilter !== 'all')
+          // Apply the source filter to server-mode bookings too (applies on every tab).
+          const filteredServer = (useServerMode && sourceFilter !== 'all')
             ? serverBookings.filter((b: any) => sourceFilter === 'synced' ? !!b.externalChannel : !b.externalChannel)
             : serverBookings;
           const listBookings = useServerMode ? filteredServer : visibleBookings;

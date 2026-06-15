@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { parseISO, isSameDay, startOfToday } from 'date-fns';
-import { MagnifyingGlass, Users, Eye, List, ArrowSquareIn, ArrowSquareOut, CheckCircle, Archive, XCircle, Trash, ArrowsClockwise, PencilSimple, X as XIcon, Upload } from 'phosphor-react';
+import { MagnifyingGlass, Users, Eye, List, ArrowSquareIn, ArrowSquareOut, CheckCircle, Archive, XCircle, Trash, X as XIcon, Upload } from 'phosphor-react';
 import { cn } from '../utils/cn';
 import { t, type Language } from '../lib/i18n';
 import { formatTz } from '../utils/formatTz';
@@ -173,66 +173,62 @@ export default function ListView({
         </div>
       </div>
 
-      {/* Source filter (only shown on the "all" tab) */}
-      {listFilter === 'all' && (
-        <div className="bg-white p-2 rounded-2xl border border-slate-200 shadow-sm flex">
-          <div className="flex gap-1 bg-slate-50 p-1 rounded-xl flex-1">
-            {([
-              { id: 'all',    Icon: List },
-              { id: 'synced', Icon: ArrowsClockwise },
-              { id: 'manual', Icon: PencilSimple },
-            ] as const).map(({ id, Icon }) => (
+      {/* Unified filter card — source / check-in date / room. Pill-shaped controls
+          matching the Reports page; all three apply across every status tab. */}
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 sm:p-5">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div>
+            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2 block">
+              {t(lang, 'list.filterBySource')}
+            </label>
+            <select
+              value={sourceFilter}
+              onChange={(e) => setSourceFilter(e.target.value as SourceFilter)}
+              className="w-full bg-slate-50 border border-slate-100 rounded-full px-5 py-2.5 text-sm font-black focus:ring-2 focus:ring-emerald-500 transition-all"
+            >
+              <option value="all">{t(lang, 'list.source.all')}</option>
+              <option value="synced">{t(lang, 'list.source.synced')}</option>
+              <option value="manual">{t(lang, 'list.source.manual')}</option>
+            </select>
+          </div>
+          <div>
+            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2 block">
+              {t(lang, 'list.filterByCheckIn')}
+            </label>
+            <input
+              type="date"
+              value={listCheckInDateFilter || ''}
+              onChange={(e) => setListCheckInDateFilter(e.target.value || null)}
+              className="w-full bg-slate-50 border border-slate-100 rounded-full px-5 py-2.5 text-sm font-black focus:ring-2 focus:ring-emerald-500 transition-all"
+            />
+          </div>
+          <div>
+            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2 block">
+              {t(lang, 'list.filterByRoom')}
+            </label>
+            <select
+              value={listRoomFilter}
+              onChange={(e) => setListRoomFilter(e.target.value)}
+              className="w-full bg-slate-50 border border-slate-100 rounded-full px-5 py-2.5 text-sm font-black focus:ring-2 focus:ring-emerald-500 transition-all"
+            >
+              <option value="all">{t(lang, 'list.allRooms')}</option>
+              {rooms.map((r: any) => (
+                <option key={r.id} value={r.id}>{r.name}</option>
+              ))}
+            </select>
+          </div>
+          <div className="flex items-end">
+            {(sourceFilter !== 'all' || listCheckInDateFilter || listRoomFilter !== 'all') && (
               <button
-                key={id}
-                onClick={() => setSourceFilter(id)}
-                className={cn(
-                  'flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all whitespace-nowrap',
-                  sourceFilter === id
-                    ? 'bg-white text-slate-900 shadow-sm'
-                    : 'text-slate-400 hover:text-slate-600',
-                )}
+                onClick={() => { setSourceFilter('all'); setListCheckInDateFilter(null); setListRoomFilter('all'); }}
+                className="w-full inline-flex items-center justify-center gap-1.5 px-5 py-2.5 text-[10px] font-black uppercase tracking-widest bg-slate-100 text-slate-600 rounded-full hover:bg-slate-200 transition-all"
               >
-                <Icon size={12} weight="bold" />
-                {t(lang, `list.source.${id}`)}
+                <XIcon size={12} weight="bold" />
+                {t(lang, 'list.clearFilter')}
               </button>
-            ))}
+            )}
           </div>
         </div>
-      )}
-
-      {/* Check-in date + room filters — apply across every status tab */}
-      <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-wrap items-center gap-3">
-        <label className="text-[11px] font-black uppercase tracking-widest text-slate-500 whitespace-nowrap">
-          {t(lang, 'list.filterByCheckIn')}
-        </label>
-        <input
-          type="date"
-          value={listCheckInDateFilter || ''}
-          onChange={(e) => setListCheckInDateFilter(e.target.value || null)}
-          className="px-3 py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 transition-all"
-        />
-        <label className="text-[11px] font-black uppercase tracking-widest text-slate-500 whitespace-nowrap">
-          {t(lang, 'list.filterByRoom')}
-        </label>
-        <select
-          value={listRoomFilter}
-          onChange={(e) => setListRoomFilter(e.target.value)}
-          className="px-3 py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 transition-all bg-white"
-        >
-          <option value="all">{t(lang, 'list.allRooms')}</option>
-          {rooms.map((r: any) => (
-            <option key={r.id} value={r.id}>{r.name}</option>
-          ))}
-        </select>
-        {(listCheckInDateFilter || listRoomFilter !== 'all') && (
-          <button
-            onClick={() => { setListCheckInDateFilter(null); setListRoomFilter('all'); }}
-            className="ml-auto inline-flex items-center gap-1.5 px-3 py-2 text-[10px] font-black uppercase tracking-widest bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 transition-all"
-          >
-            <XIcon size={12} weight="bold" />
-            {t(lang, 'list.clearFilter')}
-          </button>
-        )}
       </div>
 
       {/* Selection bar — appears only when something is checked.
