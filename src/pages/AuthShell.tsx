@@ -359,7 +359,7 @@ export function UserAuthShell() {
           </div>
           <div className="flex flex-col gap-3">
             <button
-              onClick={() => navigate(`/${slug}/calendar`)}
+              onClick={() => navigate(currentSession.isAdmin ? '/superadmin' : `/${slug}/calendar`)}
               className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-4 rounded-xl shadow-lg shadow-emerald-100 transition-all active:scale-[0.98] flex items-center justify-center gap-2"
             >
               <Sparkle size={18} weight="fill" />
@@ -387,6 +387,7 @@ export function UserAuthShell() {
           mode={authMode}
           onModeChange={setAuthMode}
           onLoggedIn={(s) => {
+            if (s.isAdmin) { navigate('/superadmin'); return; }
             const slug = encodeURIComponent((s.tenant.name || 'workspace').replace(/\s+/g, '-'));
             navigate(`/${slug}/calendar`);
           }}

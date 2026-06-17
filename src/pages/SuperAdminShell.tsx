@@ -1,53 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Database } from 'phosphor-react';
 import { authService, type SessionUser } from '../lib/authService';
 import { type Language } from '../lib/i18n';
 import AdminView from '../components/AdminView';
-
-function SuperAdminConfigPanel() {
-  const [trialDays, setTrialDays] = useState(14);
-  const [calendarYears, setCalendarYears] = useState(5);
-
-  return (
-    <div className="bg-slate-900/80 rounded-xl border border-slate-700 shadow-xl p-4 text-sm text-slate-100">
-      <h2 className="font-semibold mb-3 flex items-center gap-2">
-        <Database size={18} className="text-emerald-400" />
-        Global Configuration
-      </h2>
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div>
-          <label className="block text-[11px] text-slate-400 mb-1">Free trial period (days)</label>
-          <input
-            type="number"
-            min={1}
-            max={60}
-            value={trialDays}
-            onChange={(e) => setTrialDays(parseInt(e.target.value) || 14)}
-            className="w-full rounded bg-slate-950 border border-slate-700 px-3 py-2 text-sm"
-          />
-        </div>
-        <div>
-          <label className="block text-[11px] text-slate-400 mb-1">Calendar window (years)</label>
-          <input
-            type="number"
-            min={1}
-            max={5}
-            value={calendarYears}
-            onChange={(e) => setCalendarYears(parseInt(e.target.value) || 5)}
-            className="w-full rounded bg-slate-950 border border-slate-700 px-3 py-2 text-sm"
-          />
-        </div>
-        <div>
-          <label className="block text-[11px] text-slate-400 mb-1">Supported languages</label>
-          <div className="flex gap-2 text-xs mt-1">
-            <span className="px-2 py-1 rounded-full bg-emerald-500/20 text-emerald-100 border border-emerald-400/40">EN</span>
-            <span className="px-2 py-1 rounded-full bg-emerald-500/20 text-emerald-100 border border-emerald-400/40">AR</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 export function SuperAdminShell() {
   const [session, setSession] = useState<SessionUser | null>(null);
@@ -164,10 +118,8 @@ export function SuperAdminShell() {
         </button>
       </header>
       <main className="flex-1 p-4 space-y-4 max-w-6xl mx-auto w-full">
-        <SuperAdminConfigPanel />
-        <div className="bg-slate-900/80 rounded-xl border border-slate-700 shadow-xl p-4">
-          <AdminView lang={lang} tz={tz} superadmin />
-        </div>
+        {/* Global defaults live in AdminView's "Defaults" tab — no separate panel. */}
+        <AdminView lang={lang} tz={tz} superadmin />
       </main>
     </div>
   );

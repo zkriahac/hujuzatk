@@ -320,6 +320,13 @@ export const translations: Record<Language, Record<string, string>> = {
     'admin.expire': 'Expire',
     'admin.loading': 'Loading tenants…',
     'admin.noTenants': 'No tenants registered yet.',
+    'admin.noMatches': 'No tenants match your filters.',
+    'admin.searchPlaceholder': 'Search by name, email or phone…',
+    'admin.statTotal': 'Total',
+    'admin.statActive': 'Active',
+    'admin.statTrial': 'Trial',
+    'admin.statExpired': 'Expired',
+    'admin.statDeactivated': 'Deactivated',
 
     // Onboarding tour
     'onboarding.step1_title': 'Your Dashboard',
@@ -740,6 +747,13 @@ export const translations: Record<Language, Record<string, string>> = {
     'admin.expire': 'إنهاء',
     'admin.loading': 'جاري تحميل العملاء…',
     'admin.noTenants': 'لا يوجد عملاء مسجلين بعد.',
+    'admin.noMatches': 'لا يوجد عملاء مطابقون للتصفية.',
+    'admin.searchPlaceholder': 'البحث بالاسم أو البريد أو الهاتف…',
+    'admin.statTotal': 'الإجمالي',
+    'admin.statActive': 'نشط',
+    'admin.statTrial': 'تجريبي',
+    'admin.statExpired': 'منتهي',
+    'admin.statDeactivated': 'معطّل',
 
     // Onboarding tour
     'onboarding.step1_title': 'لوحة التحكم',
@@ -1160,6 +1174,13 @@ export const translations: Record<Language, Record<string, string>> = {
     'admin.expire': 'Sonlandır',
     'admin.loading': 'Müşteriler yükleniyor…',
     'admin.noTenants': 'Henüz kayıtlı müşteri yok.',
+    'admin.noMatches': 'Filtrelerinize uyan müşteri yok.',
+    'admin.searchPlaceholder': 'Ad, e-posta veya telefonla ara…',
+    'admin.statTotal': 'Toplam',
+    'admin.statActive': 'Aktif',
+    'admin.statTrial': 'Deneme',
+    'admin.statExpired': 'Süresi dolmuş',
+    'admin.statDeactivated': 'Devre dışı',
 
     // Onboarding tour
     'onboarding.step1_title': 'Panel Gezintisi',

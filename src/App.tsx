@@ -78,6 +78,11 @@ function RootRoute() {
         language: s.tenant.language,
         is_admin: s.isAdmin,
       });
+      // Admins have no workspace/calendar — send them straight to the superadmin dashboard.
+      if (s.isAdmin) {
+        navigate('/superadmin', { replace: true });
+        return;
+      }
       const slug = encodeURIComponent((s.tenant.name || 'workspace').replace(/\s+/g, '-'));
       navigate(`/${slug}`, { replace: true });
     }).catch(() => { /* unauth → stay on landing, or stale-chunk reload kicked in */ });

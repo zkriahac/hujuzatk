@@ -1,11 +1,22 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { gql } from '@apollo/client';
 import { apolloClient } from '../lib/apolloClient';
 import { authService } from '../lib/authService';
 import { t, type Language } from '../lib/i18n';
 import { formatTz } from '../utils/formatTz';
 import { cn } from '../utils/cn';
-import { Users, X } from 'phosphor-react';
+import { Users, X, MagnifyingGlass, Buildings, CheckCircle, Clock, WarningCircle, Prohibit } from 'phosphor-react';
+
+type TenantStatusFilter = 'all' | 'active' | 'trial' | 'expired' | 'deactivated';
+
+/** Bucket a tenant into exactly one status used by the stat cards + filters. */
+function tenantBucket(tObj: Tenant): Exclude<TenantStatusFilter, 'all'> {
+  if ((tObj as any).isActive === false) return 'deactivated';
+  const s = (tObj.subscriptionStatus || '').toUpperCase();
+  if (s === 'ACTIVE') return 'active';
+  if (s === 'TRIAL') return 'trial';
+  return 'expired';
+}
 import type { Tenant } from '../db';
 import { ADMIN_SET_INTEGRATIONS_ENABLED_MUTATION, ADMIN_SET_PLAN_MUTATION } from '../lib/graphql';
 import { PLAN_ORDER, type PlanKey } from '../lib/planConfig';
@@ -488,6 +499,8 @@ export default function AdminView({ lang, tz }: AdminViewProps) {
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<'tenants' | 'defaults'>('tenants');
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<TenantStatusFilter>('all');
 
   const loadTenants = async () => {
     setLoading(true);
@@ -500,6 +513,35 @@ export default function AdminView({ lang, tz }: AdminViewProps) {
   };
 
   useEffect(() => { void loadTenants(); }, []);
+
+  // Summary counts for the stat cards.
+  const stats = useMemo(() => {
+    const s = { total: tenants.length, active: 0, trial: 0, expired: 0, deactivated: 0 };
+    for (const tObj of tenants) s[tenantBucket(tObj)]++;
+    return s;
+  }, [tenants]);
+
+  // Search (name / email / phone) + status filter.
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return tenants.filter((tObj) => {
+      if (statusFilter !== 'all' && tenantBucket(tObj) !== statusFilter) return false;
+      if (!q) return true;
+      return (
+        (tObj.name || '').toLowerCase().includes(q) ||
+        (tObj.email || '').toLowerCase().includes(q) ||
+        String((tObj as any).phone || '').toLowerCase().includes(q)
+      );
+    });
+  }, [tenants, search, statusFilter]);
+
+  const STAT_CARDS = [
+    { key: 'all'        as TenantStatusFilter, label: t(lang, 'admin.statTotal'),       value: stats.total,       Icon: Buildings,     tone: 'text-slate-200',   ring: 'ring-slate-600' },
+    { key: 'active'     as TenantStatusFilter, label: t(lang, 'admin.statActive'),      value: stats.active,      Icon: CheckCircle,   tone: 'text-emerald-400', ring: 'ring-emerald-500' },
+    { key: 'trial'      as TenantStatusFilter, label: t(lang, 'admin.statTrial'),       value: stats.trial,       Icon: Clock,         tone: 'text-blue-400',    ring: 'ring-blue-500' },
+    { key: 'expired'    as TenantStatusFilter, label: t(lang, 'admin.statExpired'),     value: stats.expired,     Icon: WarningCircle, tone: 'text-amber-400',   ring: 'ring-amber-500' },
+    { key: 'deactivated' as TenantStatusFilter, label: t(lang, 'admin.statDeactivated'), value: stats.deactivated, Icon: Prohibit,      tone: 'text-red-400',     ring: 'ring-red-500' },
+  ];
 
   return (
     <div className="space-y-6">
@@ -526,7 +568,7 @@ export default function AdminView({ lang, tz }: AdminViewProps) {
         <DefaultsView lang={lang} />
       ) : (
         <>
-          <div className="flex justify-between items-center px-4">
+          <div className="flex flex-wrap justify-between items-center gap-3 px-4">
             <h2 className="text-2xl font-black text-emerald-400 flex items-center gap-3">
               <Users size={32} className="text-emerald-400" />
               {t(lang, 'admin.title')}
@@ -536,8 +578,42 @@ export default function AdminView({ lang, tz }: AdminViewProps) {
               {t(lang, 'admin.refresh')}
             </button>
           </div>
+
+          {/* Summary stat cards — click one to filter the table by that status. */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 px-4">
+            {STAT_CARDS.map(({ key, label, value, Icon, tone, ring }) => (
+              <button
+                key={key}
+                onClick={() => setStatusFilter(key)}
+                className={cn(
+                  'flex items-center gap-3 bg-slate-900 border border-slate-800 rounded-2xl px-4 py-3 text-start transition-all hover:border-slate-600',
+                  statusFilter === key && `ring-2 ${ring} border-transparent`,
+                )}
+              >
+                <Icon size={26} weight="duotone" className={tone} />
+                <div className="min-w-0">
+                  <div className={cn('text-2xl font-black leading-none', tone)}>{value}</div>
+                  <div className="text-[9px] font-black uppercase tracking-widest text-slate-500 mt-1 truncate">{label}</div>
+                </div>
+              </button>
+            ))}
+          </div>
+
+          {/* Search */}
+          <div className="px-4">
+            <div className="relative max-w-md">
+              <MagnifyingGlass size={16} weight="bold" className="absolute top-1/2 -translate-y-1/2 start-4 text-slate-500" />
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder={t(lang, 'admin.searchPlaceholder')}
+                className="w-full bg-slate-900 border border-slate-800 rounded-full ps-11 pe-4 py-2.5 text-sm font-bold text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              />
+            </div>
+          </div>
+
           <div className="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden shadow-2xl">
-            <div className="overflow-auto max-h-[75vh] scrollbar-hide">
+            <div className="overflow-auto max-h-[70vh] scrollbar-hide">
               <table className="w-full text-sm">
                 <thead className="bg-slate-950/80 sticky top-0 z-10">
                   <tr className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
@@ -554,7 +630,9 @@ export default function AdminView({ lang, tz }: AdminViewProps) {
                     <tr><td colSpan={6} className="px-6 py-20 text-center text-slate-500 font-black uppercase text-xs tracking-widest">{t(lang, 'admin.loading')}</td></tr>
                   ) : tenants.length === 0 ? (
                     <tr><td colSpan={6} className="px-6 py-20 text-center text-slate-500 font-black uppercase text-xs tracking-widest">{t(lang, 'admin.noTenants')}</td></tr>
-                  ) : tenants.map((tObj) => (
+                  ) : filtered.length === 0 ? (
+                    <tr><td colSpan={6} className="px-6 py-20 text-center text-slate-500 font-black uppercase text-xs tracking-widest">{t(lang, 'admin.noMatches')}</td></tr>
+                  ) : filtered.map((tObj) => (
                     <AdminTenantRow key={tObj.uuid || (tObj as any).id} tObj={tObj} onReload={loadTenants} lang={lang} tz={tz} />
                   ))}
                 </tbody>
