@@ -48,7 +48,12 @@ function normalizeTenant(tenant: any) {
 }
 
 function normalizeBooking(booking: any) {
-	return { ...booking, status: booking.status?.toUpperCase() || 'UPCOMING' };
+	// GraphQL's BookingStatus enum uses NO_SHOW (underscore). Older rows were
+	// stored as 'no-show' (hyphen); a naive toUpperCase() yields 'NO-SHOW',
+	// which is not a valid enum member and makes GraphQL throw on that row.
+	// Normalise hyphens to underscores so both spellings serialize cleanly.
+	const status = (booking.status || 'upcoming').toUpperCase().replace(/-/g, '_');
+	return { ...booking, status };
 }
 
 function requireAuth(context: any) {

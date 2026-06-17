@@ -3,7 +3,7 @@ import { format, addDays, parseISO } from 'date-fns';
 import {
   X, Sparkle, Users, Minus, Plus, CreditCard, FileText, Printer,
   PencilSimple, Prohibit, Trash, Check, WarningCircle, CaretDown, CaretUp, Upload, DownloadSimple,
-  ArrowSquareOut, Lock, ArrowsClockwise,
+  ArrowSquareOut, Lock, ArrowsClockwise, UserMinus,
 } from 'phosphor-react';
 import { useBulkImportBookings } from '../hooks/useGraphQL';
 import { cn } from '../utils/cn';
@@ -845,6 +845,30 @@ export function BookingDetailsModal({
               <Trash size={14} weight="bold" /> {t(lang, 'booking.delete')}
             </button>
           </div>
+          {/* No-show toggle — hidden once a booking is canceled (canceled is the
+              terminal state). Marking no-show records that the guest never
+              arrived; undoing reverts to upcoming, mirroring reactivate. */}
+          {booking.status !== 'CANCELED' && (
+            booking.status === 'NO_SHOW' ? (
+              <button
+                onClick={() => onUpdateStatus(booking.id!, 'UPCOMING')}
+                className="w-full py-3 bg-slate-100 text-slate-600 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-slate-200 active:scale-95 transition-all flex items-center justify-center gap-1.5"
+              >
+                <ArrowsClockwise size={14} weight="bold" /> {t(lang, 'booking.unmarkNoShow')}
+              </button>
+            ) : (
+              <button
+                onClick={() => setConfirmAction({
+                  message: t(lang, 'booking.confirmNoShow'),
+                  action: () => onUpdateStatus(booking.id!, 'NO_SHOW'),
+                  color: 'bg-slate-600 hover:bg-slate-700',
+                })}
+                className="w-full py-3 bg-slate-700 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-slate-800 active:scale-95 transition-all flex items-center justify-center gap-1.5"
+              >
+                <UserMinus size={14} weight="bold" /> {t(lang, 'booking.markNoShow')}
+              </button>
+            )
+          )}
         </div>
       </div>
 
