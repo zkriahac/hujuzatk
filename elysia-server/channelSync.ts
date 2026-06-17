@@ -179,13 +179,20 @@ export async function performSync(integration: any, tenantId: string, mode?: Syn
     events = events.filter((e) => !isBlockEvent(e));
     skipped += before - events.length;
 
-    const sweep = await prisma.booking.deleteMany({
+    // Sync NEVER hard-deletes bookings — accounting/legal/recoverability all
+    // depend on the row staying queryable. Previously-imported block
+    // placeholders are marked canceled instead; the calendar already filters
+    // canceled, so the UX is identical to a delete from the host's view, but
+    // the row is recoverable from the Canceled tab if needed.
+    const sweep = await prisma.booking.updateMany({
       where: {
         tenantId,
         room: integration.roomId,
         externalChannel: integration.channelName,
         guestName: { startsWith: '[', endsWith: 'block]' },
+        status: { not: 'canceled' },
       },
+      data: { status: 'canceled' },
     });
     blocksRemoved = sweep.count;
   }
