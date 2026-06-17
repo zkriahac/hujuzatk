@@ -312,31 +312,22 @@ export default function CalendarView({
                 const isFirstOfYear = isFirst && date.getMonth() === 0;
                 return (
                   <React.Fragment key={dStr}>
-                    {isFirst && (
+                    {isFirstOfYear && (
                       <tr aria-hidden="true">
-                        {/* Bold month-boundary line is restricted to the date column only —
-                            the room columns shouldn't be cut by a horizontal line because
-                            it visually breaks multi-day booking bars that cross the month. */}
+                        {/* Year-boundary band only — month-to-month boundaries get no line so
+                            multi-day booking bars crossing a month stay visually continuous.
+                            The bold line is restricted to the date column. */}
                         <td
                           className={cn(
-                            'p-0 border-t-2 border-slate-900 sticky z-30',
+                            'p-0 border-t-2 border-slate-900 sticky z-30 bg-slate-50',
                             isRtl ? 'right-0' : 'left-0',
-                            isFirstOfYear ? 'bg-slate-50' : 'h-0 leading-[0]',
                           )}
                         >
-                          {isFirstOfYear && (
-                            <div className={cn('text-slate-700 text-[10px] sm:text-xs font-black tracking-[0.3em] px-2 sm:px-4 py-0.5', isRtl ? 'text-right' : 'text-left')}>
-                              {date.getFullYear()}
-                            </div>
-                          )}
+                          <div className={cn('text-slate-700 text-[10px] sm:text-xs font-black tracking-[0.3em] px-2 sm:px-4 py-0.5', isRtl ? 'text-right' : 'text-left')}>
+                            {date.getFullYear()}
+                          </div>
                         </td>
-                        {/* Room columns get no border — bookings spanning the month boundary
-                            stay visually continuous. For year boundaries we still tint the
-                            strip slate-50 so the row reads as one band. */}
-                        <td
-                          colSpan={rooms.length}
-                          className={cn('p-0', isFirstOfYear ? 'bg-slate-50' : 'h-0 leading-[0]')}
-                        />
+                        <td colSpan={rooms.length} className="p-0 bg-slate-50" />
                       </tr>
                     )}
                     <tr style={{ height: rowH }} className="group" data-today={isToday ? 'true' : 'false'} data-date={dStr}>
