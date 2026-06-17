@@ -140,10 +140,6 @@ export async function performSync(integration: any, tenantId: string, mode?: Syn
   let imported = 0, updated = 0, canceled = 0, skipped = 0;
   const errors: string[] = [];
 
-  const tenantSettings = await prisma.tenantSettings.findUnique({ where: { tenantId } });
-  const defaultNightPrice: number = tenantSettings?.defaultNightPrice ?? 0;
-  const defaultTaxPct: number = tenantSettings?.defaultTax ?? 0;
-
   let events;
   try {
     events = await fetchAndParseICal(integration.icalUrl);
@@ -312,10 +308,11 @@ export async function performSync(integration: any, tenantId: string, mode?: Syn
         });
         wasCanceled ? canceled++ : updated++;
       } else {
-        const seedNightPrice = defaultNightPrice;
-        const seedTotalPrice = nights * seedNightPrice;
-        const seedTax = seedTotalPrice * (defaultTaxPct / 100);
-        const seedRemaining = seedTotalPrice + seedTax;
+        // Synced bookings carry no pricing data from the channel feeds, so we
+        // create them with zeros and let the host enter prices manually. Their
+        // edits are preserved on every subsequent resync (the UPDATE block
+        // above never writes price fields, and the drift-rescue path adopts a
+        // new UID onto the existing row without touching money fields).
         const bookingNumber = nextBookingNumberCursor++;
         await prisma.booking.create({
           data: {
@@ -326,11 +323,11 @@ export async function performSync(integration: any, tenantId: string, mode?: Syn
             checkIn: event.start,
             checkOut: event.end,
             nights,
-            nightPrice: seedNightPrice,
-            totalPrice: seedTotalPrice,
-            tax: seedTax,
+            nightPrice: 0,
+            totalPrice: 0,
+            tax: 0,
             deposit: 0,
-            remaining: seedRemaining,
+            remaining: 0,
             status,
             source: integration.channelName,
             notes: null,
