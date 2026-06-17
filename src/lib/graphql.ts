@@ -468,6 +468,7 @@ export const SYNC_CHANNEL_MUTATION = gql`
       updated
       canceled
       skipped
+      skipReasons { reason count }
       blocksRemoved
       errors
       success
@@ -486,6 +487,7 @@ export const SYNC_ALL_CHANNELS_MUTATION = gql`
       updated
       canceled
       skipped
+      skipReasons { reason count }
       blocksRemoved
       errors
       success

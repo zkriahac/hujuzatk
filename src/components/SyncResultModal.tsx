@@ -2,6 +2,11 @@ import { X, ArrowsClockwise, CheckCircle, WarningCircle, XCircle } from 'phospho
 import { cn } from '../utils/cn';
 import { t, type Language } from '../lib/i18n';
 
+export interface SkipBreakdownRow {
+  reason: string; // 'lookback' | 'block' | 'duplicate_reservation_id' | 'zero_nights'
+  count: number;
+}
+
 export interface SyncResultRow {
   integrationId?: string;
   channelName: string;
@@ -10,6 +15,7 @@ export interface SyncResultRow {
   updated: number;
   canceled: number;
   skipped: number;
+  skipReasons?: SkipBreakdownRow[];
   blocksRemoved: number;
   errors: string[];
   success: boolean;
@@ -45,6 +51,17 @@ export default function SyncResultModal({ open, onClose, results, rooms, lang, i
 
   const allSucceeded = results.every((r) => r.success) && totals.errors === 0;
   const noChanges = totals.imported === 0 && totals.updated === 0 && totals.canceled === 0 && totals.blocksRemoved === 0;
+
+  // Aggregate skip reasons across all integrations so a host who sees
+  // "skipped: 12" can tell whether those were old bookings outside the
+  // sync window, blocked dates, duplicates, or invalid same-day events.
+  const skipReasonTotals = results.reduce<Record<string, number>>((acc, r) => {
+    for (const s of r.skipReasons ?? []) acc[s.reason] = (acc[s.reason] || 0) + s.count;
+    return acc;
+  }, {});
+  const skipReasonRows = Object.entries(skipReasonTotals)
+    .filter(([, count]) => count > 0)
+    .sort((a, b) => b[1] - a[1]);
 
   return (
     <div
@@ -105,6 +122,29 @@ export default function SyncResultModal({ open, onClose, results, rooms, lang, i
             </div>
           )}
         </div>
+
+        {/* Why-skipped breakdown — only when something was skipped. Tells the
+            host whether a "missing" booking was outside the sync window, a
+            blocked date, a duplicate, or an invalid same-day event. */}
+        {skipReasonRows.length > 0 && (
+          <div className="px-5 pb-3">
+            <div className="rounded-xl bg-slate-50 border border-slate-100 p-3">
+              <div className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2">
+                {t(lang, 'sync.skipBreakdownTitle')}
+              </div>
+              <div className="space-y-1.5">
+                {skipReasonRows.map(([reason, count]) => (
+                  <div key={reason} className="flex items-start justify-between gap-3 text-xs">
+                    <span className="text-slate-600 leading-snug">
+                      {t(lang, `sync.skipReason.${reason}`)}
+                    </span>
+                    <span className="font-black tabular-nums text-slate-700 shrink-0">{count}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Per-integration breakdown is shown ONLY when something failed — the totals
             above already give a clean "brief" view that's enough for normal success.

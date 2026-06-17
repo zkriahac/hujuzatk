@@ -169,6 +169,11 @@ export const typeDefs = `
     updatedAt: DateTime!
   }
 
+  type SkipBreakdown {
+    reason: String!
+    count: Int!
+  }
+
   type SyncResult {
     integrationId: ID!
     channelName: String!
@@ -177,6 +182,7 @@ export const typeDefs = `
     updated: Int!
     canceled: Int!
     skipped: Int!
+    skipReasons: [SkipBreakdown!]!
     blocksRemoved: Int!
     errors: [String!]!
     success: Boolean!

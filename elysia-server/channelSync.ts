@@ -20,6 +20,20 @@ function toUTCMidnight(d: Date): Date {
   return new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0));
 }
 
+// Skip categories surfaced in SyncResult so the UI can tell the host *why*
+// events were dropped. Each label maps to one branch in performSync's filter
+// pipeline; the i18n side (SyncResultModal) renders a friendly description.
+export type SkipReason =
+  | 'lookback'                 // event.end < cutoff (syncLookbackDays / mode)
+  | 'block'                    // syncBlocks=false and event SUMMARY = Closed/Unavailable
+  | 'duplicate_reservation_id' // same Gathern/Airbnb reservation code seen twice in one feed
+  | 'zero_nights';             // checkOut <= checkIn (same-day or invalid)
+
+export interface SkipBreakdown {
+  reason: SkipReason;
+  count: number;
+}
+
 export interface SyncResult {
   integrationId: string;
   tenantId: string;
@@ -29,6 +43,7 @@ export interface SyncResult {
   updated: number;
   canceled: number;
   skipped: number;
+  skipReasons: SkipBreakdown[];
   blocksRemoved: number;
   errors: string[];
   success: boolean;
@@ -139,6 +154,16 @@ export type SyncMode = 'all' | 'future';
 export async function performSync(integration: any, tenantId: string, mode?: SyncMode): Promise<SyncResult> {
   let imported = 0, updated = 0, canceled = 0, skipped = 0;
   const errors: string[] = [];
+  // Per-category skip counters. Helper bumps both this and the running
+  // `skipped` total so existing call sites stay one-liners but we also get
+  // an explainable breakdown back in the response.
+  const skipReasonCounts: Record<SkipReason, number> = {
+    lookback: 0, block: 0, duplicate_reservation_id: 0, zero_nights: 0,
+  };
+  const skip = (reason: SkipReason, n = 1) => {
+    skipReasonCounts[reason] += n;
+    skipped += n;
+  };
 
   let events;
   try {
@@ -149,7 +174,7 @@ export async function performSync(integration: any, tenantId: string, mode?: Syn
       where: { id: integration.id },
       data: { lastSyncedAt: new Date(), lastSyncStatus: 'error', lastSyncMessage: message },
     });
-    return { integrationId: integration.id, tenantId, channelName: integration.channelName, roomId: integration.roomId, imported: 0, updated: 0, canceled: 0, skipped: 0, blocksRemoved: 0, errors: [message], success: false, message };
+    return { integrationId: integration.id, tenantId, channelName: integration.channelName, roomId: integration.roomId, imported: 0, updated: 0, canceled: 0, skipped: 0, skipReasons: [], blocksRemoved: 0, errors: [message], success: false, message };
   }
 
   const lookbackDays: number = (() => {
@@ -165,7 +190,7 @@ export async function performSync(integration: any, tenantId: string, mode?: Syn
     if (lookbackDays > 0) cutoff.setDate(cutoff.getDate() - lookbackDays);
     const before = events.length;
     events = events.filter((e) => e.end >= cutoff);
-    skipped += before - events.length;
+    skip('lookback', before - events.length);
   }
 
   const syncBlocks = !!integration.syncBlocks;
@@ -177,7 +202,7 @@ export async function performSync(integration: any, tenantId: string, mode?: Syn
   if (!syncBlocks) {
     const before = events.length;
     events = events.filter((e) => !isBlockEvent(e));
-    skipped += before - events.length;
+    skip('block', before - events.length);
 
     // Sync NEVER hard-deletes bookings — accounting/legal/recoverability all
     // depend on the row staying queryable. Previously-imported block
@@ -240,13 +265,13 @@ export async function performSync(integration: any, tenantId: string, mode?: Syn
   for (const event of events) {
     const resid = extractFromDescription(event.description, event.uid).externalReservationId;
     if (resid) {
-      if (feedResIds.has(resid)) { skipped++; continue; }
+      if (feedResIds.has(resid)) { skip('duplicate_reservation_id'); continue; }
       feedResIds.add(resid);
     }
     const normalizedStart = toUTCMidnight(event.start);
     const normalizedEnd = toUTCMidnight(event.end);
     const nights = differenceInCalendarDays(normalizedEnd, normalizedStart);
-    if (nights <= 0) { skipped++; continue; }
+    if (nights <= 0) { skip('zero_nights'); continue; }
     
     const dateCandidate = byDates.get(fingerprint(normalizedStart, normalizedEnd));
     const dateMatch =
@@ -438,7 +463,12 @@ export async function performSync(integration: any, tenantId: string, mode?: Syn
     },
   });
 
-  return { integrationId: integration.id, tenantId, channelName: integration.channelName, roomId: integration.roomId, imported, updated, canceled, skipped, blocksRemoved, errors, success: errors.length === 0, message: finalMessage };
+  // Flatten the per-reason map to an array, dropping zero-count rows so the
+  // UI only renders categories that actually fired.
+  const skipReasons: SkipBreakdown[] = (Object.keys(skipReasonCounts) as SkipReason[])
+    .filter((r) => skipReasonCounts[r] > 0)
+    .map((reason) => ({ reason, count: skipReasonCounts[reason] }));
+  return { integrationId: integration.id, tenantId, channelName: integration.channelName, roomId: integration.roomId, imported, updated, canceled, skipped, skipReasons, blocksRemoved, errors, success: errors.length === 0, message: finalMessage };
 }
 
 function detectSuspiciousPatterns(events: { uid: string; start: Date; end: Date; status: string }[]): string[] {
@@ -480,7 +510,7 @@ export async function syncAllTenantsForChannel(channel: Channel, mode?: SyncMode
         tenantId: integration.tenantId,
         channelName: integration.channelName,
         roomId: integration.roomId,
-        imported: 0, updated: 0, canceled: 0, skipped: 0, blocksRemoved: 0,
+        imported: 0, updated: 0, canceled: 0, skipped: 0, skipReasons: [], blocksRemoved: 0,
         errors: [err.message || String(err)],
         success: false,
         message: `Unhandled error: ${err.message}`,
