@@ -417,6 +417,16 @@ export async function performSync(integration: any, tenantId: string, mode?: Syn
 
   // ── Orphan cancel with special handling for Gathern ──
   try {
+    // Safety: never run a missing-from-feed sweep off a degraded feed. If no
+    // reservation events survived — a transient empty fetch, or a feed that only
+    // carried blocked dates (filtered out above) — the sweep would read EVERY live
+    // booking as "gone from the channel" and cancel them all at once. A genuinely
+    // emptied channel is indistinguishable from a glitch here, so we err toward
+    // leaving bookings alone; the host can always cancel manually.
+    if (events.length === 0) {
+      console.log(`[${integration.channelName}] Skipping orphan-cancel — feed returned no reservation events (room ${integration.roomId})`);
+      throw { __skipOrphan: true };
+    }
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
     const feedUids = new Set(events.map((e) => e.uid));
@@ -471,8 +481,12 @@ export async function performSync(integration: any, tenantId: string, mode?: Syn
       }
     }
   } catch (err: any) {
-    errors.push(`orphan cancel failed: ${err.message}`);
-    console.error(`[Gathern] Orphan cancel error:`, err);
+    if (err?.__skipOrphan) {
+      // Intentional skip (degraded/empty feed) — not an error.
+    } else {
+      errors.push(`orphan cancel failed: ${err.message}`);
+      console.error(`[${integration.channelName}] Orphan cancel error:`, err);
+    }
   }
 
   const suspiciousReasons = detectSuspiciousPatterns(events);
