@@ -144,19 +144,7 @@ export default function ListView({
             </button>
           ))}
         </div>
-        <div className="flex gap-3 w-full lg:w-auto lg:flex-1 lg:justify-end">
-          <div className="relative flex-1 lg:max-w-xs">
-            <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-slate-300">
-              <MagnifyingGlass size={18} />
-            </div>
-            <input
-              type="text"
-              placeholder={t(lang, 'list.search')}
-              className="w-full bg-slate-50 border-slate-100 rounded-2xl pl-11 pr-4 py-2.5 text-sm font-bold focus:ring-2 focus:ring-emerald-500 transition-all"
-              value={listSearchTerm}
-              onChange={(e) => setListSearchTerm(e.target.value)}
-            />
-          </div>
+        <div className="flex gap-3 w-full lg:w-auto lg:justify-end">
           <button
             onClick={onImportClick}
             className="inline-flex items-center gap-1.5 bg-white border border-slate-200 text-slate-700 px-4 py-2.5 rounded-2xl text-[11px] font-black uppercase tracking-widest whitespace-nowrap hover:bg-slate-50 active:scale-95 transition-all"
@@ -176,7 +164,24 @@ export default function ListView({
       {/* Unified filter card — source / check-in date / room. Pill-shaped controls
           matching the Reports page; all three apply across every status tab. */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 sm:p-5">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+          <div>
+            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2 block">
+              {t(lang, 'list.search')}
+            </label>
+            <div className="relative">
+              <div className={cn('absolute inset-y-0 flex items-center pointer-events-none text-slate-300', lang === 'ar' ? 'right-4' : 'left-4')}>
+                <MagnifyingGlass size={16} />
+              </div>
+              <input
+                type="text"
+                placeholder={t(lang, 'list.search')}
+                className={cn('w-full bg-slate-50 border border-slate-100 rounded-full py-2.5 text-sm font-bold focus:ring-2 focus:ring-emerald-500 transition-all', lang === 'ar' ? 'pr-11 pl-4' : 'pl-11 pr-4')}
+                value={listSearchTerm}
+                onChange={(e) => setListSearchTerm(e.target.value)}
+              />
+            </div>
+          </div>
           <div>
             <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2 block">
               {t(lang, 'list.filterBySource')}
